@@ -1,0 +1,5 @@
+{
+    "javascript.format.enable": true,
+    "typescript.format.insertSpaceBeforeFunctionParenthesis": true,
+    "javascript.format.insertSpaceBeforeFunctionParenthesis": true
+}
