@@ -5,27 +5,28 @@ import { IRenderer } from "../framework/bones_renderer";
 import { BlendMode } from "../framework/SpriteRenderer";
 import { TextRenderManager } from "../framework/TextRenderer";
 import { WindowManager } from "../framework/Window";
-import { GLGeometryBuffer } from "./GLGeometryBuffer";
 import { FontType, SpriteFont } from "../framework/fonts/SpriteFont";
 import { Texture2D } from "../framework/bones_texture";
-import { SharedVertexBufferDescription, DrawType, SharedVertexBufferItemDescription, ComponentType, BufferUsage, IndicesBufferDescription, GeometryBuffer } from "../framework/GeometryBuffer";
-import { GLTextShader } from "./shaders/GLTextShader";
+import { SharedVertexBufferDescription, DrawType, SharedVertexBufferItemDescription, ComponentType, BufferUsage, IndicesBufferDescription } from "../framework/GeometryBuffer";
 import { QuadGeometry } from "../framework/bones_geometry";
+import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
+import { GPUTextShader } from "./gpu_shader/GPUTextShader";
+import { WebGPURenderer } from "./WebGPURenderer";
+import { WebGPUTexture2D } from "./textures/WebGPUTexture";
 
 /**
  * The GL text render manager.
  */
-export class GLTextRenderer extends TextRenderManager
+export class WebGPUTextRenderer extends TextRenderManager
 {
-   
-    private o_transform: Mat4x4;
-
-    
     /**
-     * @brief The geometry buffer. For OpenGL it might be collection of GL buffer or vertex array object.
-     *
+     * The render pass encoder, needs to be passed in, so that items can be prepared for drawing.
      */
-     protected m_geometryBuffer: GeometryBuffer;
+    private m_currentRenderPassEncoder: GPURenderPassEncoder;
+
+    private m_currentInstanceIndex: number = 0;
+
+    private o_transform: Mat4x4;
 
     /**
      * The default color.
@@ -43,6 +44,11 @@ export class GLTextRenderer extends TextRenderManager
     protected o_currentTexture: Texture2D;
 
     /**
+     * The geometry buffers.
+     */
+    protected m_geometryBuffers: Array<WebGPUGeometryBuffer> = [];
+
+    /**
      * The state.
      */
     private m_state: LifecycleState;
@@ -50,7 +56,7 @@ export class GLTextRenderer extends TextRenderManager
     /**
      * The constructor.
      */
-    constructor(private readonly m_gl: WebGL2RenderingContext, public readonly window: WindowManager, public readonly renderer: IRenderer, private readonly m_fileLoader: FileLoader)
+    constructor(private readonly m_renderer: WebGPURenderer, public readonly window: WindowManager, private readonly m_fileLoader: FileLoader)
     {
         super();
         this.o_transform = Mat4x4.identity();
@@ -70,24 +76,14 @@ export class GLTextRenderer extends TextRenderManager
      */
     protected setBlendingMode (mode: BlendMode): void
     {
-        if (mode == BlendMode.OneMinusSrcAlpha)
-        {
-            this.m_gl.blendFunc(this.m_gl.SRC_ALPHA, this.m_gl.ONE_MINUS_SRC_ALPHA);
-            this.m_gl.enable(this.m_gl.BLEND);
-        }
+
     }
 
     /**
-     * @brief Initialize the text render manager. Initialize must be called in order to properly initialize all the variables.
-     * @returns {  Promise<void> }
+     * Creates the {@link WebGPUGeometryBuffer}.
      */
-    public async initialize (): Promise<void>
+    private createGeometryBuffer (is_dynamic: boolean): WebGPUGeometryBuffer 
     {
-        this.m_state = LifecycleState.Initialized;
-
-        this.m_shader = new GLTextShader(this.m_gl, this.m_fileLoader);
-        await this.m_shader.initialize();
-
         const geometry = new QuadGeometry();
 
         const attr = new SharedVertexBufferDescription();
@@ -104,7 +100,6 @@ export class GLTextRenderer extends TextRenderManager
         pos_attr_item.componentType = ComponentType.FLOAT;
         pos_attr_item.offsetInBytes = 0;
 
-
         const tex_attr_item = new SharedVertexBufferItemDescription();
         tex_attr_item.layoutLocation = 1;
         tex_attr_item.vertexSize = 2;
@@ -116,15 +111,34 @@ export class GLTextRenderer extends TextRenderManager
         indices.count = 6;
         indices.componentType = ComponentType.UNSIGNED_SHORT;
 
-        attr.sharedVertexBufferItems = [ pos_attr_item, tex_attr_item];
+        attr.sharedVertexBufferItems = [pos_attr_item, tex_attr_item];
 
-        this.m_geometryBuffer = new GLGeometryBuffer(this.m_gl, null, indices, attr);
+        return new WebGPUGeometryBuffer(this.m_renderer, null, indices, attr);
     }
 
-    public beginRenderPass<T> (data?: T): void
+    /**
+     * @brief Initialize the text render manager. Initialize must be called in order to properly initialize all the variables.
+     * @returns {  Promise<void> }
+     */
+    public async initialize (): Promise<void>
     {
-        throw new Error("Method not implemented.");
+        this.m_state = LifecycleState.Initialized;
+
+        this.m_shader = new GPUTextShader(this.m_renderer.device, this.m_fileLoader);
+        await this.m_shader.initialize();
     }
+
+
+    /**
+     * Begins render pass.
+     * @param { GPURenderPassEncoder } data 
+     */
+    public beginRenderPass (data): void
+    {
+        this.m_currentRenderPassEncoder = data as GPURenderPassEncoder;
+        this.m_currentInstanceIndex = 0;
+    }
+
 
     /**
      * @brief Begins the sprite batch.
@@ -136,10 +150,7 @@ export class GLTextRenderer extends TextRenderManager
         this.o_currentTexture = null;
         this.setBlendingMode(mode);
 
-        this.m_geometryBuffer.bind();
-
-        this.m_shader.use();
-
+        this.m_shader.use(this.m_currentRenderPassEncoder);
         this.m_shader.useCamera(this.m_projectionMatrix, this.m_viewMatrix);
     }
     /**
@@ -159,6 +170,15 @@ export class GLTextRenderer extends TextRenderManager
         const l = text.length;
         for (let i = 0; i < l; i++)
         {
+            // Find buffer to use. 
+            // Since it's mutable buffer, we use approach of having separate buffer for each instance.
+            if (this.m_currentInstanceIndex >= this.m_geometryBuffers.length)
+            {
+                this.m_geometryBuffers.push(this.createGeometryBuffer(true));
+            }
+            const buffer = this.m_geometryBuffers[this.m_currentInstanceIndex];
+            this.m_currentInstanceIndex++;
+
             const c = text[i];
             const ch = font.getFontCharacterInfo(c);
 
@@ -190,15 +210,11 @@ export class GLTextRenderer extends TextRenderManager
             this.o_vertices[18] = 1;
             this.o_vertices[19] = 0;
 
-            if (ch.texture != this.o_currentTexture)
-            {
-                this.o_currentTexture = ch.texture;
-                this.o_currentTexture.bind();
-            }
-
-            this.m_geometryBuffer.bindBuffer(0);
-            this.m_geometryBuffer.bufferSubData(this.o_vertices, this.o_vertices.byteLength);
-            this.m_geometryBuffer.draw();
+            (this.m_shader as GPUTextShader).useSpriteTexture(ch.texture as WebGPUTexture2D);
+            buffer.bindBuffer(0);
+            buffer.bufferSubData(this.o_vertices, this.o_vertices.byteLength);
+            buffer.bind(this.m_currentRenderPassEncoder);
+            buffer.draw(this.m_currentRenderPassEncoder);
 
             x += ch.size[0] * scale;
         }
@@ -213,11 +229,7 @@ export class GLTextRenderer extends TextRenderManager
    */
     private drawBitmapFontString (font: SpriteFont, text: string, position: Vec2, scale: number): void
     {
-        if (this.o_currentTexture != font.texture)
-        {
-            this.o_currentTexture = font.texture;
-            this.o_currentTexture.bind();
-        }
+        (this.m_shader as GPUTextShader).useSpriteTexture(font.texture as WebGPUTexture2D);
 
         let x = Math.floor(position[0]);
         let y = Math.floor(position[1]);
@@ -226,6 +238,15 @@ export class GLTextRenderer extends TextRenderManager
         const l = text.length;
         for (let i = 0; i < l; i++)
         {
+            // Find buffer to use. 
+            // Since it's mutable buffer, we use approach of having separate buffer for each instance.
+            if (this.m_currentInstanceIndex >= this.m_geometryBuffers.length)
+            {
+                this.m_geometryBuffers.push(this.createGeometryBuffer(true));
+            }
+            const buffer = this.m_geometryBuffers[this.m_currentInstanceIndex];
+            this.m_currentInstanceIndex++;
+            
             const c = text[i];
             const ch = font.getFontCharacterInfo(c);
 
@@ -263,12 +284,14 @@ export class GLTextRenderer extends TextRenderManager
             this.o_vertices[18] = texels_quad.d[0];
             this.o_vertices[19] = texels_quad.d[1];
 
-            this.m_geometryBuffer.bindBuffer(0);
-            this.m_geometryBuffer.bufferSubData(this.o_vertices, this.o_vertices.byteLength);
-            this.m_geometryBuffer.draw();
-
             x += Math.floor(ch.advance[0] * scale);
+
+            buffer.bindBuffer(0);
+            buffer.bufferSubData(this.o_vertices, this.o_vertices.byteLength);
+            buffer.bind(this.m_currentRenderPassEncoder);
+            buffer.draw(this.m_currentRenderPassEncoder);
         }
+
     }
 
     /**

@@ -1,7 +1,9 @@
 import { FileLoader } from "../../framework/bones_loaders";
 import { Color, Mat4x4 } from "../../framework/bones_math";
+import { Texture2D } from "../../framework/bones_texture";
 import { ShaderUniformType, ShaderUniform } from "../../framework/shaders/Shader";
 import { SpriteShader } from "../../framework/shaders/SpriteShader";
+import { GLTexture2D } from "../GLTexture";
 import { GLShaderImplementation } from "./GLShaderImplementation";
 
 
@@ -10,6 +12,7 @@ import { GLShaderImplementation } from "./GLShaderImplementation";
  */
 export class GLSpriteShader extends SpriteShader 
 {
+ 
     private m_shader: GLShaderImplementation;
 
     private m_projectionLocation: WebGLUniformLocation;
@@ -108,6 +111,18 @@ export class GLSpriteShader extends SpriteShader
     public useTintColor (color: Color): void
     {
         this.m_gl.uniform4f(this.m_tintColorLocation, color[0], color[1], color[2], color[3]);
+    }
+
+    /**
+     * Use the texture.
+     * @param texture {@link Texture2D} the WebGL implementation of a {@link Texture2D}.
+     * @see {@link GLTexture} 
+     */
+    public useSpriteTexture (texture: Texture2D): void
+    {
+        // not neccessary to use active(0) or activate texture unit, since 
+        // it is done on spriterendere.begin()
+        texture.bind();
     }
 
     /**

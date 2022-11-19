@@ -1,10 +1,11 @@
+import { hasOnlyExpressionInitializer } from "typescript";
 import { Vec2 } from "./bones_math";
 
 
 /**
  * The common type for all the texture data.
  */
-type TextureData = HTMLCanvasElement | HTMLImageElement | ArrayBuffer;
+type TextureData = HTMLCanvasElement | HTMLImageElement | ArrayBuffer | ImageBitmap;
 
 /**
  * @brief The texture filtering options.
@@ -71,10 +72,16 @@ class TextureOptions
 /**
  * The texture interface.
  */
-interface Texture2D
+abstract class Texture2D
 {
     readonly width: number;
     readonly height: number;
+
+    /**
+     * The async intialize method.
+     */
+    async initialize() : Promise<void> {}
+    
 
     /**
      * Sets the active texture unit.
@@ -83,17 +90,17 @@ interface Texture2D
      * 
      * @param { number } index - index of texture unit. By default 0.
      */
-    active (index: number);
+    abstract active (index: number);
 
     /**
      * @brief Use the current texture.
      */
-    bind (): void;
+     abstract bind (): void;
 
     /**
      * @brief Release the current texture.
      */
-    destroy (): void;
+     abstract destroy (): void;
 };
 
 /**
@@ -125,7 +132,7 @@ interface TextureManager
      * @param { number } height
      * @param { TextureOptions | null } options 
      */
-    createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Texture2D;
+    createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Promise<Texture2D>;
 
 
     /**

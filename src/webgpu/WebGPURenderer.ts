@@ -2,10 +2,12 @@ import { IGeometry } from "../framework/bones_geometry";
 import { FileLoader } from "../framework/bones_loaders";
 import { Color, Mat4x4, Rect, Vec2 } from "../framework/bones_math";
 import { IRenderer } from "../framework/bones_renderer";
+import { Texture2D, TextureManager } from "../framework/bones_texture";
 import { BufferUsage, ComponentType, GeometryBuffer } from "../framework/GeometryBuffer";
 import { Shader } from "../framework/shaders/Shader";
 import { SpriteShader } from "../framework/shaders/SpriteShader";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
+import { TextRenderManager } from "../framework/TextRenderer";
 import { WindowManager } from "../framework/Window";
 import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 
@@ -23,25 +25,6 @@ import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 // shader.bind(1)
 // shader.useTransform()
 // shader.draw() etc....
-
-// TEMPORARY TEST DATA 
-// 📈 Position Vertex Buffer Data
-const positions = new Float32Array([
-    1.0, -1.0, 0.0,
-    -1.0, -1.0, 0.0,
-    0.0, 1.0, 0.0
-]);
-
-// 🎨 Color Vertex Buffer Data
-const colors = new Float32Array([
-    1.0, 0.0, 0.0, // 🔴
-    0.0, 1.0, 0.0, // 🟢
-    0.0, 0.0, 1.0  // 🔵
-]);
-
-// 📇 Index Buffer Data
-const indices = new Uint16Array([0, 1, 2]);
-// END TEMPORARY TEST DATA 
 
 /**
  * The WebGPU renderer.
@@ -63,9 +46,22 @@ export class WebGPURenderer implements IRenderer
     public device: GPUDevice;
 
     /**
-     * The render pipeline.
+     * The current command encoder for rendering related operations.
+     * {@link GPUCommandEncoder}
      */
-    private m_pipeline: GPURenderPipeline;
+    public drawCommandEncoder: GPUCommandEncoder;
+
+    /**
+     * The command encoder for update read/write buffers related operations.
+     * {@link GPUCommandBuffer}
+     */
+    public updateCommandEncoder:GPUCommandEncoder;
+
+    /**
+     * The current pass encode.
+     * {@link GPURenderPassEncoder}
+     */
+    private o_currentPassEncoder: GPURenderPassEncoder;
 
     /**
      * The view of a color texture.
@@ -77,16 +73,10 @@ export class WebGPURenderer implements IRenderer
      */
     private m_depthTextureView: GPUTextureView;
 
-    // TEST
-    private positionBuffer: GPUBuffer;
-    private indexBuffer: GPUBuffer;
-    private colorBuffer: GPUBuffer;
-    private geometryBuffer: GeometryBuffer;
-
-    /**
-     * The sprite renderer.
-     */
+    // TODO: temp.
     public spriteRenderer: SpriteRenderer;
+    public textRenderer: TextRenderManager;
+    public textureManager: TextureManager;
 
     /**
      * Gets the buffer width.
@@ -173,101 +163,7 @@ export class WebGPURenderer implements IRenderer
         this.m_depthTextureView = depth_texture.createView();
     }
 
-    // 🍱 Initialize resources to render triangle (buffers, shaders, pipeline)
-    private async initTestData (): Promise<void> 
-    {
-        // // 🔺 Buffers
-        // let createBuffer = (arr: Float32Array | Uint16Array, usage: number) => {
-        //     // 📏 Align to 4 bytes (thanks @chrimsonite)
-        //     let desc = {
-        //         size: (arr.byteLength + 3) & ~3,
-        //         usage,
-        //         mappedAtCreation: true
-        //     };
-        //     let buffer = this.device.createBuffer(desc);
-        //     const writeArray =
-        //         arr instanceof Uint16Array
-        //             ? new Uint16Array(buffer.getMappedRange())
-        //             : new Float32Array(buffer.getMappedRange());
-        //     writeArray.set(arr);
-        //     buffer.unmap();
-        //     return buffer;
-        // };
-
-        // this.positionBuffer = createBuffer(positions, GPUBufferUsage.VERTEX);
-        // this.colorBuffer = createBuffer(colors, GPUBufferUsage.VERTEX);
-        // this.indexBuffer = createBuffer(indices, GPUBufferUsage.INDEX);
-
-        this.geometryBuffer = new WebGPUGeometryBuffer(this.device, [
-            {
-                data: positions,
-                componentType: ComponentType.FLOAT,
-                layoutLocation: 0,
-
-                // todo
-                isPositionBuffer: false,
-                vertexSize: 0,
-                count: 0,
-                bufferUsage: BufferUsage.DYNAMIC_DRAW
-
-            },
-            {
-                data: colors,
-                componentType: ComponentType.FLOAT,
-                layoutLocation: 1,
-
-                   // todo
-                   isPositionBuffer: false,
-                   vertexSize: 0,
-                   count: 0,
-                   bufferUsage: BufferUsage.DYNAMIC_DRAW
-            }
-        ], {
-            data: indices,
-            componentType: ComponentType.UNSIGNED_SHORT,
-            count: 3,
-
-               // todo
-               bufferUsage: BufferUsage.DYNAMIC_DRAW
-        });
-
-        //  // 🔣 Input Assembly
-        //  const positionAttribDesc: GPUVertexAttribute = {
-        //     shaderLocation: 0, // [[attribute(0)]]
-        //     offset: 0,
-        //     format: 'float32x3'
-        // };
-        // const colorAttribDesc: GPUVertexAttribute = {
-        //     shaderLocation: 1, // [[attribute(1)]]
-        //     offset: 0,
-        //     format: 'float32x3'
-        // };
-        // const positionBufferDesc: GPUVertexBufferLayout = {
-        //     attributes: [positionAttribDesc],
-        //     arrayStride: 4 * 3, // sizeof(float) * 3
-        //     stepMode: 'vertex'
-        // };
-        // const colorBufferDesc: GPUVertexBufferLayout = {
-        //     attributes: [colorAttribDesc],
-        //     arrayStride: 4 * 3, // sizeof(float) * 3
-        //     stepMode: 'vertex'
-        // };
-
-        // 🌀 Color/Blend State
-        // const colorState: GPUColorTargetState = {
-        //     format: 'bgra8unorm',
-        //     writeMask: GPUColorWrite.ALL
-        // };
-
-        // const fragment: GPUFragmentState = {
-        //     module: fragment_shader,
-        //     entryPoint: 'main',
-        //     targets: [colorState]
-        // };
-
-        // @ts-ignore
-    }
-
+   
     /**
      * Initialize the WebGPU renderer.
      */
@@ -293,10 +189,6 @@ export class WebGPURenderer implements IRenderer
         this.resize();
 
         // END INIT
-
-        // temporary test data
-        await this.initTestData();
-        // await this.shader.initialize();
     }
 
     /**
@@ -332,68 +224,31 @@ export class WebGPURenderer implements IRenderer
             depthStencilAttachment: depth_attachment
         };
 
-        const command_encoder = this.device.createCommandEncoder();
+        this.drawCommandEncoder = this.device.createCommandEncoder();
+        this.updateCommandEncoder = this.device.createCommandEncoder();
 
         // TODO: 
         // read: https://toji.github.io/webgpu-gltf-case-study/
 
         // 🖌️ Encode drawing commands
-        const pass_encoder: GPURenderPassEncoder = command_encoder.beginRenderPass(render_pass_desc);
-        pass_encoder.setViewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1], 0, 1);
-        pass_encoder.setScissorRect(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
+        this.o_currentPassEncoder = this.drawCommandEncoder.beginRenderPass(render_pass_desc);
+        this.o_currentPassEncoder.setViewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1], 0, 1);
+        this.o_currentPassEncoder.setScissorRect(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
 
         // called beginFrame
-        this.spriteRenderer.beginRenderPass(pass_encoder);
+        this.spriteRenderer.beginRenderPass(this.o_currentPassEncoder);
+        this.textRenderer.beginRenderPass(this.o_currentPassEncoder);
 
-        this.spriteRenderer.begin();
 
-        this.spriteRenderer.draw(null, new Rect(0,0, 128,128), Color.green());
-        this.spriteRenderer.draw(null, new Rect(128,128, 128,128), Color.red());
-
-        // this.spriteRenderer.end();
-
-        //     this.shader.use(pass_encoder);
-        //     this.geometryBuffer.bind(pass_encoder);
-        //     this.shader.bindInstance(0);
-        //     this.shader.useTransform(Mat4x4.translationMatrix(1, 1, 0));
-        //     this.shader.useCamera(Mat4x4.identity(), Mat4x4.identity());
-        //    // this.shader.useTintColor(Color.red());
-        //     this.geometryBuffer.draw(pass_encoder);
-
-        //     this.shader.bindInstance(1);
-        //     this.shader.useCamera(Mat4x4.identity(), Mat4x4.identity());
-        //     this.shader.useTransform(Mat4x4.identity());
-        //    // this.shader.useTintColor(Color.green());
-        //     this.geometryBuffer.draw(pass_encoder);
-
-        this.spriteRenderer.begin();
-
-        this.spriteRenderer.draw(null, new Rect(300, 300, 166,22), Color.blue());
-        this.spriteRenderer.draw(null, new Rect(50, 50,32,32), Color.lightGray());
-
-        // this.spriteRenderer.end();
-
-        //     this.shader.use(pass_encoder);
-        //     this.geometryBuffer.bind(pass_encoder);
-        //     this.shader.bindInstance(0);
-        //     this.shader.useTransform(Mat4x4.translationMatrix(1, 1, 0));
-        //     this.shader.useCamera(Mat4x4.identity(), Mat4x4.identity());
-        //    // this.shader.useTintColor(Color.red());
-        //     this.geometryBuffer.draw(pass_encoder);
-
-        //     this.shader.bindInstance(1);
-        //     this.shader.useCamera(Mat4x4.identity(), Mat4x4.identity());
-        //     this.shader.useTransform(Mat4x4.identity());
-        //    // this.shader.useTintColor(Color.green());
-        //     this.geometryBuffer.draw(pass_encoder);
-
-        pass_encoder.end();
-
-        const command_buffer = command_encoder.finish();
-        this.device.queue.submit([command_buffer]);
     }
     public endDraw (): void
     {
+        this.o_currentPassEncoder.end();
+
+        this.device.queue.submit([
+            this.updateCommandEncoder.finish(),
+            this.drawCommandEncoder.finish()
+        ]);
     }
     public destroy (): void
     {

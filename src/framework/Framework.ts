@@ -22,6 +22,8 @@ import { PostProcessManager, IEffectFactory } from "./bones_post_process";
 import { ParticlesFactory } from "./particles/ParticlesFactory";
 import { GLParticlesFactory } from "../webgl/particles/GLParticlesFactory";
 import { FrameworkPlugin } from "./plugin/FrameworkPlugin";
+import { WebGPUTextureManager } from "../webgpu/textures/WebGPUTextureManager";
+import { WebGPUTextRenderer } from "../webgpu/WebGPUTextRenderer";
 
 
 export interface GameJoltCredentials 
@@ -177,8 +179,17 @@ abstract class Framework
         if (options?.renderer == UseRendererOption.WebGPU)
         {
             this.renderer = new WebGPURenderer(canvas, this.window);
+            const device = (this.renderer as WebGPURenderer).device;
+            this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
+            this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
             this.spriteRenderer = new WebGPUSpriteRenderer(this.renderer as WebGPURenderer, this.fileLoader);
+            this.textRenderManager = new WebGPUTextRenderer(this.renderer as WebGPURenderer, this.window, this.fileLoader);
+            
+            // TODO: temp
             this.renderer.spriteRenderer = this.spriteRenderer;
+            (this.renderer as WebGPURenderer).textureManager = this.textureManager;
+            (this.renderer as WebGPURenderer).textRenderer = this.textRenderManager;
+
         }
         // by default WebGL2
         else

@@ -15,8 +15,6 @@ import { VertexBufferDescription, ComponentType, IndicesBufferDescription, Buffe
 
 export class GLSpriteRenderer extends SpriteRenderer
 {
-
-
     // For optimization, so that new matrices are not created each frame.
     private o_scale: Mat4x4;
     private o_transform: Mat4x4;
@@ -25,12 +23,29 @@ export class GLSpriteRenderer extends SpriteRenderer
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
 
+
+    /**
+     * The constant buffer, which does not change data.
+     * Use it to avoid calling buffer sub data often.
+     */
+    private m_constantBuffer: GLGeometryBuffer;
+
+    /**
+     * The mutable buffer, which changes data often.
+     */
+    private m_mutableBuffer: GLGeometryBuffer;
+
     /**
     * The geometry buffer texture coordinates.
     * Used when buffering data with 'draw' or 'drawSource'.
     * Used to avoid declaring new array on 'draw' or 'drawSource'.
     */
     private o_texCoords: Float32Array;
+
+    /**
+     * @brief The current texture pointer. Used like this in order to avoid rebinding often.
+     */
+    protected o_currentTexture?: Texture2D;
 
 
     constructor(private m_gl: WebGL2RenderingContext, public readonly window: WindowManager, public readonly renderer: IRenderer, private m_fileLoader: FileLoader)
@@ -99,14 +114,15 @@ export class GLSpriteRenderer extends SpriteRenderer
         texture_coords_attr.layoutLocation = 1;
         texture_coords_attr.vertexSize = 2;
         texture_coords_attr.componentType = ComponentType.FLOAT;
-        texture_coords_attr.bufferUsage = BufferUsage.DYNAMIC_DRAW;
 
         const indices = new IndicesBufferDescription();
         indices.data = quad_geometry.indices;
         indices.count = quad_geometry.indicesCount;
         indices.componentType = ComponentType.UNSIGNED_SHORT;
 
-        this.m_geometryBuffer = new GLGeometryBuffer(this.m_gl, [position_attr, texture_coords_attr], indices);
+        this.m_constantBuffer = new GLGeometryBuffer(this.m_gl, [position_attr, texture_coords_attr], indices);
+        texture_coords_attr.bufferUsage = BufferUsage.DYNAMIC_DRAW;
+        this.m_mutableBuffer = new GLGeometryBuffer(this.m_gl, [position_attr, texture_coords_attr], indices);
     }
 
     /**
@@ -131,10 +147,8 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public begin (mode?: BlendMode): void
     {
-        this.m_currentTexture = null;
+        this.o_currentTexture = null;
         this.setBlendingMode(mode);
-
-        this.m_geometryBuffer.bind();
 
         this.m_shader.use();
 
@@ -152,10 +166,10 @@ export class GLSpriteRenderer extends SpriteRenderer
       */
     public draw (texture: Texture2D, draw_rect: Rect, tint_color: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void
     {
-        if (texture != this.m_currentTexture)
+        if (texture != this.o_currentTexture)
         {
-            this.m_currentTexture = texture;
-            this.m_currentTexture.bind();
+            this.o_currentTexture = texture;
+            this.m_shader.useSpriteTexture(texture);
         }
 
         const offset_x = draw_rect.w * 0.5;
@@ -182,27 +196,8 @@ export class GLSpriteRenderer extends SpriteRenderer
         this.m_shader.useTransform(this.o_transform);
         this.m_shader.useTintColor(tint_color ?? this.o_defaultTintColor);
 
-        // top left 
-        this.o_texCoords[0] = 0;
-        this.o_texCoords[1] = 0;
-
-        // bottom left 
-        this.o_texCoords[2] = 0;
-        this.o_texCoords[3] = 1;
-
-        // bottom right 
-        this.o_texCoords[4] = 1;
-        this.o_texCoords[5] = 1;
-
-        // bottom right 
-        this.o_texCoords[6] = 1;
-        this.o_texCoords[7] = 0;
-
-        // texture buffer is at index 1, since it is passed as second. They are bound to index, according to order being passed in.
-        this.m_geometryBuffer.bindBuffer(1);
-        // 8 tex coords with size of 4 bytes
-        this.m_geometryBuffer.bufferSubData(this.o_texCoords, 4 * 8);
-        this.m_geometryBuffer.draw();
+        this.m_constantBuffer.bind();
+        this.m_constantBuffer.draw();
     }
 
     /**
@@ -218,10 +213,10 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public drawSource (texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void
     {
-        if (texture != this.m_currentTexture)
+        if (texture != this.o_currentTexture)
         {
-            this.m_currentTexture = texture;
-            this.m_currentTexture.bind();
+            this.o_currentTexture = texture;
+            this.m_shader.useSpriteTexture(texture);
         }
 
         const offset_x = draw_rect.w * 0.5;
@@ -273,11 +268,13 @@ export class GLSpriteRenderer extends SpriteRenderer
         this.o_texCoords[6] = x2;
         this.o_texCoords[7] = y;
 
+        this.m_mutableBuffer.bind();
+
         // texture buffer is at index 1, since it is passed as second. They are bound to index, according to order being passed in.
-        this.m_geometryBuffer.bindBuffer(1);
+        this.m_mutableBuffer.bindBuffer(1);
         // 8 tex coords with size of 4 bytes
-        this.m_geometryBuffer.bufferSubData(this.o_texCoords, 4 * 8);
-        this.m_geometryBuffer.draw();
+        this.m_mutableBuffer.bufferSubData(this.o_texCoords, 4 * 8);
+        this.m_mutableBuffer.draw();
     }
 
     /**

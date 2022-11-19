@@ -23,11 +23,6 @@ abstract class TextRenderer
      */
     protected m_shader: TextShader;
 
-    /**
-     * @brief The geometry buffer. For OpenGL it might be collection of GL buffer or vertex array object.
-     *
-     */
-    protected m_geometryBuffer: GeometryBuffer;
 
     /**
      * @brief The projection matrix.
@@ -71,13 +66,18 @@ abstract class TextRenderer
     public abstract destroy(): void;
 
     /**
+     * Pass arbitrary data to sprite renderer if needed.
+     * @param { T | unknown } data - any data required. This is called once per frame, right at the beginning of frame.
+     */
+     public abstract beginRenderPass<T>(data?: T) : void;
+
+    /**
      * @brief Begins the sprite batch.
      * @param { BlendMode | null | never }
      * @returns { void }
      */
     public abstract begin(mode?: BlendMode): void;
-
-
+    
     /**
      * Draw a string.
      * @param { SpriteFont } font 

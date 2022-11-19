@@ -21,7 +21,7 @@
 </body>
 <script src="dist/index.js"></script>
 <script>
-    const framework=new BonesFramework.TestGame(document.getElementById("canvas"));
+    const framework=new BonesFramework.WebGPUTestGame(document.getElementById("canvas"));
     framework.initializeFramework().then(x => {
         framework.runFrameworkLoops();
     });

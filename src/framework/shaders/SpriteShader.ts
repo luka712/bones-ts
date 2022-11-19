@@ -1,4 +1,5 @@
 import { Color, Mat4x4 } from "../bones_math";
+import { Texture2D } from "../bones_texture";
 import { Shader } from "./Shader";
 
 /**
@@ -27,4 +28,11 @@ export abstract class SpriteShader extends Shader
      * @param { Color } color 
      */
     public abstract useTintColor (color: Color): void;
+
+    /**
+     * Use the given texture for sprite.
+     * 
+     * @param texture {@link Texture2D} the texture. Either WebGL or WebGPU implementation.
+     */
+    public abstract useSpriteTexture(texture: Texture2D) : void;
 }

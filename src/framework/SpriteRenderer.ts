@@ -51,16 +51,6 @@ export abstract class SpriteRenderer
     protected m_shader: SpriteShader;
 
     /**
-     * The geometry buffer. For OpenGL it might be collection of GL buffer or vertex array object.
-     */
-    protected m_geometryBuffer: GeometryBuffer;
-
-    /**
-       * @brief The current texture pointer. Used like this in order to avoid rebinding often.
-       */
-    protected m_currentTexture?: Texture2D;
-
-    /**
      * @brief The projection matrix.
      */
     protected m_projectionMatrix: Mat4x4;

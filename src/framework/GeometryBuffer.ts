@@ -8,7 +8,7 @@ export enum ComponentType
      * If NONE, try to automatically select size from data provided.
      */
     NONE = 0,
-    
+
     BYTE = 0x1400,
     UNSIGNED_BYTE = 0x1401,
     SHORT = 0x1402,
@@ -40,10 +40,10 @@ export enum DrawType
      */
     POINTS = 0x0000,
 
-      /**
-     * Passed to drawElements or drawArrays to draw lines. Each set of two vertices creates a separate line.
-     */
-    LINES= 0x0001,
+    /**
+   * Passed to drawElements or drawArrays to draw lines. Each set of two vertices creates a separate line.
+   */
+    LINES = 0x0001,
 
     /**
      * Passed to drawElements or drawArrays to draw triangles. Each set of three vertices creates a separate triangle.
@@ -53,7 +53,7 @@ export enum DrawType
     /**
      * A Triangle Strip consists of connected triangles. It is defined by a sequence of vertices for the triangles, with each group of three consecutive vertices describing a triangle.
      */
-    TRIANGLE_STRIP =  0x0004,  
+    TRIANGLE_STRIP = 0x0004,
 
     /**
      * Passed to drawElements or drawArrays to draw a connected group of triangles. Each vertex connects to the previous and the first vertex in the fan.
@@ -137,12 +137,12 @@ export class VertexBufferDescription
      * The draw type hint, such as STATIC or DYNAMIC
      * In OpenGL this corresponds to GL_STATIC_DRAW or GL_DYNAMIC_DRAW
      */
-     bufferUsage: BufferUsage;
+    bufferUsage: BufferUsage;
 
-     /**
-      * The default draw type. If IndicesBufferDescription is specified, draw type is used from there instead.
-      */
-     drawType?: DrawType;
+    /**
+     * The default draw type. If IndicesBufferDescription is specified, draw type is used from there instead.
+     */
+    drawType?: DrawType;
 }
 
 export class SharedVertexBufferItemDescription
@@ -188,7 +188,7 @@ export class SharedVertexBufferDescription
      * @brief The draw type hint, such as STATIC or DYNAMIC
      * In OpenGL this corresponds to GL_STATIC_DRAW or GL_DYNAMIC_DRAW
      */
-     bufferUsage: BufferUsage;
+    bufferUsage: BufferUsage;
 
     /**
      * Items description.
@@ -197,7 +197,7 @@ export class SharedVertexBufferDescription
 
     /**
      * The default draw type.
-     */        
+     */
     drawType: DrawType = DrawType.TRIANGLES;
 
     /**
@@ -249,7 +249,7 @@ export interface GeometryBuffer
      * @param { number | undefined } n_of_primitves - number of primitives to write. If undefined, number of draw instances from read buffer is used for write buffer.
      * @param { DrawType } draw_type - the draw type of buffer. If not set, draw from read type is set for write buffer.
      */
-    transformFeedback(write_into_buffer: GeometryBuffer, n_of_primitves?: number, draw_type?: DrawType);
+    transformFeedback (write_into_buffer: GeometryBuffer, n_of_primitves?: number, draw_type?: DrawType);
 
     /**
      * Deletes the buffer 
@@ -263,5 +263,5 @@ export interface GeometryBuffer
      * For WebGL2 nothing is passed, for WebGPU pass_encoder is passed.
      * @returns { void }
      */
-    draw<T>(draw_params?: T): void;
+    draw<T> (draw_params?: T): void;
 };

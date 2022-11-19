@@ -29,9 +29,9 @@ export class SpriteFontManager
      * Initialize the sprite font manager.
      * @returns { void }
      */
-    public initialize (): void 
+    public async initialize (): Promise<void> 
     {
-        this.defaultFont = this.createFont();
+        this.defaultFont = await this.createFont();
     }
 
     /**
@@ -40,7 +40,7 @@ export class SpriteFontManager
      * @param { string } font - any standard css font that can be used by 2d context of canvas element. @see https://developer.mozilla.org/en-US/docs/Web/CSS/font . By default se to '48px sans-serif'.
      * @param { number } size - font size. By default set to 24. Larger font results in clearer text, but larger textures.
      */
-    public createFont (font: string = '24px sans-serif', size: number = 24): SpriteFont
+    public async createFont (font: string = '24px sans-serif', size: number = 24): Promise<SpriteFont>
     {
         const result = new SpriteFont(FontType.GlyphCharFont, size);
 
@@ -62,7 +62,7 @@ export class SpriteFontManager
             ctx.fillText(char, size / 2, size / 2);
 
             const font_char = new FontCharacter();
-            font_char.texture = this.m_textureManager.createTexture(canvas, size, size);
+            font_char.texture = await this.m_textureManager.createTexture(canvas, size, size);
             font_char.size = new Vec2(size, size);
 
             result.createFontCharacterInfo(char, font_char);
@@ -112,7 +112,7 @@ export class SpriteFontManager
 
             // create charater and texture for it.
             const font_char = new FontCharacter();
-            font_char.texture = this.m_textureManager.createTexture(canvas, size, size);
+            font_char.texture = await this.m_textureManager.createTexture(canvas, size, size);
             font_char.size = new Vec2(size, size);
 
             result.createFontCharacterInfo(char, font_char);

@@ -9,7 +9,7 @@ import { Texture2D, TextureManager, TextureChannel, TextureData, TextureFilterin
 /**
  * The gl texture.
  */
-export class GLTexture2D implements Texture2D
+export class GLTexture2D extends Texture2D
 {
     private m_glTexture: WebGLTexture;
     private m_state: LifecycleState;
@@ -37,6 +37,7 @@ export class GLTexture2D implements Texture2D
      */
     constructor(private m_gl: WebGL2RenderingContext, source: TextureData | null, channel: TextureChannel, texture_options?: TextureOptions)
     {
+        super();
         if (source instanceof HTMLImageElement || source instanceof HTMLCanvasElement)
         {
             // if textureSize is specified, use it, otherwise use data from image.
@@ -236,9 +237,11 @@ class GLTextureManager implements TextureManager
     * @param { number } height
     * @param { TextureOptions | null } options 
     */
-    public createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Texture2D
+    public async createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Promise<Texture2D>
     {
-        return new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA);
+        const tex = new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA);
+         await tex.initialize();
+         return tex;
     }
 
     /**

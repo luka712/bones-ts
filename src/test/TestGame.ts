@@ -1,6 +1,6 @@
 import { stat } from "fs";
 import { Framework } from "../framework/Framework";
-import { WebGLScreenTestState } from "./WebGLScreenTestState";
+import { WebGLScreenTestState } from "./state/WebGLScreenTestState";
 
 export class TestGame extends Framework
 {

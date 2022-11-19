@@ -49,7 +49,7 @@ export class CbfgFontLoader
         canvas.width = bitmap.width;
         canvas.height = bitmap.height;
         ctx.drawImage(bitmap, 0, 0);
-        font.texture = this.m_textureManager.createTexture(canvas, bitmap.width, bitmap.height);
+        font.texture = await this.m_textureManager.createTexture(canvas, bitmap.width, bitmap.height);
         canvas.remove();
 
         // cells size.

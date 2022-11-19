@@ -152,8 +152,6 @@ export abstract class GPUShader implements Shader
         (pass_encoder as unknown as GPURenderPassEncoder).setPipeline(this.pipeline);
     }
 
-
-
     /**
      * Used by WebGPU. If there is per instance uniforms, use this to bind and prepare uniforms.
      * @param { number } instance_index 

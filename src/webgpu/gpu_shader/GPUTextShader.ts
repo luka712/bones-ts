@@ -3,10 +3,11 @@ import { FileLoader } from "../../framework/bones_loaders";
 import { Mat4x4, Color } from "../../framework/bones_math";
 import { Texture2D } from "../../framework/bones_texture";
 import { SpriteShader } from "../../framework/shaders/SpriteShader";
+import { TextShader } from "../../framework/shaders/TextShader";
 import { WebGPUTexture2D } from "../textures/WebGPUTexture";
 import { GPUShader, GPU_BIND_GROUP_OFFSET } from "./GPUShader";
 
-export class GPUSpriteShader extends GPUShader implements SpriteShader
+export class GPUTextShader extends GPUShader implements TextShader
 {
     /**
      * Buffer that contains projection, view matrix.
@@ -19,9 +20,9 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
     private m_transformBuffer: GPUBuffer;
 
     /**
-     * Buffer for tint color. 
+     * Buffer for color. 
      */
-    private m_tintColorBuffer: GPUBuffer;
+    private m_colorBuffer: GPUBuffer;
 
 
     /**
@@ -37,30 +38,25 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
         {
             // describe the shader layouts
             vertexLayouts: [
-                // POSITION
                 {
-                    arrayStride: 4 * 3, // float * 3
+                    // shared buffer.
+                    arrayStride: 4 * 5, // float * 3 * 2
                     attributes: [
+                        // POSITION
                         {
                             shaderLocation: 0,
                             format: 'float32x3',
-                            offset: 0
-                        }
-                    ],
-                    stepMode: 'vertex'
-                },
-                // TEX COORDS
-                {
-                    arrayStride: 4 * 2, // float * 2
-                    attributes: [
+                            offset: 0,
+                        }, 
+                        // TEX COORDS
                         {
                             shaderLocation: 1,
                             format: 'float32x2',
-                            offset: 0
+                            offset: 4 * 3
                         }
                     ],
                     stepMode: 'vertex'
-                },
+                }
             ]
         };
     }
@@ -71,8 +67,8 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
      */
     public async initialize (): Promise<void>
     {
-        this.m_vertexSource = await this.m_fileLoader.loadFile("assets/framework/shaders/sprite/gpu/sprite_v.wgsl")
-        this.m_fragmentSource = await this.m_fileLoader.loadFile("assets/framework/shaders/sprite/gpu/sprite_f.wgsl");
+        this.m_vertexSource = await this.m_fileLoader.loadFile("assets/framework/shaders/text/gpu/text_v.wgsl")
+        this.m_fragmentSource = await this.m_fileLoader.loadFile("assets/framework/shaders/text/gpu/text_f.wgsl");
 
         // most of initialize is in main, or super class
         // such as creation of pipeline.
@@ -104,7 +100,7 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
-        this.m_tintColorBuffer = this.m_device.createBuffer({
+        this.m_colorBuffer = this.m_device.createBuffer({
             size: 4 * 4 * 256, // vec4
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
@@ -128,7 +124,7 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
                         resource: {
                             offset,
                             size: 4 * 4,
-                            buffer: this.m_tintColorBuffer
+                            buffer: this.m_colorBuffer
                         }
                     }
                     // {
@@ -185,9 +181,9 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
      * 
      * @param { Color } color 
      */
-    public useTintColor (color: Color): void
+    public useColor (color: Color): void
     {
-        this.m_device.queue.writeBuffer(this.m_tintColorBuffer, this.m_bindGroupPerInstance[this.m_currentInstanceIndex].offset, color.buffer, color.byteOffset, color.byteLength);
+        this.m_device.queue.writeBuffer(this.m_colorBuffer, this.m_bindGroupPerInstance[this.m_currentInstanceIndex].offset, color.buffer, color.byteOffset, color.byteLength);
     }
 
     /**

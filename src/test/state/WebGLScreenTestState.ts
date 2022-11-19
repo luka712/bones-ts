@@ -1,10 +1,10 @@
-import { Vec2, Rect } from "../framework/bones_math";
-import { Effect } from "../framework/bones_post_process";
-import { Texture2D } from "../framework/bones_texture";
-import { SpriteFont } from "../framework/fonts/SpriteFont";
-import { Framework } from "../framework/Framework";
-import { ParticlesEmitter } from "../framework/particles/ParticlesEmitter";
-import { State } from "../framework/state/State";
+import { Vec2, Rect } from "../../framework/bones_math";
+import { Effect } from "../../framework/bones_post_process";
+import { Texture2D } from "../../framework/bones_texture";
+import { SpriteFont } from "../../framework/fonts/SpriteFont";
+import { Framework } from "../../framework/Framework";
+import { ParticlesEmitter } from "../../framework/particles/ParticlesEmitter";
+import { State } from "../../framework/state/State";
 
 export class WebGLScreenTestState extends State 
 {
