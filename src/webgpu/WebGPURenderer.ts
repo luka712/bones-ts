@@ -27,10 +27,23 @@ import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 // shader.draw() etc....
 
 /**
+ * Provides data from renderer.
+ */
+export class WebGPURendererContext 
+{
+    device: GPUDevice;
+    /**
+     * The render pass encoder in current frame.
+     */
+    currentRenderPassEncoder: GPURenderPassEncoder
+}
+
+/**
  * The WebGPU renderer.
  */
 export class WebGPURenderer implements IRenderer
 {
+    public readonly context : WebGPURendererContext = new WebGPURendererContext();
 
     public clearColor: Color;
     private m_bufferSize: Vec2;
@@ -178,7 +191,10 @@ export class WebGPURenderer implements IRenderer
             throw new Error("WebGPURenderer::initialize: WebGPU cannot be initialized. Adapter not found.");
         }
 
-        this.device = await adapter.requestDevice();
+        this.context.device = await adapter.requestDevice();
+        this.device = this.context.device;
+
+
         this.device.lost.then(() => 
         {
             throw new Error("WebGPURenderer::initialize: WebGPU cannot be initialized. Device has been lost.");
@@ -231,10 +247,12 @@ export class WebGPURenderer implements IRenderer
         // read: https://toji.github.io/webgpu-gltf-case-study/
 
         // 🖌️ Encode drawing commands
-        this.o_currentPassEncoder = this.drawCommandEncoder.beginRenderPass(render_pass_desc);
-        this.o_currentPassEncoder.setViewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1], 0, 1);
-        this.o_currentPassEncoder.setScissorRect(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
-
+        const render_pass_encoder = this.drawCommandEncoder.beginRenderPass(render_pass_desc);
+        render_pass_encoder.setViewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1], 0, 1);
+        render_pass_encoder.setScissorRect(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
+        this.context.currentRenderPassEncoder = render_pass_encoder;
+        this.o_currentPassEncoder = render_pass_encoder;
+        
         // called beginFrame
         this.spriteRenderer.beginRenderPass(this.o_currentPassEncoder);
         this.textRenderer.beginRenderPass(this.o_currentPassEncoder);

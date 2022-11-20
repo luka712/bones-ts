@@ -15,7 +15,7 @@ import { WindowManager } from "./Window";
 import { State } from "./state/State";
 import { SpriteFont } from "./fonts/SpriteFont";
 import { SpriteFontManager } from "./fonts/SpriteFontManager";
-import { WebGPURenderer } from "../webgpu/WebGPURenderer";
+import { WebGPURenderer, WebGPURendererContext } from "../webgpu/WebGPURenderer";
 import { SoundManager } from "./sounds/SoundManager";
 import { WebGPUSpriteRenderer } from "../webgpu/WebGPUSpriteRenderer";
 import { PostProcessManager, IEffectFactory } from "./bones_post_process";
@@ -182,9 +182,9 @@ abstract class Framework
             const device = (this.renderer as WebGPURenderer).device;
             this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
-            this.spriteRenderer = new WebGPUSpriteRenderer(this.renderer as WebGPURenderer, this.fileLoader);
+            this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context, this.renderer as WebGPURenderer, this.fileLoader);
             this.textRenderManager = new WebGPUTextRenderer(this.renderer as WebGPURenderer, this.window, this.fileLoader);
-            
+
             // TODO: temp
             this.renderer.spriteRenderer = this.spriteRenderer;
             (this.renderer as WebGPURenderer).textureManager = this.textureManager;
@@ -300,9 +300,9 @@ abstract class Framework
      * @param { string } name 
      * @param { FrameworkPlugin } plugin - plugin instance. 
      */
-    protected addPlugin(name: string, plugin: FrameworkPlugin) : FrameworkPlugin 
+    protected addPlugin (name: string, plugin: FrameworkPlugin): FrameworkPlugin 
     {
-        if(this.plugins[name])
+        if (this.plugins[name])
         {
             throw new Error(`Framework::addPlugin: Plugin '${name}' already added!`);
         }
@@ -314,7 +314,7 @@ abstract class Framework
      * Setups the framework. 
      * To override if there are any plugins to be registered.
      */
-    public setup(): void 
+    public setup (): void 
     {
 
     }
