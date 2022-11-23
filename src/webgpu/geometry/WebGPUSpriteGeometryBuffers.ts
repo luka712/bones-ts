@@ -7,7 +7,6 @@ import { WebGPURendererContext } from "../WebGPURenderer";
 
 export class WebGPUSpriteGeometryBuffer
 {
-   
     private m_verticesBuffer: GPUBuffer;
     private m_texCoordsBuffer: GPUBuffer;
     private m_indicesBuffer: GPUBuffer;
@@ -18,12 +17,7 @@ export class WebGPUSpriteGeometryBuffer
      * Index is layoutLocation.
      * @see [usage pattern](https://github.com/toji/webgpu-best-practices/blob/main/buffer-uploads.md)
      */
-    private m_stagingBuffer: { [id: string]: Array<GPUBuffer> } = {};
-
-    /**
-     * The number of indices.
-     */
-    private m_indicesCount: number = 0;
+    private m_texCoordsStagingBuffers: Array<GPUBuffer> = [];
 
     /**
      * The bound buffer index.
@@ -79,7 +73,7 @@ export class WebGPUSpriteGeometryBuffer
         indices_buffer.unmap();
 
         this.m_verticesBuffer = vertices_buffer;
-        this.m_texCoordsBuffer= tex_coords_buffer;
+        this.m_texCoordsBuffer = tex_coords_buffer;
         this.m_indicesBuffer = indices_buffer;
     }
 
@@ -87,9 +81,9 @@ export class WebGPUSpriteGeometryBuffer
     {
         const pass_encoder = this.m_ctx.currentRenderPassEncoder;
 
-        pass_encoder.setVertexBuffer(0, this.m_verticesBuffer );
-        pass_encoder.setVertexBuffer(1, this.m_texCoordsBuffer );
-        pass_encoder.setIndexBuffer( this.m_indicesBuffer, this.m_indexFormat);
+        pass_encoder.setVertexBuffer(0, this.m_verticesBuffer);
+        pass_encoder.setVertexBuffer(1, this.m_texCoordsBuffer);
+        pass_encoder.setIndexBuffer(this.m_indicesBuffer, this.m_indexFormat);
     }
 
 
@@ -105,6 +99,40 @@ export class WebGPUSpriteGeometryBuffer
         this.m_boundIndex = buffer_index;
     }
 
+    /**
+     * Set the texture coords data.
+     * @param data 
+     */
+    public setTexCoords (data: Float32Array): void 
+    {
+        // 1. get or create staging buffer ( write ) 
+
+        // try find one write buffer
+        let write_buffer = this.m_texCoordsStagingBuffers.pop();
+
+        // if it does not exist, create one
+        if (!write_buffer)
+        {
+            write_buffer = this.m_ctx.device.createBuffer({
+                size: this.m_texCoordsBuffer.size,
+                usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+                mappedAtCreation: true,
+            });
+        }
+
+        // 2. write data into staging buffer.
+        var array = new Float32Array(write_buffer.getMappedRange());
+        array.set(data);
+        write_buffer.unmap();
+
+        // encode a command
+        const command_encoder = this.m_ctx.device.createCommandEncoder();
+        command_encoder.copyBufferToBuffer(write_buffer, 0, this.m_texCoordsBuffer, 0, this.m_texCoordsBuffer.size);
+        this.m_ctx.device.queue.submit([command_encoder.finish()]);
+
+        write_buffer.mapAsync(GPUMapMode.WRITE)
+            .then(() => this.m_texCoordsStagingBuffers.push(write_buffer));
+    }
 
     // /**
     //  * @brief Add new data to a buffer.
@@ -178,7 +206,7 @@ export class WebGPUSpriteGeometryBuffer
     /**
      * Draw the element.
      */
-    public draw(): void 
+    public draw (): void 
     {
         // 6 indices , 1 instance
         this.m_ctx.currentRenderPassEncoder.drawIndexed(6, 1);

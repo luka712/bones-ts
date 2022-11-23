@@ -14,7 +14,6 @@ export class WebGPUTexture2D extends Texture2D
 {
     private m_state: LifecycleState;
 
-
     /**
      * The sampler. Exposed so that it can be used by shader, when creating texture bind group.
      * @see {@link GPUSampler}

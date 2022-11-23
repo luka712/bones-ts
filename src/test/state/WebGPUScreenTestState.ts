@@ -97,9 +97,11 @@ export class WebGPUScreenTestState extends State
         this.spriteRenderer.drawSource(this.m_testTexture, new Rect(0, 64 * 5, 64, 64), new Rect(0, half_texture_size, half_texture_size, half_texture_size));
 
         // bottom right
-        // this.spriteRenderer.drawSource(this.m_testTexture, new Rect(64, 64 * 5, 64, 64), new Rect(half_texture_size, half_texture_size, half_texture_size, half_texture_size));
+         this.spriteRenderer.drawSource(this.m_testTexture, new Rect(64, 64 * 5, 64, 64), new Rect(half_texture_size, half_texture_size, half_texture_size, half_texture_size));
 
         this.spriteRenderer.draw(this.m_testTexture, new Rect(132, 64 * 4, 128, 128));
+        this.spriteRenderer.draw(this.m_testTexture, new Rect(132, 64 * 6, 128, 128));
+
 
         this.spriteRenderer.end();
 

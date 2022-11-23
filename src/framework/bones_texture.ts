@@ -1,5 +1,6 @@
 import { hasOnlyExpressionInitializer } from "typescript";
 import { Vec2 } from "./bones_math";
+import { FrameworkUtils } from "./FrameworkUtil";
 
 
 /**
@@ -74,8 +75,14 @@ class TextureOptions
  */
 abstract class Texture2D
 {
+    readonly id: string;
     readonly width: number;
     readonly height: number;
+
+    constructor()
+    {
+        this.id = FrameworkUtils.generateId();
+    }
 
     /**
      * The async intialize method.

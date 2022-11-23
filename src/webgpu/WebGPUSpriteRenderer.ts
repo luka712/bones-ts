@@ -25,6 +25,16 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     private m_constantGeometryBuffer: WebGPUSpriteGeometryBuffer;
 
+    /**
+     * The mutable geometry buffers.
+     */
+    private m_mutableGeometryBuffers: Array<WebGPUSpriteGeometryBuffer> = [];
+
+    /**
+     * The index of mutable buffers.
+     */
+    private m_mutableBuffersIndex: number;
+
     // For optimization, so that new matrices are not created each frame.
     private o_scale: Mat4x4;
     private o_transform: Mat4x4;
@@ -36,7 +46,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
 
-    constructor(ctx: WebGPURendererContext, private readonly m_renderer: IRenderer,  private readonly m_fileLoader: FileLoader)
+    constructor(private m_ctx: WebGPURendererContext, private readonly m_renderer: IRenderer,  private readonly m_fileLoader: FileLoader)
     {
         super();
 
@@ -52,8 +62,8 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
             1, 0
         ]);
 
-        this.m_spritePipeline = new WebGPUSpritePipeline(ctx, m_fileLoader);
-        this.m_constantGeometryBuffer = new WebGPUSpriteGeometryBuffer(ctx);
+        this.m_spritePipeline = new WebGPUSpritePipeline(m_ctx, m_fileLoader);
+        this.m_constantGeometryBuffer = new WebGPUSpriteGeometryBuffer(m_ctx);
     }
 
     /**
@@ -96,6 +106,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     public beginRenderPass (data): void
     {
         this.m_spritePipeline.beginRenderPass();
+        this.m_mutableBuffersIndex = 0;
     }
 
     /**
@@ -148,79 +159,69 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
 
     public drawSource (texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void
     {
-        // // Find buffer to use. 
-        // // Since it's mutable buffer, we use approach of having separate buffer for each instance.
-        // if (this.m_mutableGeometryBufferInstanceIndex >= this.m_mutableGeometryBuffers.length)
-        // {
-        //     this.m_mutableGeometryBuffers.push(this.createGeometryBuffer(true));
-        // }
-        // const mutable_buffer = this.m_mutableGeometryBuffers[this.m_mutableGeometryBufferInstanceIndex];
-        // this.m_mutableGeometryBufferInstanceIndex++;
+        // Find buffer to use. 
+        // Since it's mutable buffer, we use approach of having separate buffer for each instance.
+        if (this.m_mutableBuffersIndex >= this.m_mutableGeometryBuffers.length)
+        {
+            var buffer = new WebGPUSpriteGeometryBuffer(this.m_ctx);
+            buffer.initialize();
+            this.m_mutableGeometryBuffers.push(buffer);
+        }
+        const mutable_buffer = this.m_mutableGeometryBuffers[this.m_mutableBuffersIndex];
+        this.m_mutableBuffersIndex++;
 
+        const offset_x = draw_rect.w * 0.5;
+        const offset_y = draw_rect.h * 0.5;
 
-        // // bind the current instance
-        // this.m_shader.bindInstance(this.m_currentInstanceIndex);
+        // First get required matrices.
+        Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
+        if (axis_of_rotation && rotation_in_radians >= 0)
+        {
+            Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
+        }
+        else
+        {
+            Mat4x4.identity(this.o_rotation);
+        }
 
-        // const offset_x = draw_rect.w * 0.5;
-        // const offset_y = draw_rect.h * 0.5;
+        // transform will already contain translation here, saves 1 operation.
+        Mat4x4.translationMatrix(draw_rect.x + offset_x, draw_rect.y + offset_y, 0, this.o_transform);
 
-        // // First get required matrices.
-        // Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
-        // if (axis_of_rotation && rotation_in_radians >= 0)
-        // {
-        //     Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
-        // }
-        // else
-        // {
-        //     Mat4x4.identity(this.o_rotation);
-        // }
+        // now multiply transform with translation with other matrices.
+        Mat4x4.multiply(this.o_transform, this.o_rotation, this.o_transform);
+        Mat4x4.multiply(this.o_transform, this.o_scale, this.o_transform);
 
-        // // transform will already contain translation here, saves 1 operation.
-        // Mat4x4.translationMatrix(draw_rect.x + offset_x, draw_rect.y + offset_y, 0, this.o_transform);
+        // find texture coordinages from source rectangle
+        // update VBO for each character
+        const x = source_rect.x / texture.width;
+        const y = source_rect.y / texture.height;
 
-        // // now multiply transform with translation with other matrices.
-        // Mat4x4.multiply(this.o_transform, this.o_rotation, this.o_transform);
-        // Mat4x4.multiply(this.o_transform, this.o_scale, this.o_transform);
+        // where does it end
+        const x2 = x + (source_rect.w / texture.width);
+        const y2 = y + (source_rect.h / texture.height);
 
-        // this.m_shader.useTransform(this.o_transform);
-        // this.m_shader.useTintColor(tint_color ?? this.o_defaultTintColor);
-        // (this.m_shader as GPUSpriteShader).useSpriteTexture(texture as WebGPUTexture2D);
+        // top left 
+        this.o_texCoords[0] = x;
+        this.o_texCoords[1] = y;
 
-        // // find texture coordinages from source rectangle
-        // // update VBO for each character
-        // const x = source_rect.x / texture.width;
-        // const y = source_rect.y / texture.height;
+        // bottom left 
+        this.o_texCoords[2] = x;
+        this.o_texCoords[3] = y2;
 
-        // // where does it end
-        // const x2 = x + (source_rect.w / texture.width);
-        // const y2 = y + (source_rect.h / texture.height);
+        // bottom right 
+        this.o_texCoords[4] = x2;
+        this.o_texCoords[5] = y2;
 
-        // // top left 
-        // this.o_texCoords[0] = x;
-        // this.o_texCoords[1] = y;
+        // bottom right 
+        this.o_texCoords[6] = x2;
+        this.o_texCoords[7] = y;
+      
+        this.m_spritePipeline.setInstanceData(this.o_transform,tint_color ?? this.o_defaultTintColor, texture as WebGPUTexture2D );
 
-        // // bottom left 
-        // this.o_texCoords[2] = x;
-        // this.o_texCoords[3] = y2;
-
-        // // bottom right 
-        // this.o_texCoords[4] = x2;
-        // this.o_texCoords[5] = y2;
-
-        // // bottom right 
-        // this.o_texCoords[6] = x2;
-        // this.o_texCoords[7] = y;
-
-
-        // // texture buffer is at index 1, since it is passed as second. They are bound to index, according to order being passed in.
-        // mutable_buffer.bindBuffer(1);
-        // // 8 tex coords with size of 4 bytes
-        // mutable_buffer.bufferSubData(this.o_texCoords, 4 * 8);
-        // mutable_buffer.bind(this.m_currentRenderPassEncoder);
-        // mutable_buffer.draw(this.m_currentRenderPassEncoder);
-
-        // // this instance was used, increase the current index.
-        // this.m_currentInstanceIndex++;
+        // bind and draw.
+        mutable_buffer.setTexCoords(this.o_texCoords);
+        mutable_buffer.bind();
+        mutable_buffer.draw();
     }
 
 

@@ -41,6 +41,11 @@ export class WebGPUSpritePipeline
     private readonly m_instanceBindGroup: Array<WebGPUSpritePipelineInstanceBuffers> = [];
 
     /**
+     * The cached bind group for textures.
+     */
+    private readonly m_textureBindGroup: { [id: string]: GPUBindGroup } = {}
+
+    /**
      * The instance index.
      */
     private m_instanceIndex: number = 0;
@@ -226,36 +231,47 @@ export class WebGPUSpritePipeline
         device.queue.writeBuffer(this.m_cameraMatricesBuffer, 64, view_matrix.buffer, view_matrix.byteOffset, view_matrix.byteLength);
     }
 
+    /**
+     * Sets the instance data of this pipeline.
+     * @param transform_matrix 
+     * @param tint_color 
+     * @param texture 
+     */
     public setInstanceData (transform_matrix: Mat4x4, tint_color: Color, texture: WebGPUTexture2D): void 
     {
         // create or get from cache bind group.
-        if(this.m_instanceIndex >= this.m_instanceBindGroup.length)
+        if (this.m_instanceIndex >= this.m_instanceBindGroup.length)
         {
             this.m_instanceBindGroup.push(this.createInstanceBuffers());
         }
         const instance_bind_group = this.m_instanceBindGroup[this.m_instanceIndex];
-        
+
         const device = this.m_ctx.device;
         const pass_encoder = this.m_ctx.currentRenderPassEncoder;
 
+        // uniforms
         pass_encoder.setBindGroup(1, instance_bind_group.bindGroup);
         device.queue.writeBuffer(instance_bind_group.transformBuffer, 0, transform_matrix.buffer, transform_matrix.byteOffset, transform_matrix.byteLength);
         device.queue.writeBuffer(instance_bind_group.tintColorBuffer, 0, tint_color.buffer, tint_color.byteOffset, tint_color.byteLength);
 
-        // for texture, create a new bind group.
-        const texture_bind_group = device.createBindGroup({
-            layout: this.pipeline.getBindGroupLayout(2),
-            entries: [
-                {
-                    binding: 0,
-                    resource: texture.sampler,
-                },
-                {
-                    binding : 1,
-                    resource: texture.texture.createView()
-                }
-            ]
-        });
+        // Texture.
+        let texture_bind_group = this.m_textureBindGroup[texture.id];
+        if (!texture_bind_group)
+        {
+            texture_bind_group = device.createBindGroup({
+                layout: this.pipeline.getBindGroupLayout(2),
+                entries: [
+                    {
+                        binding: 0,
+                        resource: texture.sampler,
+                    },
+                    {
+                        binding: 1,
+                        resource: texture.texture.createView()
+                    }
+                ]
+            });
+        }
         pass_encoder.setBindGroup(2, texture_bind_group);
 
         this.m_instanceIndex++;
