@@ -1,9 +1,7 @@
-import { text } from "stream/consumers";
 import { LifecycleState } from "../../framework/bones_common";
 import { ImageLoader } from "../../framework/bones_loaders";
 import { Vec2 } from "../../framework/bones_math";
 import { TextureManager, Texture2D, TextureOptions, TextureChannel, TextureData } from "../../framework/bones_texture";
-import { GLTexture2D } from "../../webgl/GLTexture";
 import { WebGPURenderer } from "../WebGPURenderer";
 import { WebGPUTexture2D } from "./WebGPUTexture";
 
@@ -80,7 +78,7 @@ import { WebGPUTexture2D } from "./WebGPUTexture";
      {
          const data = await this.m_imageLoader.loadImage(path);
  
-         const texture = new WebGPUTexture2D(this.m_renderer.device, data, TextureChannel.RGBA, options);
+         const texture = new WebGPUTexture2D(this.m_renderer.device, data, options);
          await texture.initialize();
          if (key)
          {
@@ -105,7 +103,7 @@ import { WebGPUTexture2D } from "./WebGPUTexture";
      */
      public async createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Promise<Texture2D>
      {
-         const tex = new WebGPUTexture2D(this.m_renderer.device, data, options?.channel ?? TextureChannel.RGBA);
+         const tex = new WebGPUTexture2D(this.m_renderer.device, data, options);
          await tex.initialize();
          return tex;
      }
@@ -125,7 +123,7 @@ import { WebGPUTexture2D } from "./WebGPUTexture";
          {
              this.m_textureCache[key].destroy();
          }
-         const texture = new WebGPUTexture2D(this.m_renderer.device, data, options?.channel ?? TextureChannel.RGBA, options);
+         const texture = new WebGPUTexture2D(this.m_renderer.device, data, options);
          this.m_textureCache[key] = texture;
          return texture;
  

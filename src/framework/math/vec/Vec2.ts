@@ -1,4 +1,5 @@
 import { BaseMatrix } from "../BaseMatrix";
+import { Quaternion } from "../quaternion/Quaternion";
 import { Vec3 } from "./Vec3";
 
 
@@ -7,6 +8,15 @@ import { Vec3 } from "./Vec3";
  */
 export class Vec2 extends BaseMatrix<Vec2>
 {
+    // just optimization variables 
+    private static temp_v2_a: Vec2;
+    private static temp_v2_b: Vec2;
+    private static temp_v2_c: Vec2;
+
+    private static temp_v3_a: Vec3;
+    private static temp_v3_b: Vec3;
+    private static temp_v3_c: Vec3;
+
     constructor(x: number, y: number)
     {
         super(2);
@@ -94,6 +104,24 @@ export class Vec2 extends BaseMatrix<Vec2>
     }
 
     /**
+     * Copies the vector.
+     * @returns {@link Vec2}
+     */
+    public copy (): Vec2 
+    {
+        return new Vec2(this.x, this.y);
+    }
+
+    /**
+     * Gets the vector angle
+     * @returns 
+     */
+    public angle (): number 
+    {
+        return Math.atan2(this[1], this[0]);
+    }
+
+    /**
      * @returns { Vec2 }
      */
     public static unitX (): Vec2 
@@ -128,10 +156,184 @@ export class Vec2 extends BaseMatrix<Vec2>
     }
 
     /**
+     * Adds vector a - vector b.
+     * @param a 
+     * @param b 
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     * @returns {@link Vec2} - new instance or passed in out vector as result.
+     */
+    public static add (a: Vec2, b: Vec2, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        out[0] = a[0] + b[0];
+        out[1] = a[1] + b[1];
+        return out;
+    }
+
+    /**
+     * Subtract vector a - vector b.
+     * @param a 
+     * @param b 
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     * @returns {@link Vec2} - new instance or passed in out vector as result.
+     */
+    public static subtract (a: Vec2, b: Vec2, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        out[0] = a[0] - b[0];
+        out[1] = a[1] - b[1];
+        return out;
+    }
+
+    /**
+     * Multiply a vector with scalar.
+     * @param v - the vector.
+     * @param s - the scalar.
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     */
+    public static multiplyWithScalar (v: Vec2, s: number, out?: Vec2): Vec2 
+    {
+        if (!out)
+        {
+            out = new Vec2(0, 0);
+        }
+
+        out[0] = v[0] * s;
+        out[1] = v[1] * s;
+        return out;
+    }
+
+    /**
+     * Clamps vector component wise between 2 vectors.
+     * @param v - the value vector.
+     * @param min - the minimum value.
+     * @param max - the maximum value.
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     * @returns {@link Vec2}
+     */
+    public static clamp (v: Vec2, min: Vec2, max: Vec2, out?: Vec2): Vec2 
+    {
+        if (!out)
+        {
+            out = new Vec2(0, 0);
+        }
+
+
+        if (v[0] < min[0])
+        {
+            v[0] = min[0];
+        }
+        else if (v[0] > max[0])
+        {
+            v[0] = max[0];
+        }
+
+        if (v[1] < min[1])
+        {
+            v[1] = min[1];
+        }
+        else if (v[1] > max[1])
+        {
+            v[1] = max[1];
+        }
+
+        return out;
+    }
+
+    /**
+     * Normalizes a vector and returns normalized vector.
+     * @param v - input vector.
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     * @returns {@link Vec2} - new instance or passed in out vector as result.
+     */
+    public static normalize (v: Vec2, out?: Vec2): Vec2 
+    {
+        if (!out)
+        {
+            out = Vec2.zero();
+        }
+
+        const l = v.magnitude();
+
+        if (l != 0)
+        {
+            out[0] /= l;
+            out[1] /= l;
+        }
+
+        return out;
+    }
+
+    /**
      * @returns { Vec2  }
      */
     public static fromArray (value: ArrayLike<number>): Vec2  
     {
         return new Vec2(value[0], value[1]);
+    }
+
+    /**
+     * Divides self with scalar and returns self.
+     * @param vector - vector to divide.
+     * @param scalar - scalar to divide with.
+     * @parma out - optional, if passed in, result is saved to out vector.
+     */
+    public static divideWithScalar (vector: Vec2, scalar: number, out?: Vec2): Vec2 
+    {
+        if (!out)
+        {
+            out = new Vec2(0, 0);
+        }
+
+        out[0] = vector[0] / scalar;
+        out[1] = vector[1] / scalar;
+
+        return out;
+    }
+
+    /**
+     * Creates the vector from polar coordinates.
+     * @param angle - the angle.
+     * @param magnitude - the magnitude.
+     * @parma out - optional, if passed in, result is saved to out vector.
+     * @returns 
+     */
+    public static fromPolar (angle: number, magnitude: number, out?: Vec2): Vec2 
+    {
+        if (!out)
+        {
+            out = new Vec2(0, 0);
+        }
+
+        out[0] = Math.cos(angle) * magnitude;
+        out[1] = Math.sin(angle) * magnitude;
+        return out;
+    }
+
+    /**
+     * Rotates a vec2 with quaternion.
+     * @param v - the vector. 
+     * @param q - the quaternion.
+     * @parma out - optional, if passed in, result is saved to out vector.
+     */
+    public static rotateWithQuaternion (v: Vec2, q: Quaternion, out?: Vec2): Vec2 
+    {
+        this.temp_v3_a = Vec3.construct(q[0] + q[0], q[1] + q[1], q[2] + q[2], this.temp_v3_a);
+        this.temp_v3_b = Vec3.construct(q[0], q[0], q[3], this.temp_v3_b);
+        this.temp_v3_c = Vec3.construct(1, q[1], q[2], this.temp_v3_c);
+
+        Vec3.multiply(this.temp_v3_a, this.temp_v3_b, this.temp_v3_b);
+        Vec3.multiply(this.temp_v3_a, this.temp_v3_c, this.temp_v3_c);
+
+        const a = this.temp_v3_b;
+        const b = this.temp_v3_c;
+
+        out = out ?? new Vec2(0, 0);
+        out[0] = v[0] * (1.0 - b[1] - b[2]) + v[1] * (a[1] - a[2]);
+        out[1] = v[0] * (a[1] + a[2]) + v[1] * (1.0 - a[0] - b[2]);
+
+        return out;
     }
 }

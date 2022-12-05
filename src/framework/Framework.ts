@@ -4,7 +4,7 @@ import { GLSpriteRenderer } from "../webgl/GLSpriteRenderer";
 import { GLTextureManager } from "../webgl/GLTexture";
 import { GLTextRenderer } from "../webgl/GLTextRenderer";
 import { Config } from "./bones_config";
-import { InputManager } from "./InputManager";
+import { InputManager } from "./input/InputManager";
 import { FileLoader, ImageLoader } from "./bones_loaders";
 import { IRenderer } from "./bones_renderer";
 import { SpriteRenderer } from "./SpriteRenderer";

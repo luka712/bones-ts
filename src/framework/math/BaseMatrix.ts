@@ -74,6 +74,20 @@ export class BaseMatrix<T> extends Float32Array
     }
 
     /**
+     * Divides self with scalar and returns self.
+     */
+    public divideWithScalar(scalar: number): T 
+    {
+        let l = this.length;
+        while (l > 0)
+        {
+            l--;
+            this[l] /= scalar;
+        }
+        return this as unknown as T;
+    }
+
+    /**
      * Are color components same as other color components.
      */
     public equals(other: Float32Array): boolean
@@ -88,5 +102,4 @@ export class BaseMatrix<T> extends Float32Array
 
         return true;
     }
-
 }

@@ -1,7 +1,7 @@
 import { LifecycleState } from "../bones_common";
 import { Config } from "../bones_config";
 import { Framework } from "../Framework";
-import { InputManager } from "../InputManager";
+import { InputManager } from "../input/InputManager";
 import { IEffectFactory, PostProcessManager } from "../bones_post_process";
 import { SpriteRenderer } from "../SpriteRenderer";
 import { TextureManager } from "../bones_texture";

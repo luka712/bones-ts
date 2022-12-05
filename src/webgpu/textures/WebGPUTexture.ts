@@ -6,6 +6,11 @@ import { ImageLoader } from "../../framework/bones_loaders";
 import { Vec2 } from "../../framework/bones_math";
 import { Texture2D, TextureManager, TextureChannel, TextureData, TextureFiltering, TextureOptions, TextureWrap } from "../../framework/bones_texture";
 
+// private, used only here
+interface WebGPUTextureOptions
+{
+    readonly textureFormat: GPUTextureFormat;
+}
 
 /**
  * The gl texture.
@@ -46,7 +51,7 @@ export class WebGPUTexture2D extends Texture2D
      * @param { TextureChannel } channel // TODO: can be passed from texture optionsb
      * @param m_texture_options {@link TextureOptions} various texture options.
      */
-    constructor(private m_device: GPUDevice, private m_source: TextureData | null, channel: TextureChannel, private m_texture_options?: TextureOptions)
+    constructor(private m_device: GPUDevice, private m_source: TextureData | null, private m_texture_options?: TextureOptions)
     {
         super();
         if (m_source instanceof HTMLImageElement || m_source instanceof HTMLCanvasElement)
@@ -71,15 +76,52 @@ export class WebGPUTexture2D extends Texture2D
     }
 
     /**
+     * From options to WebGPU options.
+     * @returns 
+     */
+    private optionsToGPUOptions (): WebGPUTextureOptions 
+    {
+        let texture_format: GPUTextureFormat = 'rgba8unorm';
+
+        if (this.m_texture_options)
+        {
+            // if channel exists.
+            const channel = this.m_texture_options.channel ?? TextureChannel.RGBA;
+            if (channel)
+            {
+                if (channel == TextureChannel.RED)
+                {
+                    texture_format = 'r8unorm';
+                }
+                else if (channel == TextureChannel.RGBA)
+                {
+                    texture_format = 'rgba8unorm';
+                }
+                else 
+                {
+                    // try to support it.
+                    throw new Error("WebGPUTexture2D::textureFormat: Format currently not supported in WebGPU renderer!")
+                }
+            }
+
+        }
+
+        return {
+            textureFormat: texture_format
+        }
+    }
+
+    /**
      * Initialize the texture.
      */
     public async initialize (): Promise<void>
     {
+        const gpu_options = this.optionsToGPUOptions();
 
         // create empty texture
         this.texture = this.m_device.createTexture({
             size: [this.width, this.height],
-            format: 'rgba8unorm',
+            format: gpu_options.textureFormat, // usually formats such as 'rgba8unorm', 'r8unorm'
             usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT
         });
 

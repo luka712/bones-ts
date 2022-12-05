@@ -22,7 +22,7 @@ export class WebGPUScreenTestState extends State
         // throw new Error("Method not implemented.");
     }
     //#endregion
-   
+
     private emitter: ParticlesEmitter;
 
     private m_testTexture: Texture2D;
@@ -45,7 +45,7 @@ export class WebGPUScreenTestState extends State
 
         // load font
         this.m_testBitmapFont = await this.fontManager.loadBitmapFont(
-            "assets/framework/fonts/cbfg/TheleahFat.bmp", 
+            "assets/framework/fonts/cbfg/TheleahFat.bmp",
             "assets/framework/fonts/cbfg/TheleahFat.csv");
 
         //	m_testEffect = Effects->CreateGrayScaleEffect();
@@ -57,11 +57,11 @@ export class WebGPUScreenTestState extends State
     public onUpdate (delta_time: number): void
     {
         // this.particleManager.update(delta_time);
-       // this.emitter.update(delta_time);
+        // this.emitter.update(delta_time);
     }
     public onDraw (): void
     {
-       // this.postProcessManager.beforeRender(this.m_testEffect);
+        // this.postProcessManager.beforeRender(this.m_testEffect);
 
         // TODO: 
         //rename textRenderManager to textRenderer
@@ -85,6 +85,20 @@ export class WebGPUScreenTestState extends State
         this.spriteRenderer.begin();
 
 
+        const ms_passed = this.timeManager.time.deltaTimeMS;
+        const fps = this.timeManager.fps;
+       // this.spriteRenderer.drawString(this.m_testBitmapFont, "Bitmap font test: Test 12345", new Vec2(0, 20), 0.35);
+
+        this.spriteRenderer.drawString(this.m_testBitmapFont, "Test", new Vec2(0, 20), 1);
+        this.spriteRenderer.drawString(this.m_testBitmapFont, "Test", new Vec2(0, 80), 1);
+        this.spriteRenderer.drawString(this.m_testBitmapFont, "Test", new Vec2(0, 120), 1);
+
+        // this.spriteRenderer.drawString(this.m_testBitmapFont, "MS Test: " + ms_passed, new Vec2(0, 48), 0.35);
+        // this.spriteRenderer.drawString(this.m_testBitmapFont, "FPS Test: " + fps, new Vec2(0, 72), 0.35);
+
+
+        // this.spriteRenderer.drawString(this.m_testBitmapFont, "Texture test. One drawn with 4 source rects, 1 drawn hole ", new Vec2(0.0, 64 * 3 + 10), 0.35);
+
         const half_texture_size = this.m_testTexture.width / 2.0;
 
         // top left 
@@ -97,11 +111,10 @@ export class WebGPUScreenTestState extends State
         this.spriteRenderer.drawSource(this.m_testTexture, new Rect(0, 64 * 5, 64, 64), new Rect(0, half_texture_size, half_texture_size, half_texture_size));
 
         // bottom right
-         this.spriteRenderer.drawSource(this.m_testTexture, new Rect(64, 64 * 5, 64, 64), new Rect(half_texture_size, half_texture_size, half_texture_size, half_texture_size));
+        this.spriteRenderer.drawSource(this.m_testTexture, new Rect(64, 64 * 5, 64, 64), new Rect(half_texture_size, half_texture_size, half_texture_size, half_texture_size));
 
+        // full tex
         this.spriteRenderer.draw(this.m_testTexture, new Rect(132, 64 * 4, 128, 128));
-        this.spriteRenderer.draw(this.m_testTexture, new Rect(132, 64 * 6, 128, 128));
-
 
         this.spriteRenderer.end();
 

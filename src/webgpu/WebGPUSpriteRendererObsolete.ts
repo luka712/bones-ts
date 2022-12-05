@@ -6,7 +6,7 @@ import { Rect, Color, Mat4x4 } from "../framework/bones_math";
 import { Texture2D } from "../framework/bones_texture";
 import { VertexBufferDescription, ComponentType, IndicesBufferDescription, BufferUsage } from "../framework/GeometryBuffer";
 import { Vec3 } from "../framework/math/vec/Vec3";
-import { BlendMode, SpriteRenderer } from "../framework/SpriteRenderer";
+import { Blend, BlendMode, SpriteRenderer } from "../framework/SpriteRenderer";
 import { GPUSpriteShader } from "./gpu_shader/GPUSpriteShader";
 import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 import { WebGPURenderer } from "./WebGPURenderer";
@@ -76,7 +76,7 @@ export class WebGPUSpriteRendererObsolete extends SpriteRenderer
        * @param { BlendMode } mode
        * @returns { void }
        */
-    protected setBlendingMode (mode: BlendMode): void
+    protected setBlendingMode (mode: Blend): void
     {
 
     }
@@ -150,7 +150,7 @@ export class WebGPUSpriteRendererObsolete extends SpriteRenderer
     /**
      * @brief Begins the sprite batch.
      */
-    public begin (mode?: BlendMode): void
+    public begin (mode?: Blend): void
     {
         // then use shader and bind per pass cameras.
         this.m_shader.use(this.m_currentRenderPassEncoder);
@@ -176,7 +176,7 @@ export class WebGPUSpriteRendererObsolete extends SpriteRenderer
 
         // First get required matrices.
         Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
-        if (axis_of_rotation && rotation_in_radians >= 0)
+        if (axis_of_rotation && rotation_in_radians)
         {
             Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
         }
@@ -224,7 +224,7 @@ export class WebGPUSpriteRendererObsolete extends SpriteRenderer
 
         // First get required matrices.
         Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
-        if (axis_of_rotation && rotation_in_radians >= 0)
+        if (axis_of_rotation && rotation_in_radians )
         {
             Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
         }

@@ -1,7 +1,7 @@
 import { prototype } from "events";
 import { FileLoader } from "../../framework/bones_loaders";
 import { TextureManager } from "../../framework/bones_texture";
-import { InputManager } from "../../framework/InputManager";
+import { InputManager } from "../../framework/input/InputManager";
 import { ParticlesEmitter } from "../../framework/particles/ParticlesEmitter";
 import { ParticlesFactory } from "../../framework/particles/ParticlesFactory";
 import { WindowManager } from "../../framework/Window";

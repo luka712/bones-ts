@@ -11,5 +11,5 @@ var u_texture: texture_2d<f32>;
 @fragment
 fn main(@location(0) v_texCoords: vec2<f32>) -> @location(0) vec4<f32> 
 {
-    return textureSample(u_texture, u_sampler, v_texCoords) * u_tintColor;
+   return textureSample(u_texture, u_sampler, v_texCoords) * u_tintColor;
 }

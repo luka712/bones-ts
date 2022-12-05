@@ -16,9 +16,9 @@ export class Vec3 extends BaseMatrix<Vec3>
         this[2] = z;
     }
 
-    public get X (): number { return this[0]; }
-    public get Y (): number { return this[1]; }
-    public get Z (): number { return this[2]; }
+    public get x (): number { return this[0]; }
+    public get y (): number { return this[1]; }
+    public get z (): number { return this[2]; }
 
     /*
      * Get the magnitude (length) of a vector.
@@ -206,6 +206,24 @@ export class Vec3 extends BaseMatrix<Vec3>
     }
 
     /**
+     * Creates a new vector 3 or assigns to out vector.
+     * @param x 
+     * @param y 
+     * @param z 
+     * @parma out - optional, if passed in, result is saved to out vector.
+     */
+    public static construct (x: number, y: number, z: number, out?: Vec3): Vec3 
+    {
+        out = out ?? new Vec3(0, 0, 0);
+
+        out[0] = x;
+        out[1] = y;
+        out[2] = z;
+
+        return out;
+    }
+
+    /**
      * Adds two vectors.
      * @param { Vec3 | Float32Array } a
      * @param { Vec3 | Float32Array } b
@@ -237,6 +255,24 @@ export class Vec3 extends BaseMatrix<Vec3>
         out[0] = a[0] - b[0];
         out[1] = a[1] - b[1];
         out[2] = a[2] - b[2];
+
+        return out;
+    }
+
+
+    /**
+     * Multiplies two vectors.
+     * @param a - the a vector.
+     * @param b - the b vector.
+     * @parma out - optional, if passed in, result is saved to out vector.
+     */
+    public static multiply (a: Vec3, b: Vec3, out?: Vec3): Vec3 
+    {
+        out = out ?? new Vec3(0, 0, 0);
+
+        out[0] = a[0] * b[0];
+        out[1] = a[1] * b[1];
+        out[2] = a[2] * b[2];
 
         return out;
     }

@@ -46,13 +46,15 @@ enum TextureWrap
 
 /**
  * @brief Which channels to use.
+ * TODO: rename to texture format.
  */
 enum TextureChannel
 {
-    RED,
-    RG8,
-    RGB,
-    RGBA,
+    INVALID = 0,
+    RED = 1,
+    RG8 = 2,
+    RGB = 3,
+    RGBA = 4,
 };
 
 /**
@@ -60,7 +62,9 @@ enum TextureChannel
  */
 class TextureOptions
 {
+    // DEPRECATED
     public channel?: TextureChannel;
+    public textureFormat? :TextureChannel;
     public textureFiltering?: TextureFiltering;
     public textureWrap?: TextureWrap;
 

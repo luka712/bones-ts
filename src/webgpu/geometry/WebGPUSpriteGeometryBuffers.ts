@@ -13,11 +13,11 @@ export class WebGPUSpriteGeometryBuffer
     private m_indexFormat: GPUIndexFormat = 'uint16';
 
     /**
-     * The dictionary of buffers that are used to buffer subdata.
-     * Index is layoutLocation.
+     * The staging buffers.
      * @see [usage pattern](https://github.com/toji/webgpu-best-practices/blob/main/buffer-uploads.md)
      */
     private m_texCoordsStagingBuffers: Array<GPUBuffer> = [];
+    private m_verticesStagingBuffers: Array<GPUBuffer> = [];
 
     /**
      * The bound buffer index.
@@ -44,7 +44,7 @@ export class WebGPUSpriteGeometryBuffer
         const vertices_buffer = device.createBuffer({
             label: "vertices",
             size: (vertices.byteLength + 3) & ~3,
-            usage: GPUBufferUsage.VERTEX,
+            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
             mappedAtCreation: true,
         });
         const write_vertices_array = new Float32Array(vertices_buffer.getMappedRange());
@@ -100,10 +100,11 @@ export class WebGPUSpriteGeometryBuffer
     }
 
     /**
-     * Set the texture coords data.
+     * Takes care of staging buffer, gets or creates one, writes data into it, and returns buffer.
      * @param data 
+     * @returns 
      */
-    public setTexCoords (data: Float32Array): void 
+    private fillTexCoordsBufferAndReturnBuffer (data: Float32Array): GPUBuffer 
     {
         // 1. get or create staging buffer ( write ) 
 
@@ -125,6 +126,17 @@ export class WebGPUSpriteGeometryBuffer
         array.set(data);
         write_buffer.unmap();
 
+        return write_buffer;
+    }
+
+    /**
+     * Set the texture coords data.
+     * @param data 
+     */
+    public setTexCoords (data: Float32Array): void 
+    {
+        const write_buffer = this.fillTexCoordsBufferAndReturnBuffer(data);
+
         // encode a command
         const command_encoder = this.m_ctx.device.createCommandEncoder();
         command_encoder.copyBufferToBuffer(write_buffer, 0, this.m_texCoordsBuffer, 0, this.m_texCoordsBuffer.size);
@@ -134,52 +146,69 @@ export class WebGPUSpriteGeometryBuffer
             .then(() => this.m_texCoordsStagingBuffers.push(write_buffer));
     }
 
-    // /**
-    //  * @brief Add new data to a buffer.
-    //  *
-    //  * @param { ArrayBufferView } buffer_data - data.
-    //  * @param { number } size - size of data.
-    //  * @returns { void }
-    //  */
-    // public bufferSubData (buffer_data: ArrayBufferView, size: number): void 
-    // {
-    //     // see https://github.com/toji/webgpu-metaballs/blob/main/js/webgpu-renderer/webgpu-metaball-renderer.js#L137 staging buffers
-    //     // see https://gpuweb.github.io/gpuweb/explainer/#buffer-mapping
-    //     const buffer = this.m_bufferLayoutLocation[this.m_boundIndex].buffer;
+    /**
+    * Takes care of staging buffer, gets or creates one, writes data into it, and returns buffer.
+    * @param data 
+    * @returns 
+    */
+    private fillVerticesBufferAndReturnBuffer (data: Float32Array): GPUBuffer 
+    {
+        // 1. get or create staging buffer ( write ) 
 
-    //     // try find one write buffer
-    //     let write_buffer = this.m_stagingBuffer[this.m_boundIndex]?.pop();
+        // try find one write buffer
+        let write_buffer = this.m_verticesStagingBuffers.pop();
 
-    //     // if it does not exist, create one
-    //     if (!write_buffer)
-    //     {
-    //         // check also if array is initialized, if not initialize one.
-    //         if (!this.m_stagingBuffer[this.m_boundIndex])
-    //         {
-    //             this.m_stagingBuffer[this.m_boundIndex] = [];
-    //         }
+        // if it does not exist, create one
+        if (!write_buffer)
+        {
+            write_buffer = this.m_ctx.device.createBuffer({
+                size: this.m_verticesBuffer.size,
+                usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+                mappedAtCreation: true,
+            });
+        }
 
-    //         write_buffer = this.m_renderer.device.createBuffer({
-    //             size: buffer.size,
-    //             usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
-    //             mappedAtCreation: true,
-    //         });
-    //     }
+        // 2. write data into staging buffer.
+        var array = new Float32Array(write_buffer.getMappedRange());
+        array.set(data);
+        write_buffer.unmap();
 
-    //     this.fillBuffer(write_buffer, buffer_data, ComponentType.FLOAT);
+        return write_buffer;
+    }
 
-    //     const command_encoder = this.m_renderer.device.createCommandEncoder();
-    //     command_encoder.copyBufferToBuffer(write_buffer, 0, buffer, 0, buffer.size);
-    //     this.m_renderer.device.queue.submit([command_encoder.finish()]);
+    /**
+      * Set the texture coords data.
+      * @param data 
+      */
+    public setVertices (data: Float32Array): void 
+    {
+        const write_buffer = this.fillVerticesBufferAndReturnBuffer(data);
 
-    //     write_buffer.mapAsync(GPUMapMode.WRITE)
-    //         .then(() => this.m_stagingBuffer[this.m_boundIndex].push(write_buffer));
-    // }
+        // encode a command
+        const command_encoder = this.m_ctx.device.createCommandEncoder();
+        command_encoder.copyBufferToBuffer(write_buffer, 0, this.m_verticesBuffer, 0, this.m_verticesBuffer.size);
+        this.m_ctx.device.queue.submit([command_encoder.finish()]);
 
-    // public transformFeedback (write_into_buffer: GeometryBuffer, n_of_primitves?: number, draw_type?: DrawType)
-    // {
-    //     throw new Error("Method not implemented.");
-    // }
+        write_buffer.mapAsync(GPUMapMode.WRITE)
+            .then(() => this.m_verticesStagingBuffers.push(write_buffer));
+    }
+
+    public setVerticesAndTexCoords (vertices_data: Float32Array, texcoords_data: Float32Array): void 
+    {
+        const v_write_buffer = this.fillVerticesBufferAndReturnBuffer(vertices_data);
+        const t_write_buffer = this.fillTexCoordsBufferAndReturnBuffer(texcoords_data);
+
+        // encode a command
+        const command_encoder = this.m_ctx.device.createCommandEncoder();
+        command_encoder.copyBufferToBuffer(v_write_buffer, 0, this.m_verticesBuffer, 0, this.m_verticesBuffer.size);
+        command_encoder.copyBufferToBuffer(t_write_buffer, 0, this.m_texCoordsBuffer, 0, this.m_texCoordsBuffer.size);
+        this.m_ctx.device.queue.submit([command_encoder.finish()]);
+
+        v_write_buffer.mapAsync(GPUMapMode.WRITE)
+            .then(() => this.m_verticesStagingBuffers.push(v_write_buffer));
+        t_write_buffer.mapAsync(GPUMapMode.WRITE)
+            .then(() => this.m_texCoordsStagingBuffers.push(t_write_buffer));
+    }
 
     /**
      * @brief Delete the VAO and buffers.

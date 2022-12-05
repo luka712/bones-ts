@@ -1,65 +1,104 @@
 // For ASCII codes see https://ascii.cl/ or https://www.libsdl.org/release/SDL-1.2.15/docs/html/sdlkey.html
 
-import { pad } from "crypto-js";
-import { workerData } from "worker_threads";
-import { Vec2 } from "./bones_math";
+import { Vec2 } from "../bones_math";
+import { DPadButtons, FaceButtons, GamePadIndex, Keys } from "./InputManagerEnums";
+import { GamePadState, KeyboardState, MouseState } from "./InputStates";
 
-export enum Keys
-{
-    ESCAPE = "Escape",
-    ARROW_UP = "ArrowUp",
-    ARROW_DOWN = "ArrowDown",
-    ARROW_LEFT = "ArrowLeft",
-    ARROW_RIGHT = "ArrowRight",
-    ENTER = "Enter",
-    BACKQUOTE = "`",
-    TAB = "Tab",
-};
 
-class MouseState
+/**
+ * The keyboard state.
+ */
+class KeyboardStateImplementation implements KeyboardState
 {
+    protected m_isKeyDown: { [id: Keys | string]: boolean } = {};
+
+    constructor()
+    { }
+
+
+    /**
+     * Sets the key to true.
+     * @param key 
+     */
+    public setKeyDown (key: Keys | string): void 
+    {
+        this.m_isKeyDown[key] = true;
+    }
+
+    /**
+  * Sets the key to false.
+  * @param key 
+  */
+    public setKeyUp (key: Keys | string): void 
+    {
+        this.m_isKeyDown[key] = false;
+    }
+
+
+    /**
+     * Check if key is up.
+     * @param key 
+     */
+    public isKeyUp (key: Keys | string): boolean
+    {
+        return !this.isKeyDown(key);
+    }
+
+    /**
+     * Checks if key of keyboard state is down.
+     * @param key - the key {@see Keys}
+     * @returns 
+     */
+    public isKeyDown (key: Keys | string): boolean 
+    {
+        return this.m_isKeyDown[key] === true;
+    }
+
+    /**
+     * Creates a copy of a keyboard state.
+     * @param keyboard_state 
+     */
+    public static copy (keyboard_state: KeyboardStateImplementation): KeyboardState 
+    {
+        const instance = new KeyboardStateImplementation();
+        Object.assign(instance, keyboard_state);
+        return instance;
+    }
+}
+
+class MouseStateImplementation implements MouseState 
+{
+    /**
+     * The mouse position.
+     */
     position: Vec2 = Vec2.zero();
-
     leftButtonDown: boolean;
     leftButtonUp: boolean;
-
     rightButtonDown: boolean;
     rightButtonUp: boolean;
-
-    /**
-     * @brief The mouse movement in x direction or change in x direction from previous frame.
-     */
     deltaX: number;
+    deltaY: number;
+
 
     /**
-     * @brief The mouse movement in y direction or change in y direction from previous frame.
+     * Creates a copy of a mouse state.
+     * @param mouse_state 
      */
-    deltaY: number;
+    public static copy (mouse_state: MouseStateImplementation): MouseState 
+    {
+        const instance = new MouseStateImplementation();
+        Object.assign(instance, mouse_state);
+        // needs to be copied.
+        instance.position = new Vec2(mouse_state.position.x, mouse_state.position.y);
+        return instance;
+    }
 }
 
-
-/**
- * The D-Pad buttons.
- */
-export enum DPadButtons 
-{
-    // order is important.
-    Up = 1, Down = 2, Left = 4, Right = 8
-}
-
-/**
- * The face buttons.
- */
-export enum FaceButtons 
-{
-    // order is important.
-    A = 1, B = 2, X = 4, Y = 8, Select = 16, 
-}
 
 /**
  * The state of a gamepad.
  */
-class GamepadState 
+export class GamePadStateImplementation implements GamePadState
 {
     /**
      * Is gamepad connected.
@@ -110,11 +149,24 @@ class GamepadState
      * @param { FaceButtons } button - button or buttons if passed with |. Example FaceButtons.Down | FaceButtons.Up 
      * @returns { boolean }
      */
-    public isFaceButtonUp(button: FaceButtons) : boolean 
+    public isFaceButtonUp (button: FaceButtons): boolean 
     {
         return !this.isFaceButtonDown(button);
     }
+
+    /**
+    * Creates a copy of a mouse state.
+    * @param game_pad_state 
+    */
+    public static copy (game_pad_state: GamePadStateImplementation): GamePadState 
+    {
+        const instance = new GamePadStateImplementation();
+        Object.assign(instance, game_pad_state);
+        return instance;
+    }
 }
+
+
 
 /**
  * @brief OnClick event.
@@ -133,8 +185,16 @@ class OnClickEvent
 export class InputManager
 {
     private m_isKeyDown: { [id: number]: boolean };
-    private m_mouseState: MouseState;
-    private m_gamepadState: Array<GamepadState>; // 0 to 3, for total of 4 controllers
+
+    private m_keyboardState: KeyboardStateImplementation = new KeyboardStateImplementation();
+    private m_mouseState: MouseStateImplementation = new MouseStateImplementation();
+    private m_gamepadState: Array<GamePadStateImplementation> = [
+        new GamePadStateImplementation(),
+        new GamePadStateImplementation(),
+        new GamePadStateImplementation(),
+        new GamePadStateImplementation(),
+    ]; // 0 to 3, for total of 4 controllers
+
     private m_onClickEvent: OnClickEvent;
 
     /**
@@ -145,15 +205,8 @@ export class InputManager
     constructor(private readonly m_canvas: HTMLCanvasElement)
     {
         this.m_isKeyDown = {};
-        this.m_mouseState = new MouseState();
         this.m_onClickEvent = new OnClickEvent();
         this.m_onClickSubscribers = [];
-        this.m_gamepadState = [
-            new GamepadState(),
-            new GamepadState(),
-            new GamepadState(),
-            new GamepadState(),
-        ]
 
         // https://stackoverflow.com/questions/15631991/how-to-register-onkeydown-event-for-html5-canvas
         this.m_canvas.tabIndex = 1000;
@@ -176,18 +229,20 @@ export class InputManager
         m_canvas.onkeydown = (event) =>
         {
             this.m_isKeyDown[event.key] = true;
+            this.m_keyboardState.setKeyDown(event.key);
         };
 
         m_canvas.onkeyup = (event) =>
         {
             this.m_isKeyDown[event.key] = false;
+            this.m_keyboardState.setKeyUp(event.key);
         };
 
         m_canvas.onmousemove = (event) =>
         {
             const rect = m_canvas.getBoundingClientRect();
-            this.m_mouseState.position[0] = event.clientX - rect.left;
-            this.m_mouseState.position[1] = event.clientY - rect.top;
+            this.m_mouseState.position.x = event.clientX - rect.left;
+            this.m_mouseState.position.y = event.clientY - rect.top;
             this.m_mouseState.deltaX = event.movementX;
             this.m_mouseState.deltaY = event.movementY;
         }
@@ -303,6 +358,24 @@ export class InputManager
     }
 
     /**
+     * Gets the keyboard state.
+     */
+    public getKeyboardState (): KeyboardState 
+    {
+        return this.m_keyboardState;
+    }
+
+    /**
+     * Gets the copy of a keyboard state. 
+     * Useful when keyboard state needs to be unique between frames.
+     * @returns 
+     */
+    public getKeyboardStateCopy (): KeyboardState 
+    {
+        return KeyboardStateImplementation.copy(this.m_keyboardState);
+    }
+
+    /**
      * Gets the mouse state.
      * @returns { MouseState }
      */
@@ -312,12 +385,32 @@ export class InputManager
     }
 
     /**
+    * Gets the mouse state.
+    * Useful when keyboard state needs to be unique between frames.
+    * @returns { MouseState }
+    */
+    public getMouseStateCopy (): MouseState
+    {
+        return MouseStateImplementation.copy(this.m_mouseState);
+    }
+
+    /**
      * Gets the state of a gamepad.
-     * @param { number } index 
+     * @param index {@link GamePadIndex} 
      */
-    public getGamepadState (index: number): GamepadState 
+    public getGamepadState (index: GamePadIndex | number): GamePadState 
     {
         return this.m_gamepadState[index];
+    }
+
+    /**
+    * Gets the state of a gamepad.
+    * Useful when keyboard state needs to be unique between frames.
+    * @param index {@link GamePadIndex} 
+    */
+    public getGamepadStateCopy (index: GamePadIndex | number): GamePadState 
+    {
+        return GamePadStateImplementation.copy(this.m_gamepadState[index]);
     }
 
     /**

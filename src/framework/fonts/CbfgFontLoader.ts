@@ -1,6 +1,6 @@
 import { ImageLoader } from "../bones_loaders";
 import { Vec2 } from "../bones_math";
-import { TextureManager } from "../bones_texture";
+import { TextureChannel, TextureManager } from "../bones_texture";
 import { FontType, SpriteFont } from "./SpriteFont";
 import { Quad2D } from "../math/geometry/Quad2D";
 
@@ -25,18 +25,18 @@ export class CbfgFontLoader
      * Loads a bitmap font, created by Cbfg tool.
      * @see https://github.com/CodeheadUK/CBFG
      * @param { HTMLImageElement|string } bitmap - bitmap path or HTMLImageElement
-     * @param { string } data - path to data file(csv) or csv source.
+     * @param { string } data_or_file_path - path to data file(csv) or csv source.
      * @returns { Promise<SpriteFont> }
      */
-    public async loadFont (bitmap: HTMLImageElement | string, data: string): Promise<SpriteFont>
+    public async loadFont (bitmap: HTMLImageElement | string, data_or_file_path: string): Promise<SpriteFont>
     {
         if (typeof bitmap === "string")
         {
             bitmap = await this.m_imageLoader.loadImage(bitmap);
         }
-        if(data.indexOf(".csv") > 0)
+        if(data_or_file_path.indexOf(".csv") > 0)
         {
-            data = await (await fetch(data)).text();
+            data_or_file_path = await (await fetch(data_or_file_path)).text();
         }
 
         const font = new SpriteFont(FontType.BitmapFont, 0);
@@ -48,8 +48,27 @@ export class CbfgFontLoader
         // load texture, draw it to canvas, create gl texture, remove canvas.
         canvas.width = bitmap.width;
         canvas.height = bitmap.height;
+
         ctx.drawImage(bitmap, 0, 0);
-        font.texture = await this.m_textureManager.createTexture(canvas, bitmap.width, bitmap.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const red = data[i]; 
+            const green = data[i + 1];
+            const blue = data[i + 2]; 
+
+            if(red == 0 && green == 0 && blue == 0)
+            {
+                // set alpha to 0 if black
+                data[i+3] = 128;
+            }
+
+        }
+        ctx.putImageData(imageData, 0, 0);
+
+        font.texture = await this.m_textureManager.createTexture(canvas, bitmap.width, bitmap.height, {
+            textureFormat: TextureChannel.RGBA
+        });
         canvas.remove();
 
         // cells size.
@@ -57,7 +76,7 @@ export class CbfgFontLoader
         let cell_size_y = 0;
 
         // go through each line.
-        const lines = (await data).split("\n");
+        const lines = (await data_or_file_path).split("\n");
         const count = lines.length;
         for (let i = 0; i < count; i++)
         {

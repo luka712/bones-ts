@@ -1,15 +1,9 @@
-import { IGeometry } from "../framework/bones_geometry";
-import { FileLoader } from "../framework/bones_loaders";
-import { Color, Mat4x4, Rect, Vec2 } from "../framework/bones_math";
+import { Color, Vec2 } from "../framework/bones_math";
 import { IRenderer } from "../framework/bones_renderer";
-import { Texture2D, TextureManager } from "../framework/bones_texture";
-import { BufferUsage, ComponentType, GeometryBuffer } from "../framework/GeometryBuffer";
-import { Shader } from "../framework/shaders/Shader";
-import { SpriteShader } from "../framework/shaders/SpriteShader";
+import { TextureManager } from "../framework/bones_texture";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
 import { TextRenderManager } from "../framework/TextRenderer";
 import { WindowManager } from "../framework/Window";
-import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 
 // TODO: see https://austin-eng.com/webgpu-samples/samples/helloTriangle#main.ts
 
@@ -159,9 +153,10 @@ export class WebGPURenderer implements IRenderer
             const format = navigator.gpu.getPreferredCanvasFormat();
             this.m_gpuContext.configure({
                 device: this.device,
-                alphaMode: "opaque",
+                alphaMode: "premultiplied",
                 size: [this.m_canvas.width * window.devicePixelRatio, this.m_canvas.height * window.devicePixelRatio],
-                format: format,
+                // format: format,
+                format: 'bgra8unorm',
                 usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
             });
         }
@@ -237,7 +232,7 @@ export class WebGPURenderer implements IRenderer
 
         const render_pass_desc: GPURenderPassDescriptor = {
             colorAttachments: [color_attachment],
-            depthStencilAttachment: depth_attachment
+            depthStencilAttachment: depth_attachment,
         };
 
         this.drawCommandEncoder = this.device.createCommandEncoder();

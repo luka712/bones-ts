@@ -4,7 +4,7 @@ import { GLGeometryBuffer } from "../GLGeometryBuffer";
 import { Mat4x4 } from "../../framework/bones_math";
 import { FileLoader } from "../../framework/bones_loaders";
 import { Vec3 } from "../../framework/math/vec/Vec3";
-import { InputManager } from "../../framework/InputManager";
+import { InputManager } from "../../framework/input/InputManager";
 import { GLParticleEmitterRenderStepShader, GLParticleEmitterUpdateStepShader } from "../shaders/particles/GLParticleEmitterShaders";
 import { ParticlesEmitter } from "../../framework/particles/ParticlesEmitter";
 import { ParticleEmitterRenderStepShader, ParticleEmitterUpdateStepShader } from "../../framework/shaders/particles/ParticleEmitterShader";
@@ -149,8 +149,9 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
     public update (delta_time: number): void
     {
         const origin = Vec3.zero();
-        origin[0] = this.m_inputManager.getMouseState().position.x;
-        origin[1] = this.m_inputManager.getMouseState().position.y;
+        var mouse_state = this.m_inputManager.getMouseState();
+        origin[0] = mouse_state.position.x;
+        origin[1] = mouse_state.position.y;
 
         const force = Vec3.zero();
 

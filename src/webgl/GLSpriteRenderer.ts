@@ -2,14 +2,14 @@ import { LifecycleState } from "../framework/bones_common";
 import { QuadGeometry } from "../framework/bones_geometry";
 import { FileLoader } from "../framework/bones_loaders";
 import { IRenderer } from "../framework/bones_renderer";
-import { BlendMode, SpriteRenderer } from "../framework/SpriteRenderer";
+import { Blend, BlendFactor, BlendMode, SpriteRenderer } from "../framework/SpriteRenderer";
 import { Texture2D } from "../framework/bones_texture";
 import { WindowManager } from "../framework/Window";
 import { Mat4x4 } from "../framework/math/mat/Mat4x4";
-import { Rect } from "../framework/math/RectF";
+import { Rect } from "../framework/math/Rect";
 import { Vec3 } from "../framework/math/vec/Vec3";
 import { GLGeometryBuffer, } from "./GLGeometryBuffer";
-import { Color } from "../framework/bones_math";
+import { Color, Vec2 } from "../framework/bones_math";
 import { GLSpriteShader } from "./shaders/GLSpriteShader";
 import { VertexBufferDescription, ComponentType, IndicesBufferDescription, BufferUsage } from "../framework/GeometryBuffer";
 
@@ -73,16 +73,51 @@ export class GLSpriteRenderer extends SpriteRenderer
     }
 
     /**
-    * @brief Set the Blending Mode for sprite batch.
-    *
-    * @param { BlendMode } mode
-    * @returns { void }
+    * {@inheritDoc SpriteRenderer}
     */
-    protected setBlendingMode (mode: BlendMode = BlendMode.OneMinusSrcAlpha): void
+    protected setBlendingMode (mode?: Blend): void
     {
-        if (mode == BlendMode.OneMinusSrcAlpha)
+        let source = this.m_gl.SRC_ALPHA;
+        let dest = this.m_gl.ONE_MINUS_SRC_ALPHA;
+
+        if (mode)
         {
-            this.m_gl.blendFunc(this.m_gl.SRC_ALPHA, this.m_gl.ONE_MINUS_SRC_ALPHA);
+            let source = this.m_gl.SRC_ALPHA;
+            let dest = this.m_gl.ONE_MINUS_SRC_ALPHA;
+
+            switch (mode.srcFactor)
+            {
+                case BlendFactor.SRC_ALPHA:
+                    source = this.m_gl.SRC_ALPHA;
+                    break;
+                case BlendFactor.ONE_MINUS_SRC_ALPHA:
+                    source = this.m_gl.ONE_MINUS_SRC_ALPHA;
+                    break;
+                case BlendFactor.ONE:
+                    source = this.m_gl.ONE;
+                    break;
+                default:
+                    throw new Error("GLSpriteRenderer::setBlendingMode:  Unable to resolve source blending mode!");
+            }
+
+            switch (mode.destFactor)
+            {
+                case BlendFactor.SRC_ALPHA:
+                    dest = this.m_gl.SRC_ALPHA;
+                    break;
+                case BlendFactor.ONE_MINUS_SRC_ALPHA:
+                    dest = this.m_gl.ONE_MINUS_SRC_ALPHA;
+                    break;
+                case BlendFactor.ONE:
+                    dest = this.m_gl.ONE;
+                    break;
+                default:
+                    throw new Error("GLSpriteRenderer::setBlendingMode:  Unable to resolve destination blending mode!");
+
+            }
+
+
+            this.m_gl.blendFunc(source, dest);
             this.m_gl.enable(this.m_gl.BLEND);
         }
     }
@@ -143,9 +178,9 @@ export class GLSpriteRenderer extends SpriteRenderer
     }
 
     /**
-     * @brief Begins the sprite batch.
-     */
-    public begin (mode?: BlendMode): void
+   * {@inheritDoc SpriteRenderer}
+   */
+    public begin (mode?: Blend): void
     {
         this.o_currentTexture = null;
         this.setBlendingMode(mode);
@@ -156,15 +191,9 @@ export class GLSpriteRenderer extends SpriteRenderer
     }
 
     /**
-      * @brief Draws the texture at position.
-      *
-      * @param { Texture2D } texture - which texture to draw.
-      * @param { Rect } draw_rect - the drawing rectangle
-      * @param { Vec2|undefined } tint_color - the color to be used as tint color. 
-      * @param { Vec3|undefined } axis_of_rotation - if sprites needs to be rotated around arbitrary axis.
-      * @param { number|undefined} rotation_in_radians - how much to rotate, in radians.
-      */
-    public draw (texture: Texture2D, draw_rect: Rect, tint_color: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void
+     * {@inheritDoc SpriteRenderer}
+     */
+    public draw (texture: Texture2D, draw_rect: Rect, tint_color: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number, origin?: Vec2): void
     {
         if (texture != this.o_currentTexture)
         {
@@ -172,12 +201,18 @@ export class GLSpriteRenderer extends SpriteRenderer
             this.m_shader.useSpriteTexture(texture);
         }
 
-        const offset_x = draw_rect.w * 0.5;
-        const offset_y = draw_rect.h * 0.5;
+        let offset_x = draw_rect.w * 0.5;
+        let offset_y = draw_rect.h * 0.5;
+
+        if (origin)
+        {
+            offset_x -= draw_rect.w * origin[0];
+            offset_y -= draw_rect.h * origin[1];
+        }
 
         // First get required matrices.
         Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
-        if (axis_of_rotation && rotation_in_radians >= 0)
+        if (axis_of_rotation && rotation_in_radians)
         {
             Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
         }
@@ -224,7 +259,8 @@ export class GLSpriteRenderer extends SpriteRenderer
 
         // First get required matrices.
         Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
-        if (axis_of_rotation && rotation_in_radians >= 0)
+        // !! if rotation in radians is anything besides 0
+        if (axis_of_rotation && rotation_in_radians)
         {
             Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
         }

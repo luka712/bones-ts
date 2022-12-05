@@ -2,9 +2,10 @@ import { TimerComponent } from "../plugin_utils_components/TimerComponent";
 import { LifecycleState } from "../framework/bones_common";
 import { Vec2, Rect, Color } from "../framework/bones_math";
 import { SpriteFont, FontCharacter, FontType } from "../framework/fonts/SpriteFont";
-import { Keys, FaceButtons, InputManager, DPadButtons } from "../framework/InputManager";
+import { InputManager } from "../framework/input/InputManager";
 import { Sound } from "../framework/sounds/Sound";
 import { TextRenderManager } from "../framework/TextRenderer";
+import { DPadButtons, FaceButtons, Keys } from "../framework/input/InputManagerEnums";
 
 
 /**
@@ -724,8 +725,8 @@ export class TextMenuComponent
         {
             this.o_lastInput = 1;
 
-            this.__mouseRect.x = mouse_state.position[0];
-            this.__mouseRect.y = mouse_state.position[1];
+            this.__mouseRect.x = mouse_state.position.x;
+            this.__mouseRect.y = mouse_state.position.y;
             this.__mouseRect.w = 1;
             this.__mouseRect.h = 1;
 

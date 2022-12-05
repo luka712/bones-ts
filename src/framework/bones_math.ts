@@ -1,6 +1,6 @@
 import { Color } from "./math/Color";
 import { Mat4x4 } from "./math/mat/Mat4x4";
-import { Rect } from "./math/RectF";
+import { Rect } from "./math/Rect";
 import { Vec2 } from "./math/vec/Vec2";
 
 /**

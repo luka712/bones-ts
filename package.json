@@ -2,7 +2,9 @@
   "name": "bones-framework-ts",
   "version": "0.0.1",
   "description": "The Typescript implementation of Bones Framework",
-  "main": "webpack.config.js",
+  "main": "dist/index.js",
+  "browser": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
     "build": "npx webpack"

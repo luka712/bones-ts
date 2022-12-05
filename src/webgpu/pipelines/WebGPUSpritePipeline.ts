@@ -114,7 +114,20 @@ export class WebGPUSpritePipeline
             module: fragment_shader,
             targets: [{
                 format: 'bgra8unorm',
-                writeMask: GPUColorWrite.ALL
+                blend: {
+                    // https://learnopengl.com/Advanced-OpenGL/Blending#:~:text=Blending%20in%20OpenGL%20is%20commonly,behind%20it%20with%20varying%20intensity.
+                    color: {
+                      srcFactor: 'src-alpha',
+                      dstFactor: 'one-minus-src-alpha',
+                      operation: 'add'  
+                    },
+                    alpha: {
+                        srcFactor: 'one',
+                        dstFactor: 'one-minus-src-alpha',
+                        operation: 'add'  
+                    },
+                },
+                writeMask: GPUColorWrite.ALL,
             }],
             entryPoint: 'main'
         }
@@ -124,15 +137,14 @@ export class WebGPUSpritePipeline
             vertex: vertex,
             fragment: fragment,
             primitive: {
-                frontFace: 'cw',
-                cullMode: 'none',
                 topology: 'triangle-list'
             },
             depthStencil: {
                 depthWriteEnabled: true,
                 depthCompare: 'less',
                 format: 'depth24plus-stencil8'
-            }
+                
+            },
         };
 
 
