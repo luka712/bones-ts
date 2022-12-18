@@ -12,6 +12,7 @@ import { SpriteFontManager } from "../fonts/SpriteFontManager";
 import { SoundManager } from "../sounds/SoundManager";
 import { FrameworkPlugin } from "../plugin/FrameworkPlugin";
 import { ParticlesFactory } from "../particles/ParticlesFactory";
+import { PostProcessPipelineFactory } from "../post_process/pipelines/PostProcessPipelineFactory";
 
 /**
  * @brief The state of framework. State can be used for transitions.
@@ -47,6 +48,11 @@ export abstract class State
      * @brief Create the prefined effect.
      */
     public readonly effects: IEffectFactory;
+
+    /**
+     * The pipelines for effects.
+     */
+    public readonly postProcessPipelines: PostProcessPipelineFactory;
 
     /**
      * @brief The config.
@@ -115,6 +121,7 @@ export abstract class State
         this.timeManager = framework.timeManager;
         this.soundManager = framework.soundManager;
         this.particles = framework.particles;
+        this.postProcessPipelines = framework.postProcessPipelines;
     }
 
     /**

@@ -1,3 +1,4 @@
+import { text } from "stream/consumers";
 import { FileLoader } from "../../framework/bones_loaders";
 import { Color, Mat4x4 } from "../../framework/bones_math";
 import { Texture2D } from "../../framework/bones_texture";
@@ -42,10 +43,10 @@ export class GLSpriteShader extends SpriteShader
 
         await this.m_shader.initialize(vertex_source, fragment_source);
 
-        this.m_projectionLocation = this.m_shader.getUniform("u_projection_matrix");
-        this.m_viewLocation = this.m_shader.getUniform("u_view_matrix");
-        this.m_transformLocation = this.m_shader.getUniform("u_transform_matrix");
-        this.m_tintColorLocation = this.m_shader.getUniform("u_tint_color");
+        this.m_projectionLocation = this.m_shader.getUniformLocation("u_projection_matrix");
+        this.m_viewLocation = this.m_shader.getUniformLocation("u_view_matrix");
+        this.m_transformLocation = this.m_shader.getUniformLocation("u_transform_matrix");
+        this.m_tintColorLocation = this.m_shader.getUniformLocation("u_tint_color");
     }
 
     /**
@@ -57,6 +58,15 @@ export class GLSpriteShader extends SpriteShader
     public createUniform (uniform_name: string, type: ShaderUniformType, key?: string): ShaderUniform
     {
         return this.m_shader.createUniform(uniform_name, type, key);
+    }
+
+    
+    /**
+     * @inheritdoc
+     */
+    public getUniform (uniform_name: any): ShaderUniform | undefined
+    {
+        return this.m_shader.getUniform(uniform_name);
     }
 
     /**
@@ -122,6 +132,7 @@ export class GLSpriteShader extends SpriteShader
     {
         // not neccessary to use active(0) or activate texture unit, since 
         // it is done on spriterendere.begin()
+        texture.active(0);
         texture.bind();
     }
 

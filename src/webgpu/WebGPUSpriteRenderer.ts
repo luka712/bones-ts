@@ -16,6 +16,10 @@ import { SpriteFont, FontType } from "../framework/fonts/SpriteFont";
  */
 export class WebGPUSpriteRenderer extends SpriteRenderer
 {
+    public drawOnPosition (texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, origin?: Vec2): void
+    {
+        throw new Error("Method not implemented.");
+    }
     /**
      * The webgpu sprite pipeline.
      */

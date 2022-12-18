@@ -2,7 +2,7 @@ import { text } from "stream/consumers";
 import { LifecycleState } from "../framework/bones_common";
 import { QuadGeometry } from "../framework/bones_geometry";
 import { FileLoader } from "../framework/bones_loaders";
-import { Rect, Color, Mat4x4 } from "../framework/bones_math";
+import { Rect, Color, Mat4x4, Vec2 } from "../framework/bones_math";
 import { Texture2D } from "../framework/bones_texture";
 import { VertexBufferDescription, ComponentType, IndicesBufferDescription, BufferUsage } from "../framework/GeometryBuffer";
 import { Vec3 } from "../framework/math/vec/Vec3";
@@ -17,6 +17,10 @@ import { WebGPUTexture2D } from "./textures/WebGPUTexture";
  */
 export class WebGPUSpriteRendererObsolete extends SpriteRenderer
 {
+    public drawOnPosition (texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, origin?: Vec2): void
+    {
+        throw new Error("Method not implemented.");
+    }
     /**
      * The render pass encoder, needs to be passed in, so that items can be prepared for drawing.
      */

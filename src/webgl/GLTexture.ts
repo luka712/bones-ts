@@ -21,7 +21,7 @@ export class GLTexture2D extends Texture2D
     /**
      * Return the WebGLTexture as handle.
      */
-    public get handle(): WebGLTexture 
+    public get handle (): WebGLTexture 
     {
         return this.m_glTexture;
     }
@@ -140,6 +140,26 @@ export class GLTexture2D extends Texture2D
         }
         this.m_state = LifecycleState.Destroyed;
     }
+
+    /**
+     * Creates a new empty texture.
+     * @param gl - the gl context.
+     * @param size - the size of a texture. {@link TextureOptions.textureSize} is ignored as size is passed as second parameter.
+     * @param options - the options. {@link TextureOptions.textureSize} is ignored as size is passed as second parameter.
+     */
+    public static createEmpty (gl: WebGL2RenderingContext, size: Vec2, options?: TextureOptions): Texture2D 
+    {
+        const channel = options?.channel ?? TextureChannel.RGBA;
+
+        if (!options)
+        {
+            options = {};
+        }
+        options.textureSize = size;
+
+
+        return new GLTexture2D(gl, null, channel, options);
+    }
 }
 
 /**
@@ -240,8 +260,8 @@ class GLTextureManager implements TextureManager
     public async createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Promise<Texture2D>
     {
         const tex = new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA);
-         await tex.initialize();
-         return tex;
+        await tex.initialize();
+        return tex;
     }
 
     /**

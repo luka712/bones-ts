@@ -9,6 +9,7 @@ import { GLShaderImplementation } from "./GLShaderImplementation";
  */
 export class GLEffectShader extends EffectShader 
 {
+   
     private m_shader: GLShaderImplementation;
 
     private m_resolutionLocation: WebGLUniformLocation;
@@ -49,17 +50,24 @@ export class GLEffectShader extends EffectShader
         this.m_shader.initialize();
 
         // false for don't log message if not in shader.
-        this.m_resolutionLocation = this.m_shader.getUniform("u_resolution", false);
-        this.m_timeLocation = this.m_shader.getUniform("u_time", false);
-        this.m_randomLocation = this.m_shader.getUniform("u_random", false);
+        this.m_resolutionLocation = this.m_shader.getUniformLocation("u_resolution", false);
+        this.m_timeLocation = this.m_shader.getUniformLocation("u_time", false);
+        this.m_randomLocation = this.m_shader.getUniformLocation("u_random", false);
 
         // framebuffer texture, must always exist.
-        this.m_texture0Location = this.m_shader.getUniform("u_texture0");
-        this.m_texture1Location = this.m_shader.getUniform("u_texture1", false);
-        this.m_texture2Location = this.m_shader.getUniform("u_texture2", false);
-        this.m_texture3Location = this.m_shader.getUniform("u_texture3", false);
+        this.m_texture0Location = this.m_shader.getUniformLocation("u_texture0");
+        this.m_texture1Location = this.m_shader.getUniformLocation("u_texture1", false);
+        this.m_texture2Location = this.m_shader.getUniformLocation("u_texture2", false);
+        this.m_texture3Location = this.m_shader.getUniformLocation("u_texture3", false);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public getUniform (uniform_name: any): ShaderUniform | undefined
+    {
+        return this.m_shader.getUniform(uniform_name);
+    }
 
     /**
      * Creates a uniform value.
@@ -132,6 +140,16 @@ export class GLEffectShader extends EffectShader
             this.m_gl.uniform1f(this.m_randomLocation, random);
         }
     }
+
+    /**
+     * @inheritdoc
+     */
+    public useSceneTexture (tex: Texture2D): void
+    {
+        this.useTextureUnit0();
+        tex.bind();
+    }
+  
 
     /**
      * Use the texture unit 0.

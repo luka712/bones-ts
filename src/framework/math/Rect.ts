@@ -1,3 +1,4 @@
+import { Vec2 } from "../bones_math";
 
 /**
  * The rectangle class.
@@ -26,6 +27,50 @@ class Rect
             && this.x + this.w > other.x
             && this.y + this.h > other.y
             && this.y < other.y + other.h;
+    }
+
+    /**
+     * Checks rectangle with position vector intersection.
+     * @param position_vector - the position vector.
+     */
+    public intersectsVector(position_vector: Vec2) : boolean 
+    {
+        return this.x <= position_vector.x 
+        && this.x + this.w > position_vector.x
+        && this.y + this.h > position_vector.y
+        && this.y <= position_vector.y;
+    }
+
+    /**
+     * Enlarges self with specified width and height.
+     * @param width - width amount.
+     * @param height - height amount.
+     */
+    public enlarge(width: number, height: number) : Rect 
+    {
+        this.x -= width;
+        this.h -= height;
+        this.w += width * 2;
+        this.h += height * 2;
+        return this;
+    }
+
+    /**
+     * Enlarges the rect by specified amount.
+     * @param in - rect to enlarge.
+     * @param width - width amount.
+     * @param height - height amount.
+     * @param out 
+     */
+    public static enlarge(in_rect: Rect, width: number, height : number, out?: Rect) : Rect 
+    {
+        out = out ?? new Rect();
+
+        out.x = in_rect.x - width;
+        out.y = in_rect.y - height;
+        out.w = in_rect.w + (width * 2);
+        out.h = in_rect.h + (height * 2);
+        return out;
     }
 }
 

@@ -1,16 +1,28 @@
 import { LifecycleState } from "./bones_common";
-import { IRenderFramebuffer } from "./bones_framebuffer";
 import { IRenderer } from "./bones_renderer";
+import { Texture2D } from "./bones_texture";
 import { TimeManager } from "./bones_time";
+import { PostProcessPipeline } from "./post_process/pipelines/PostProcessPipeline";
 import { EffectShader } from "./shaders/EffectShader";
+
+
 
 /**
  * The post processing manager.
  */
 abstract class PostProcessManager 
 {
-    protected m_currentEffect: Effect;
-    protected m_frameBuffer: IRenderFramebuffer;
+    /**
+     * Default pipeline should work with 1 framebuffer and simple effect.
+     * For more advanced pipelines, they need to be created or used and set by user.
+     */
+    protected m_defaultPipeline: PostProcessPipeline;
+
+    /**
+     * Currently bound pipeline.
+     */
+    protected m_currentPipeline: PostProcessPipeline
+
     protected m_renderer: IRenderer;
 
     protected m_lifeCycleState: LifecycleState;
@@ -18,7 +30,7 @@ abstract class PostProcessManager
     /**
      * @brief Initialize the post process manager.
      */
-    public abstract initialize (): void;
+    public abstract initialize (): Promise<void>;
 
     /**
      * @brief Prepares effect for cathing all the renderer objects to apply effect for.
@@ -27,9 +39,21 @@ abstract class PostProcessManager
      */
     public beforeRender (effect: Effect): void 
     {
-        this.m_currentEffect = effect;
-        this.m_frameBuffer.bind();
-        this.m_frameBuffer.clear(this.m_renderer.clearColor);
+        // reset pipeline to default one, whenever before render is used.
+        this.m_currentPipeline = this.m_defaultPipeline;
+        this.m_currentPipeline.effect = effect;
+        this.m_defaultPipeline.framebuffer.bind();
+        this.m_defaultPipeline.framebuffer.clear(this.m_renderer.clearColor);
+    }
+
+    /**
+     * Use custom pipeline instead of using default one with passed in effect.
+     * @param pipeline 
+     */
+    public beforeRenderUsePipeline(pipeline: PostProcessPipeline) : void 
+    {
+        this.m_currentPipeline = pipeline;
+        this.m_currentPipeline.bind();
     }
 
     /**
@@ -38,13 +62,23 @@ abstract class PostProcessManager
      */
     public afterRender (): void
     {
-        if (this.m_currentEffect)
+        if (this.m_currentPipeline)
         {
-            this.m_currentEffect.use();
-            this.m_frameBuffer.drawPass();
+            this.m_currentPipeline.drawPass();
         }
-        this.m_currentEffect = null;
+        this.m_currentPipeline = null;
     }
+}
+
+/**
+ * Create the GL effects options.
+ */
+export class CreateEffectOptions 
+{
+    public texture0?: Texture2D;
+    public texture1?: Texture2D;
+    public texture2?: Texture2D;
+    public texture3?: Texture2D;
 }
 
 /**
@@ -52,6 +86,15 @@ abstract class PostProcessManager
  */
 interface IEffectFactory 
 {
+
+    /**
+     * Create one effect.
+     * @param vertex_path 
+     * @param fragment_path 
+     * @param options - the options to pass.
+     */
+    create (vertex_path: string, fragment_path: string, options?: CreateEffectOptions): Promise<Effect>
+
     /**
      * @brief Create a Gray Scale Effect object.
      *

@@ -1,14 +1,14 @@
 /**
  * The time manager.
  */
-class TimeManager 
+export class TimeManager 
 {
-    private __lastFrame: Date;
+    private m_lastFrame: Date;
 
     /**
      * Number of passed frames since game start.
      */
-    private __frameCount: number;
+    private m_frameCount: number;
 
     /**
      * The get fps calculated from last frame.
@@ -27,8 +27,8 @@ class TimeManager
 
     constructor()
     {
-        this.__lastFrame = new Date();
-        this.__frameCount = 0;
+        this.m_lastFrame = new Date();
+        this.m_frameCount = 0;
 
         this.time = new Time();
     }
@@ -39,14 +39,14 @@ class TimeManager
     public start (): void 
     {
         const new_time = new Date();
-        const delta_time_ms = new_time.getTime() - this.__lastFrame.getTime();
+        const delta_time_ms = new_time.getTime() - this.m_lastFrame.getTime();
 
         this.time.elapsedTimeMS += delta_time_ms;
 
-        this.__frameCount++;
+        this.m_frameCount++;
         this.fps = 1000 / delta_time_ms;
-        this.averageFPS = (this.__frameCount / this.time.elapsedTimeMS) * 1000;
-        this.__lastFrame = new_time;
+        this.averageFPS = (this.m_frameCount / this.time.elapsedTimeMS) * 1000;
+        this.m_lastFrame = new_time;
 
 
         this.time.deltaTimeMS = delta_time_ms;
@@ -56,7 +56,7 @@ class TimeManager
 /**
  * How much time has passed.
  */
-class Time 
+export class Time 
 {
     constructor()
     {
@@ -83,7 +83,3 @@ class Time
     }
 };
 
-export
-{
-    TimeManager
-}

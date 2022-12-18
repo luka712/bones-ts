@@ -1,3 +1,4 @@
+import { unwatchFile } from "fs";
 import { LifecycleState } from "../../framework/bones_common";
 import { Shader, ShaderUniform, ShaderUniformType } from "../../framework/shaders/Shader";
 import { GLShaderHandler } from "./GLShaderHandler";
@@ -72,6 +73,16 @@ export class GLShaderImplementation extends Shader
         return this.uniformValues[key];
     }
 
+    
+    /**
+     * @inheritdoc
+     */
+    public getUniform (uniform_name: any): ShaderUniform | undefined
+    {
+        return this.uniformValues[uniform_name];
+    }
+ 
+
     /**
      * Use/Bind the program
      */
@@ -128,7 +139,7 @@ export class GLShaderImplementation extends Shader
      * @param { boolean } log_warning- if true, warns if uniform is not found.
      * @return { WebGLUniformLocation } address of the unfirom
      */
-    public getUniform (uniform: string, log_warning: boolean = true): WebGLUniformLocation
+    public getUniformLocation (uniform: string, log_warning: boolean = true): WebGLUniformLocation
     {
         var result = this.m_gl.getUniformLocation(this.program, uniform);
         if (!result && log_warning)

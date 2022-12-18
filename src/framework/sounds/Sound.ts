@@ -1,31 +1,59 @@
+import { LifecycleState } from "../bones_common";
+
 /**
  * The sound.
  */
 export class Sound 
 {
-    private __audioBuffer: AudioBuffer;
+    private m_audioBuffer: AudioBuffer;
+
+    private m_state: LifecycleState = LifecycleState.Created;
 
     /**
      * Create a sound.
-     * @param { AudioContext } __audioContext 
-     * @param { ArrayBuffer } __data 
+     * @param { AudioContext } m_audioContext 
+     * @param { ArrayBuffer } m_data 
      */
-    constructor(private readonly __audioContext: AudioContext, private readonly __data: ArrayBuffer)
+    constructor(private readonly m_audioContext: AudioContext, private readonly m_data: ArrayBuffer)
     {
-        this.__audioContext.decodeAudioData(this.__data, (data) =>
-        {
-            this.__audioBuffer = data;
-        });
+
     }
+
+    /**
+     * Gets the current lifecycle state.
+     */
+    public get state (): LifecycleState 
+    {
+        return this.m_state;
+    }
+
+    /**
+    * The volume of a sound.
+    */
+    public volume: number = 1;
+
+    /**
+     * Initialize the music.
+     */
+    public async initialize (): Promise<void> 
+    {
+        this.m_audioBuffer = await this.m_audioContext.decodeAudioData(this.m_data);
+        this.m_state = LifecycleState.Initialized;
+    }
+
 
     /**
      * Play the sound.
      */
     public play (): void
     {
-        const source = this.__audioContext.createBufferSource();
-        source.buffer = this.__audioBuffer;
-        source.connect(this.__audioContext.destination);
+        const gain_node = this.m_audioContext.createGain();
+        gain_node.gain.value = this.volume;
+        gain_node.connect(this.m_audioContext.destination);
+
+        const source = this.m_audioContext.createBufferSource();
+        source.buffer = this.m_audioBuffer;
+        source.connect(gain_node);
 
         source.start();
     }

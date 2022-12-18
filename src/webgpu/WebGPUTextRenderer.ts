@@ -1,7 +1,5 @@
 import { LifecycleState } from "../framework/bones_common";
 import { FileLoader } from "../framework/bones_loaders";
-import { Color, Mat4x4, Vec2 } from "../framework/bones_math";
-import { IRenderer } from "../framework/bones_renderer";
 import { BlendMode } from "../framework/SpriteRenderer";
 import { TextRenderManager } from "../framework/TextRenderer";
 import { WindowManager } from "../framework/Window";
@@ -13,6 +11,7 @@ import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 import { GPUTextShader } from "./gpu_shader/GPUTextShader";
 import { WebGPURenderer } from "./WebGPURenderer";
 import { WebGPUTexture2D } from "./textures/WebGPUTexture";
+import { Mat4x4, Color, Vec2 } from "..";
 
 /**
  * The GL text render manager.

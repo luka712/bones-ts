@@ -95,6 +95,32 @@ export class SpriteFont
     }
 
     /**
+     * Measures the font text.
+     * @param text - the text to measuer.
+     */
+    public measureText(text: string) : Vec2 
+    {
+        return new Vec2(this.measureTextHorizontal(text), this.m_map["0"].size.y);
+    }
+
+    /**
+     * Measures the text horizontally.
+     * @param text - the text to measure.
+     * @returns text length in pixels horizontally.
+     */
+    public measureTextHorizontal(text: string) : number 
+    {
+        let len = 0;
+        for(let i = 0; i < text.length; i++)
+        {
+            const c = this.getFontCharacterInfo(text[i]);
+            len += c.advance.x;
+        }
+
+        return len;
+    }
+
+    /**
      * Creates the font character info. Puts it in map.
      * @param { string } char 
      * @param { FontCharacter } info  

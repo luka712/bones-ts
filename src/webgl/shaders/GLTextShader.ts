@@ -38,10 +38,10 @@ import { GLShaderImplementation } from "./GLShaderImplementation";
  
          await this.m_shader.initialize(vertex_source, fragment_source);
  
-         this.m_projectionLocation = this.m_shader.getUniform("u_projection_matrix");
-         this.m_viewLocation = this.m_shader.getUniform("u_view_matrix");
-         this.m_transformLocation = this.m_shader.getUniform("u_transform_matrix");
-         this.m_colorLocation = this.m_shader.getUniform("u_color")
+         this.m_projectionLocation = this.m_shader.getUniformLocation("u_projection_matrix");
+         this.m_viewLocation = this.m_shader.getUniformLocation("u_view_matrix");
+         this.m_transformLocation = this.m_shader.getUniformLocation("u_transform_matrix");
+         this.m_colorLocation = this.m_shader.getUniformLocation("u_color")
      }
 
        /**
@@ -53,6 +53,14 @@ import { GLShaderImplementation } from "./GLShaderImplementation";
     public createUniform (uniform_name: string, type: ShaderUniformType, key?: string): ShaderUniform
     {
         return this.m_shader.createUniform(uniform_name, type, key);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public getUniform (uniform_name: any): ShaderUniform | undefined
+    {
+        return this.m_shader.getUniform(uniform_name);
     }
 
     /**

@@ -1,58 +1,16 @@
-import { LifecycleState } from "../framework/bones_common";
 import { FileLoader } from "../framework/bones_loaders";
 import { Vec2 } from "../framework/bones_math";
-import { Effect, IEffectFactory, PostProcessManager } from "../framework/bones_post_process";
+import { CreateEffectOptions, Effect, IEffectFactory } from "../framework/bones_post_process";
 import { IRenderer } from "../framework/bones_renderer";
-import { Texture2D, TextureManager, TextureWrap } from "../framework/bones_texture";
+import { TextureManager, TextureWrap } from "../framework/bones_texture";
 import { TimeManager } from "../framework/bones_time";
-import { WindowManager } from "../framework/Window";
 import { Vec3 } from "../framework/math/vec/Vec3";
-import { GLRenderFrameBuffer } from "./webgl_framebuffer";
 import { ShaderUniformType } from "../framework/shaders/Shader";
 import { GLEffectShader } from "./shaders/GLEffectShader";
 
 
-/**
- * The gl post process manager.
- */
-export class GLPostProcessManager extends PostProcessManager 
-{
-    private m_state: LifecycleState;
 
-    /**
-     * The constructor.
-     * @param { WindowManager } window_manager 
-     * @param { IRenderer } renderer 
-     * @param { WebGL2RenderingContext } gl 
-     */
-    constructor(window_manager: WindowManager, renderer: IRenderer, gl: WebGL2RenderingContext)
-    {
-        super();
-        this.m_frameBuffer = new GLRenderFrameBuffer(window_manager, renderer, gl);
-        this.m_renderer = renderer;
-    }
 
-    public initialize (): void
-    {
-        if (this.m_state != LifecycleState.Initialized)
-        {
-            this.m_frameBuffer.initialize(); 
-        }
-        this.m_state = LifecycleState.Initialized;
-    }
-
-}
-
-/**
- * Create the GL effects options.
- */
-class CreateGLEffectOptions 
-{
-    public texture0?: Texture2D;
-    public texture1?: Texture2D;
-    public texture2?: Texture2D;
-    public texture3?: Texture2D;
-}
 
 class GLEffectFactory implements IEffectFactory 
 {
@@ -78,7 +36,7 @@ class GLEffectFactory implements IEffectFactory
      * @param { string } vertex_path 
      * @param { string } fragment_path 
      */
-    private async create (vertex_path: string, fragment_path: string, options?: CreateGLEffectOptions): Promise<Effect>
+    public async create (vertex_path: string, fragment_path: string, options?: CreateEffectOptions): Promise<Effect>
     {
         const v_source = await this.m_fileLoader.loadFile(vertex_path);
         const f_source = await this.m_fileLoader.loadFile(fragment_path);
@@ -194,7 +152,7 @@ class GLEffectFactory implements IEffectFactory
      * 
      * @return { Promise<Effect> }
      */
-    public async texelColorEffect(): Promise<Effect>
+    public async texelColorEffect (): Promise<Effect>
     {
         const texture1 = await this.m_textureManager.loadTexture2D("assets/framework/textures/texel_color/gameboy_colors.png", "texel_color_input_texture", {
             textureWrap: TextureWrap.Repeat
@@ -214,7 +172,6 @@ class GLEffectFactory implements IEffectFactory
 
         return effect;
     }
-
 }
 
 export 

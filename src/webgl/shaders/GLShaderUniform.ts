@@ -37,7 +37,18 @@ function setVec2Uniform(gl: WebGL2RenderingContext, location: WebGLUniformLocati
      gl.uniform3f(location, value[0], value[1], value[2]);
  }
 
-type UniformValue = number | Float32Array;
+ /**
+  * Set the bool uniform.
+  * @param gl 
+  * @param location 
+  * @param value 
+  */
+ function setBoolUniform(gl: WebGL2RenderingContext, location : WebGLUniformLocation, value: boolean) : void 
+ {
+    gl.uniform1i(location, value ? 1 : 0);
+ }
+
+type UniformValue = number | Float32Array | boolean;
 
 /**
  * The GLShaderUniform implementaion of IShaderUniform.
@@ -46,7 +57,7 @@ export class GLShaderUniform implements ShaderUniform
 {
     // TODO: think about creating refresh bool, to avoid calling gpu ! 
 
-    public value: Float32Array | number;
+    public value: Float32Array | number | boolean;
     public minValue: Float32Array | number;
     public maxValue: Float32Array | number;
 
@@ -55,7 +66,8 @@ export class GLShaderUniform implements ShaderUniform
     private static __map: { [id: number]: (gl: WebGLUniformLocation, location: WebGLUniformLocation, value: UniformValue) => void } = {
         [ShaderUniformType.Float]: setFloatUniform,
         [ShaderUniformType.Vec2]: setVec2Uniform,
-        [ShaderUniformType.Vec3]: setVec3Uniform
+        [ShaderUniformType.Vec3]: setVec3Uniform,
+        [ShaderUniformType.Bool]: setBoolUniform
     }
 
     /**
@@ -84,6 +96,10 @@ export class GLShaderUniform implements ShaderUniform
             this.value = Vec3.zero();
             this.minValue = Vec3.zero();
             this.maxValue = Vec3.one();
+        }
+        else if(type == ShaderUniformType.Bool)
+        {
+            this.value = true;
         }
         else 
         {

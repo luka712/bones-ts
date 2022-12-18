@@ -26,9 +26,9 @@ class KeyboardStateImplementation implements KeyboardState
     }
 
     /**
-  * Sets the key to false.
-  * @param key 
-  */
+     * Sets the key to false.
+     * @param key 
+     */
     public setKeyUp (key: Keys | string): void 
     {
         this.m_isKeyDown[key] = false;
@@ -319,10 +319,11 @@ export class InputManager
         this.m_mouseState.deltaX = 0;
         this.m_mouseState.deltaY = 0;
 
-        for (const key in this.m_isKeyDown)
-        {
-            this.m_isKeyDown[key] = false;
-        }
+        // TODO: probably not necessary, since there is key up!
+        // for (const key in this.m_isKeyDown)
+        // {
+        //     this.m_isKeyDown[key] = false;
+        // }
 
         for (let i = 0; i < 3; i++)
         {

@@ -50,6 +50,12 @@ export abstract class EffectShader extends Shader
     public abstract useRandom (random: number): void;
 
     /**
+     * Uses the currrent scene texture as input.
+     * @param tex - the texture that represents screen texture.
+     */
+    public abstract useSceneTexture(tex: Texture2D): void;
+
+    /**
      * Use the texture unit 0.
      * @returns { void }
      */

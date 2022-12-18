@@ -64,25 +64,25 @@ export class GLParticleEmitterUpdateStepShader extends ParticleEmitterUpdateStep
             textureWrap: TextureWrap.Repeat
         });
 
-        this.m_texture0Location = this.m_shader.getUniform("u_texture0");
+        this.m_texture0Location = this.m_shader.getUniformLocation("u_texture0");
 
-        this.m_projectionMatrixLocation = this.m_shader.getUniform("u_projectionMatrix");
-        this.m_viewMatrixLocation = this.m_shader.getUniform("u_viewMatrix");
+        this.m_projectionMatrixLocation = this.m_shader.getUniformLocation("u_projectionMatrix");
+        this.m_viewMatrixLocation = this.m_shader.getUniformLocation("u_viewMatrix");
 
-        this.m_deltaTimeLocation = this.m_shader.getUniform("u_deltaTime");
+        this.m_deltaTimeLocation = this.m_shader.getUniformLocation("u_deltaTime");
 
-        this.m_originLocation = this.m_shader.getUniform("u_origin");
+        this.m_originLocation = this.m_shader.getUniformLocation("u_origin");
 
-        this.m_xDirectionMinMaxLocation = this.m_shader.getUniform("u_xDirectionMinMax");
-        this.m_yDirectionMinMaxLocation = this.m_shader.getUniform("u_yDirectionMinMax");
-        this.m_zDirectionMinMaxLocation = this.m_shader.getUniform("u_zDirectionMinMax");
+        this.m_xDirectionMinMaxLocation = this.m_shader.getUniformLocation("u_xDirectionMinMax");
+        this.m_yDirectionMinMaxLocation = this.m_shader.getUniformLocation("u_yDirectionMinMax");
+        this.m_zDirectionMinMaxLocation = this.m_shader.getUniformLocation("u_zDirectionMinMax");
 
-        this.m_minMaxSpeedLocation = this.m_shader.getUniform("u_minMaxSpeed");
+        this.m_minMaxSpeedLocation = this.m_shader.getUniformLocation("u_minMaxSpeed");
 
-        this.m_maxAgeLocation = this.m_shader.getUniform("u_maxAge")
+        this.m_maxAgeLocation = this.m_shader.getUniformLocation("u_maxAge")
 
-        this.m_forceLocation = this.m_shader.getUniform("u_force");
-        this.m_frictionFactorLocation = this.m_shader.getUniform("u_frictionFactor");
+        this.m_forceLocation = this.m_shader.getUniformLocation("u_force");
+        this.m_frictionFactorLocation = this.m_shader.getUniformLocation("u_frictionFactor");
     }
 
     /**
@@ -94,6 +94,15 @@ export class GLParticleEmitterUpdateStepShader extends ParticleEmitterUpdateStep
     public createUniform (uniform_name: string, type: ShaderUniformType, key?: string): ShaderUniform
     {
         return this.m_shader.createUniform(uniform_name, type, key);
+    }
+
+    
+    /**
+     * @inheritdoc
+     */
+    public getUniform (uniform_name: any): ShaderUniform | undefined
+    {
+        return this.m_shader.getUniform(uniform_name);
     }
 
     /**
@@ -180,6 +189,15 @@ export class GLParticleEmitterRenderStepShader extends ParticleEmitterRenderStep
     public createUniform (uniform_name: string, type: ShaderUniformType, key?: string): ShaderUniform
     {
         return this.m_shader.createUniform(uniform_name, type, key);
+    }
+
+    
+    /**
+     * @inheritdoc
+     */
+    public getUniform (uniform_name: any): ShaderUniform | undefined
+    {
+        return this.m_shader.getUniform(uniform_name);
     }
 
     /**

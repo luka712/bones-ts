@@ -4,6 +4,7 @@ export enum ShaderUniformType
     Float = 0,
     Vec2 = 1,
     Vec3 = 2,
+    Bool = 3
 }
 
 export interface ShaderUniform
@@ -16,7 +17,7 @@ export interface ShaderUniform
     /**
      * Any value that can be passed to shader.
      */
-    value: Float32Array | number;
+    value: Float32Array | number | boolean;
 
     /**
      * Minimum value that should be used.
@@ -76,6 +77,7 @@ export abstract class Shader
      */
     readonly uniformValues: { [id: string]: ShaderUniform };
 
+
     /**
      * Creates a uniform value.
      * @param { string } uniform_name - the name of uniform in shader.
@@ -87,6 +89,12 @@ export abstract class Shader
         type: ShaderUniformType,
         key?: string
     ): ShaderUniform;
+
+    /**
+     * Gets the uniform.
+     * @param uniform_name 
+     */
+    public abstract getUniform (uniform_name): ShaderUniform | undefined;
 
     /**
      * Initialize the shader.

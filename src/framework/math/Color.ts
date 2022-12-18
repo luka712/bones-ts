@@ -70,6 +70,14 @@ export class Color extends BaseMatrix<Color>
     }
 
     /**
+     * Color defined by r:0,g:0,b:0,a:0.
+     */
+    public static transparent(): Color 
+    {
+        return new Color(0,0,0,0);
+    }
+
+    /**
      * The black color.
      * @returns { Color } - new instance
      */

@@ -12,6 +12,7 @@ import { GLGeometryBuffer, } from "./GLGeometryBuffer";
 import { Color, Vec2 } from "../framework/bones_math";
 import { GLSpriteShader } from "./shaders/GLSpriteShader";
 import { VertexBufferDescription, ComponentType, IndicesBufferDescription, BufferUsage } from "../framework/GeometryBuffer";
+import { threadId } from "worker_threads";
 
 export class GLSpriteRenderer extends SpriteRenderer
 {
@@ -236,15 +237,7 @@ export class GLSpriteRenderer extends SpriteRenderer
     }
 
     /**
-     * Draw the texture part specifed by source rectangle at specified draw rectangle, with optional tint color and rotation values.
-     * To be used when part of texture needs to be drawn.
-     * 
-     * @param { Texture2D } texture - which texture to draw.
-     * @param { Rect } draw_rect - the drawing rectangle
-     * @param { Rect } source_rect - defines which part from texture to select.
-     * @param { Vec2|undefined } tint_color - the color to be used as tint color. 
-     * @param { Vec3|undefined } axis_of_rotation - if sprites needs to be rotated around arbitrary axis.
-     * @param { number|undefined} rotation_in_radians - how much to rotate, in radians.
+     * @inheritdoc
      */
     public drawSource (texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void
     {
@@ -311,6 +304,54 @@ export class GLSpriteRenderer extends SpriteRenderer
         // 8 tex coords with size of 4 bytes
         this.m_mutableBuffer.bufferSubData(this.o_texCoords, 4 * 8);
         this.m_mutableBuffer.draw();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public drawOnPosition (texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, origin?: Vec2): void
+    {
+        if (texture != this.o_currentTexture)
+        {
+            this.o_currentTexture = texture;
+            this.m_shader.useSpriteTexture(texture);
+        }
+
+        // default value, start from this.
+        // this places origin it at 0,0 
+        let offset_x = texture.width * 0.5;
+        let offset_y = texture.height * 0.5;
+
+        // if origin is defined use it, but correct it for texture one.
+        if (origin)
+        {
+            offset_x -= texture.width * origin[0];
+            offset_y -= texture.height * origin[1];
+        }
+
+        // First get required matrices.
+        Mat4x4.scaleMatrix(texture.width, texture.height, 1.0, this.o_scale);
+        if (rotation_in_radians)
+        {
+            Mat4x4.rotationZ(rotation_in_radians, this.o_rotation);
+        }
+        else
+        {
+            Mat4x4.identity(this.o_rotation);
+        }
+
+        // transform will already contain translation here, saves 1 operation.
+        Mat4x4.translationMatrix(position.x + offset_x, position.y + offset_y, 0, this.o_transform);
+
+        // now multiply transform with translation with other matrices.
+        Mat4x4.multiply(this.o_transform, this.o_rotation, this.o_transform);
+        Mat4x4.multiply(this.o_transform, this.o_scale, this.o_transform);
+
+        this.m_shader.useTransform(this.o_transform);
+        this.m_shader.useTintColor(tint_color ?? this.o_defaultTintColor);
+
+        this.m_constantBuffer.bind();
+        this.m_constantBuffer.draw();
     }
 
     /**

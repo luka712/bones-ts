@@ -1,6 +1,6 @@
 import { hasOnlyExpressionInitializer } from "typescript";
-import { Vec2 } from "./bones_math";
 import { FrameworkUtils } from "./FrameworkUtil";
+import { Vec2 } from "./math/vec/Vec2";
 
 
 /**

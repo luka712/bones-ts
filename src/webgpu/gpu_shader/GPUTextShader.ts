@@ -2,6 +2,7 @@
 import { FileLoader } from "../../framework/bones_loaders";
 import { Mat4x4, Color } from "../../framework/bones_math";
 import { Texture2D } from "../../framework/bones_texture";
+import { ShaderUniform } from "../../framework/shaders/Shader";
 import { SpriteShader } from "../../framework/shaders/SpriteShader";
 import { TextShader } from "../../framework/shaders/TextShader";
 import { WebGPUTexture2D } from "../textures/WebGPUTexture";
@@ -59,6 +60,10 @@ export class GPUTextShader extends GPUShader implements TextShader
                 }
             ]
         };
+    }
+    public getUniform (uniform_name: any): ShaderUniform
+    {
+        throw new Error("Method not implemented.");
     }
 
 

@@ -167,6 +167,16 @@ export abstract class SpriteRenderer
      */
     public abstract drawSource(texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number) : void;
 
+    /**
+     * Draw the texture on given position.
+     * @param texture - the texture to draw. 
+     * @param position - the position to draw to.
+     * @param tint_color - the tint color.
+     * @param rotation_in_radians - rotation in radians.
+     * @param origin - origin of sprite, by default 0,0 for top left corner. 
+     */
+    public abstract drawOnPosition(texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, origin?: Vec2) : void;
+
         /**
      * Draw a string.
      * @param { SpriteFont } font 

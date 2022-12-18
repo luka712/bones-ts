@@ -76,6 +76,10 @@ export abstract class GPUShader implements Shader
         protected m_fragmentSource?: string,
         protected m_options?: GPUShaderOptions)
     { }
+    public getUniform (uniform_name: any): ShaderUniform
+    {
+        throw new Error("Method not implemented.");
+    }
 
 
 

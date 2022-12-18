@@ -1,5 +1,7 @@
 import { BaseMatrix } from "../BaseMatrix";
+import { MathUtil } from "../MathUtil";
 import { Quaternion } from "../quaternion/Quaternion";
+import { Rect } from "../Rect";
 import { Vec3 } from "./Vec3";
 
 
@@ -52,6 +54,17 @@ export class Vec2 extends BaseMatrix<Vec2>
     }
 
     /**
+     * Sets the magnitude for self.
+     */
+    public setMagnitude (magnitude: number): Vec2 
+    {
+        this.normalize();
+        this[0] *= magnitude;
+        this[1] *= magnitude;
+        return this;
+    }
+
+    /**
      * Get the squard magnitude (square length) of a vector.
      */
     public magnitudeSq (): number 
@@ -61,8 +74,7 @@ export class Vec2 extends BaseMatrix<Vec2>
 
     /**
      * Find distance squared to other vector.
-     * @param { Vec2 |Float32Array}
-     * @return number 
+     * @param other
      */
     public distanceSq (other: Vec2 | Float32Array): number 
     {
@@ -73,9 +85,9 @@ export class Vec2 extends BaseMatrix<Vec2>
     }
 
     /**
-     * Distance to other Vec3.
+     * Distance to other vector.
      */
-    public distance (other: Vec3): number
+    public distance (other: Vec2): number
     {
         return Math.sqrt(this.distanceSq(other));
     }
@@ -119,6 +131,37 @@ export class Vec2 extends BaseMatrix<Vec2>
     public angle (): number 
     {
         return Math.atan2(this[1], this[0]);
+    }
+
+    /**
+     * Keeps the vector within given bounds.
+     * @param v - vector to keep within bounds.
+     * @param bounds - the bounds.
+     * @param out - optional, if passed in, result is saved to out vector.
+     */
+    public clampToBounds (bounds: Rect): Vec2 
+    {
+        // handle x
+        if (this[0] < bounds.x)
+        {
+            this[0] = bounds.x;
+        }
+        else if (this[0] > bounds.w)
+        {
+            this[0] = bounds.w;
+        }
+
+        // handle y
+        if (this[1] < bounds.y)
+        {
+            this[1] = bounds.y;
+        }
+        else if (this[1] > bounds.h)
+        {
+            this[1] = bounds.h;
+        }
+
+        return this;
     }
 
     /**
@@ -187,6 +230,24 @@ export class Vec2 extends BaseMatrix<Vec2>
         return out;
     }
 
+
+    /**
+     * Multiply vector a * vector b.
+     * @param a 
+     * @param b 
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     * @returns {@link Vec2} - new instance or passed in out vector as result.
+     */
+    public static multiply (a: Vec2, b: Vec2, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        out[0] = a[0] * b[0];
+        out[1] = a[1] * b[1];
+        return out;
+    }
+
+
     /**
      * Multiply a vector with scalar.
      * @param v - the vector.
@@ -195,13 +256,29 @@ export class Vec2 extends BaseMatrix<Vec2>
      */
     public static multiplyWithScalar (v: Vec2, s: number, out?: Vec2): Vec2 
     {
-        if (!out)
-        {
-            out = new Vec2(0, 0);
-        }
+        out = out ?? new Vec2(0, 0);
 
         out[0] = v[0] * s;
         out[1] = v[1] * s;
+        return out;
+    }
+
+
+    /**
+     * Add a vector multiplied by scalar to vector v.
+     * v += other * scalar
+     * 
+     * @param v - the vector.
+     * @param other - vector to be mulitipled by scalar and added to vector v.
+     * @param scalar - the scalar.
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     */
+    public static addVec2MultipledWithScalar (v: Vec2, other: Vec2, scalar: number, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        out[0] = v[0] + other[0] * scalar;
+        out[1] = v[1] + other[1] * scalar;
         return out;
     }
 
@@ -215,11 +292,7 @@ export class Vec2 extends BaseMatrix<Vec2>
      */
     public static clamp (v: Vec2, min: Vec2, max: Vec2, out?: Vec2): Vec2 
     {
-        if (!out)
-        {
-            out = new Vec2(0, 0);
-        }
-
+        out = out ?? new Vec2(0, 0);
 
         if (v[0] < min[0])
         {
@@ -250,10 +323,7 @@ export class Vec2 extends BaseMatrix<Vec2>
      */
     public static normalize (v: Vec2, out?: Vec2): Vec2 
     {
-        if (!out)
-        {
-            out = Vec2.zero();
-        }
+        out = out ?? new Vec2(0, 0);
 
         const l = v.magnitude();
 
@@ -262,6 +332,24 @@ export class Vec2 extends BaseMatrix<Vec2>
             out[0] /= l;
             out[1] /= l;
         }
+
+        return out;
+    }
+
+    /**
+     * Sets the magnitude of a vector.
+     * @param v - input vector.
+     * @param m - desired magnitude.
+     * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+     * @returns {@link Vec2} - new instance or passed in out vector as result.
+     */
+    public static setMagnitude (v: Vec2, m: number, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        Vec2.normalize(v, out);
+        out[0] *= m;
+        out[1] *= m;
 
         return out;
     }
@@ -316,7 +404,7 @@ export class Vec2 extends BaseMatrix<Vec2>
      * Rotates a vec2 with quaternion.
      * @param v - the vector. 
      * @param q - the quaternion.
-     * @parma out - optional, if passed in, result is saved to out vector.
+     * @param out - optional, if passed in, result is saved to out vector.
      */
     public static rotateWithQuaternion (v: Vec2, q: Quaternion, out?: Vec2): Vec2 
     {
@@ -333,6 +421,79 @@ export class Vec2 extends BaseMatrix<Vec2>
         out = out ?? new Vec2(0, 0);
         out[0] = v[0] * (1.0 - b[1] - b[2]) + v[1] * (a[1] - a[2]);
         out[1] = v[0] * (a[1] + a[2]) + v[1] * (1.0 - a[0] - b[2]);
+
+        return out;
+    }
+
+    /**
+      * Find distance squared to other vector.
+      * @param a 
+      * @param b
+      */
+    public static distanceSq (a: Vec2, b: Vec2): number 
+    {
+        const dx = a[0] - b[0];
+        const dy = a[1] - b[1];
+
+        return dx * dx + dy * dy;
+    }
+
+    /**
+     * Distance to other vector.
+     * @param a 
+    * @param b
+     */
+    public static distance (a: Vec2, b: Vec2): number
+    {
+        return Math.sqrt(this.distanceSq(a, b));
+    }
+
+    /**
+     * Create a random vec2.
+     * @param min - the min x,y component value.
+     * @param max - the max x,y component value.
+     * @param out - optional, if passed in, result is saved to out vector.
+     */
+    public static random (min: number, max: number, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+        out[0] = MathUtil.randomFloat(min, max);
+        out[1] = MathUtil.randomFloat(min, max);
+        return out;
+    }
+
+    /**
+     * Keeps the vector within given bounds.
+     * @param v - vector to keep within bounds.
+     * @param bounds - the bounds.
+     * @param out - optional, if passed in, result is saved to out vector.
+     */
+    public static clampToBounds (v: Vec2, bounds: Rect, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        out[0] = v[0];
+        out[1] = v[1];
+
+        // handle x
+        if (out[0] < bounds.x)
+        {
+            out[0] = bounds.x;
+        }
+        else if (out[0] > bounds.w)
+        {
+            out[0] = bounds.w;
+        }
+
+        // handle y
+        if (out[1] < bounds.y)
+        {
+            out[1] = bounds.y;
+        }
+        else if (out[1] > bounds.h)
+        {
+            out[1] = bounds.h;
+        }
 
         return out;
     }

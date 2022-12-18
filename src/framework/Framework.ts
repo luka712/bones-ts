@@ -1,4 +1,4 @@
-import { GLEffectFactory, GLPostProcessManager } from "../webgl/GLPostProcessManager";
+import { GLEffectFactory } from "../webgl/GLPostProcessManager";
 import { WebGL2Renderer } from "../webgl/WebGL2Renderer";
 import { GLSpriteRenderer } from "../webgl/GLSpriteRenderer";
 import { GLTextureManager } from "../webgl/GLTexture";
@@ -24,6 +24,9 @@ import { GLParticlesFactory } from "../webgl/particles/GLParticlesFactory";
 import { FrameworkPlugin } from "./plugin/FrameworkPlugin";
 import { WebGPUTextureManager } from "../webgpu/textures/WebGPUTextureManager";
 import { WebGPUTextRenderer } from "../webgpu/WebGPUTextRenderer";
+import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
+import { GLPipelineFactory } from "../webgl/post_process/pipelines/GLPipelineFactory";
+import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager";
 
 
 export interface GameJoltCredentials 
@@ -65,6 +68,12 @@ export interface FrameworkOptions
  */
 abstract class Framework
 {
+    /**
+     * The {@link WebGL2RenderingContext} initialize by framework.
+     * Only valid if WebGL2 rendering is used.
+     */
+    public static gl: WebGL2RenderingContext;
+
     private m_runFramework: boolean;
 
     /**
@@ -153,6 +162,11 @@ abstract class Framework
     public readonly effects: IEffectFactory;
 
     /**
+     * The pipeline factory.
+     */
+    public readonly postProcessPipelines: PostProcessPipelineFactory;
+
+    /**
      * The particles factory.
      */
     public readonly particles: ParticlesFactory;
@@ -196,6 +210,7 @@ abstract class Framework
         {
             this.renderer = new WebGL2Renderer(canvas, this.window);
             const gl = (this.renderer as WebGL2Renderer).gl;
+            Framework.gl = gl;
             this.textureManager = new GLTextureManager(gl, this.imageLoader);
             this.spriteRenderer = new GLSpriteRenderer(gl, this.window, this.renderer, this.fileLoader);
             this.renderer.spriteRenderer = this.spriteRenderer;
@@ -204,6 +219,7 @@ abstract class Framework
             this.effects = new GLEffectFactory(this.renderer, this.timeManager, this.fileLoader, this.textureManager, gl);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
             this.particles = new GLParticlesFactory(gl, this.fileLoader, this.input, this.textureManager, this.window);
+            this.postProcessPipelines = new GLPipelineFactory(this.window, this.renderer, gl, this.effects);
         }
     }
 
@@ -332,7 +348,7 @@ abstract class Framework
         await this.textRenderManager?.initialize();
         await this.config.initialize();
         this.fontManager?.initialize();
-        this.postProcessManager?.initialize();
+        await this.postProcessManager?.initialize();
 
         // this.inputManager.initialize();
 

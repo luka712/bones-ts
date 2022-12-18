@@ -216,6 +216,7 @@ export class GLTextRenderer extends TextRenderManager
         if (this.o_currentTexture != font.texture)
         {
             this.o_currentTexture = font.texture;
+            this.o_currentTexture.active(0);
             this.o_currentTexture.bind();
         }
 
