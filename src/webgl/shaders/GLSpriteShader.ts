@@ -18,8 +18,6 @@ export class GLSpriteShader extends SpriteShader
 
     private m_projectionLocation: WebGLUniformLocation;
     private m_viewLocation: WebGLUniformLocation;
-    private m_transformLocation: WebGLUniformLocation;
-    private m_tintColorLocation: WebGLUniformLocation;
 
     /**
      * The constructor.
@@ -45,8 +43,6 @@ export class GLSpriteShader extends SpriteShader
 
         this.m_projectionLocation = this.m_shader.getUniformLocation("u_projection_matrix");
         this.m_viewLocation = this.m_shader.getUniformLocation("u_view_matrix");
-        this.m_transformLocation = this.m_shader.getUniformLocation("u_transform_matrix");
-        this.m_tintColorLocation = this.m_shader.getUniformLocation("u_tint_color");
     }
 
     /**
@@ -101,26 +97,6 @@ export class GLSpriteShader extends SpriteShader
     {
         this.m_gl.uniformMatrix4fv(this.m_projectionLocation, false, projection_matrix);
         this.m_gl.uniformMatrix4fv(this.m_viewLocation, false, view_matrix);
-    }
-
-    /**
-     * Use the transform matrix.
-     *
-     * @param { Mat4x4 } transform_matrix
-     */
-    public useTransform (transform_matrix: Mat4x4): void
-    {
-        this.m_gl.uniformMatrix4fv(this.m_transformLocation, false, transform_matrix);
-    }
-
-    /**
-     * Use the tint color.
-     * 
-     * @param { Color } color 
-     */
-    public useTintColor (color: Color): void
-    {
-        this.m_gl.uniform4f(this.m_tintColorLocation, color[0], color[1], color[2], color[3]);
     }
 
     /**

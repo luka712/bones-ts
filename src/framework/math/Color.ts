@@ -110,7 +110,7 @@ export class Color extends BaseMatrix<Color>
     */
     public static green (): Color 
     {
-        return new Color(0, 1, 0, 0);
+        return new Color(0, 1, 0, 1);
     }
 
     /**
@@ -119,7 +119,7 @@ export class Color extends BaseMatrix<Color>
      */
     public static blue (): Color 
     {
-        return new Color(0, 0, 1, 0);
+        return new Color(0, 0, 1, 1);
     }
 
     /**

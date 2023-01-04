@@ -1,6 +1,5 @@
 import { GLEffectFactory } from "../webgl/GLPostProcessManager";
 import { WebGL2Renderer } from "../webgl/WebGL2Renderer";
-import { GLSpriteRenderer } from "../webgl/GLSpriteRenderer";
 import { GLTextureManager } from "../webgl/GLTexture";
 import { GLTextRenderer } from "../webgl/GLTextRenderer";
 import { Config } from "./bones_config";
@@ -15,9 +14,8 @@ import { WindowManager } from "./Window";
 import { State } from "./state/State";
 import { SpriteFont } from "./fonts/SpriteFont";
 import { SpriteFontManager } from "./fonts/SpriteFontManager";
-import { WebGPURenderer, WebGPURendererContext } from "../webgpu/WebGPURenderer";
+import { WebGPURenderer } from "../webgpu/WebGPURenderer";
 import { SoundManager } from "./sounds/SoundManager";
-import { WebGPUSpriteRenderer } from "../webgpu/WebGPUSpriteRenderer";
 import { PostProcessManager, IEffectFactory } from "./bones_post_process";
 import { ParticlesFactory } from "./particles/ParticlesFactory";
 import { GLParticlesFactory } from "../webgl/particles/GLParticlesFactory";
@@ -27,6 +25,8 @@ import { WebGPUTextRenderer } from "../webgpu/WebGPUTextRenderer";
 import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
 import { GLPipelineFactory } from "../webgl/post_process/pipelines/GLPipelineFactory";
 import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager";
+import { GLSpriteRenderer } from "../webgl/GLSpriteRenderer";
+import { GLLineRenderer2D } from "../webgl/renderers/lines/GLLineRenderer2D";
 
 
 export interface GameJoltCredentials 
@@ -122,6 +122,12 @@ abstract class Framework
     public readonly spriteRenderer: SpriteRenderer;
 
     /**
+     * The line renderer.
+     * @todo experimental.
+     */
+    public readonly lineRenderer2D: GLLineRenderer2D;
+
+    /**
      * The text render manager.
      */
     public readonly textRenderManager: TextRenderManager;
@@ -196,7 +202,7 @@ abstract class Framework
             const device = (this.renderer as WebGPURenderer).device;
             this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
-            this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context, this.renderer as WebGPURenderer, this.fileLoader);
+            // this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context, this.renderer as WebGPURenderer, this.fileLoader);
             this.textRenderManager = new WebGPUTextRenderer(this.renderer as WebGPURenderer, this.window, this.fileLoader);
 
             // TODO: temp
@@ -220,6 +226,9 @@ abstract class Framework
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
             this.particles = new GLParticlesFactory(gl, this.fileLoader, this.input, this.textureManager, this.window);
             this.postProcessPipelines = new GLPipelineFactory(this.window, this.renderer, gl, this.effects);
+
+            // various renderers. Use factory to create one instead.
+            this.lineRenderer2D = new GLLineRenderer2D(this);
         }
     }
 
@@ -344,11 +353,13 @@ abstract class Framework
 
         await this.renderer.initialize();
         this.textureManager?.initialize();
-        await this.spriteRenderer?.initialize();
-        await this.textRenderManager?.initialize();
+       // await this.spriteRenderer?.initialize();
+       // await this.textRenderManager?.initialize();
         await this.config.initialize();
         this.fontManager?.initialize();
-        await this.postProcessManager?.initialize();
+       //  await this.postProcessManager?.initialize();
+
+       await this.lineRenderer2D.initialize();
 
         // this.inputManager.initialize();
 

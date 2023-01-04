@@ -18,7 +18,11 @@ import { GLScreenQuadGeometry } from "../../geometry/GLScreenQuadGeometry";
  */
 export class GLBloomPipeline extends PostProcessPipeline 
 {
-    private m_simpleFramebuffer: GLRenderFrameBuffer;
+    // create two simple buffers for each pass. Avoids texture feedback if one buffers is used to read/write texture.
+    private m_simpleFramebufferHorizontal: GLRenderFrameBuffer;
+    private m_simpleFramebufferVertical: GLRenderFrameBuffer;
+
+    // has normal scene and brightness texture
     private m_extractFramebuffer: GLExtractBrightColorFramebuffer;
 
     // two blur passes.
@@ -50,7 +54,7 @@ export class GLBloomPipeline extends PostProcessPipeline
         horizontal_blur_u.minValue = 0;
         horizontal_blur_u.maxValue = 5;
         horizontal_blur_u.value = 2.3;
-        this.m_uniforms["horizontalBlurSize"] =  horizontal_blur_u;
+        this.m_uniforms["horizontalBlurSize"] = horizontal_blur_u;
 
         // vertical blur shader
         this.m_blurEffectVertical = await this.m_effectFactory.create(
@@ -63,7 +67,7 @@ export class GLBloomPipeline extends PostProcessPipeline
         vertical_blur_u.minValue = 0;
         vertical_blur_u.maxValue = 2.3;
         vertical_blur_u.value = 1;
-        this.m_uniforms["verticalBlurSize"] =  vertical_blur_u;
+        this.m_uniforms["verticalBlurSize"] = vertical_blur_u;
 
         // combine shader.
         this.m_bloomBlendEffect = await this.m_effectFactory.create(
@@ -76,11 +80,14 @@ export class GLBloomPipeline extends PostProcessPipeline
         blur_factor_u.minValue = 0;
         blur_factor_u.maxValue = 5;
         blur_factor_u.value = 1.2;
-        this.m_uniforms["blurFactor"] =  blur_factor_u;
+        this.m_uniforms["blurFactor"] = blur_factor_u;
 
         // framebuffer with single tex
-        this.m_simpleFramebuffer = new GLRenderFrameBuffer(this.m_windowManager, this.m_renderer, this.m_gl);
-        await this.m_simpleFramebuffer.initialize();
+        this.m_simpleFramebufferHorizontal = new GLRenderFrameBuffer(this.m_windowManager, this.m_renderer, this.m_gl);
+        await this.m_simpleFramebufferHorizontal.initialize();
+
+        this.m_simpleFramebufferVertical = new GLRenderFrameBuffer(this.m_windowManager, this.m_renderer, this.m_gl);
+        await this.m_simpleFramebufferVertical.initialize();
 
         // framebuffer that writes into 2 texture units.
         this.m_extractFramebuffer = new GLExtractBrightColorFramebuffer(this.m_windowManager, this.m_renderer, this.m_gl);
@@ -112,7 +119,7 @@ export class GLBloomPipeline extends PostProcessPipeline
         const brightness_tex = this.m_extractFramebuffer.getBrightnessOutputTexture();
 
         // bind the buffer, so that it's renderer into it.
-        this.m_simpleFramebuffer.bind();
+        this.m_simpleFramebufferHorizontal.bind();
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // use brightness texture and do horizontal pass over it.
@@ -123,12 +130,19 @@ export class GLBloomPipeline extends PostProcessPipeline
         GLScreenQuadGeometry.instance.draw();
 
         // ----------------------- VERTICAL PASS
-        // get the output texture
-        const horizontal_blur_tex = this.m_simpleFramebuffer.getOutputTexture(0);
+
+        // vertical pass shader.
+        this.m_blurEffectVertical.use();
+
+        // get the output texture from horizontal pass framebuffer.
+        const horizontal_blur_tex = this.m_simpleFramebufferHorizontal.getOutputTexture(0);
+
+        // bind the buffer, so that it's renderer into it.
+        this.m_simpleFramebufferVertical.bind();
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // use brightness texture and do horizontal pass over it.
-        // first use the shader.
-        this.m_blurEffectVertical.use();
+
         this.m_blurEffectVertical.shader.useSceneTexture(horizontal_blur_tex);
 
         // draw geometry.
@@ -137,7 +151,7 @@ export class GLBloomPipeline extends PostProcessPipeline
         // ---------------------- BLUR TEXTURE
         // get the output texture.
         const scene_texture = this.m_extractFramebuffer.getOutputTexture(0);
-        const blur_texture = this.m_simpleFramebuffer.getOutputTexture(0);
+        const blur_texture = this.m_simpleFramebufferVertical.getOutputTexture(0);
 
         // back to canvas buffer.
         gl.bindTexture(gl.TEXTURE_2D, null); // this should generally not be necessary since we do not render to texture, but chrome is bit conservative in error messages. 
@@ -149,7 +163,7 @@ export class GLBloomPipeline extends PostProcessPipeline
 
         // pass the scene texture to unit0
         this.m_bloomBlendEffect.shader.useSceneTexture(scene_texture);
-        
+
         // does not have brightness texture, therefore set texture unit and bind texture
         this.m_bloomBlendEffect.shader.texture1 = blur_texture;
         this.m_bloomBlendEffect.shader.useTextureUnit1();

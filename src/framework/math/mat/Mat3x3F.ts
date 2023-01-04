@@ -1,5 +1,5 @@
 import { BaseMatrix } from "../BaseMatrix";
-import { Mat2x2F } from "./Mat2x2F";
+import { Mat2x2 } from "./Mat2x2";
 
 /**
  * The matrix 3x3 class.
@@ -60,7 +60,7 @@ import { Mat2x2F } from "./Mat2x2F";
       * Returns submatrix 2x2 of submatrix 3x3.
       * Passed in row and column are ignored.
       */
-     public subMatrix(row: number, col: number): Mat2x2F
+     public subMatrix(row: number, col: number): Mat2x2
      {
          if (row > 2)
          {
@@ -71,7 +71,7 @@ import { Mat2x2F } from "./Mat2x2F";
              col = 2;
          }
  
-         const result = Mat2x2F.identity();
+         const result = Mat2x2.identity();
  
          let i = 0;
          let j = 0;
@@ -142,7 +142,7 @@ import { Mat2x2F } from "./Mat2x2F";
  
      /**
       * Returns the determinant of a matrix.
-      * @param { Mat2x2F | Float32Array } m 
+      * @param { Mat2x2 | Float32Array } m 
       * @returns { number }
       */
      public static determinant(m: Mat3x3F | Float32Array): number
@@ -193,7 +193,7 @@ import { Mat2x2F } from "./Mat2x2F";
       */
      public static minor(m: Mat3x3F | Float32Array, row: number, col: number): number
      {
-         return Mat2x2F.determinant(Mat3x3F.subMatrix(m, row, col));
+         return Mat2x2.determinant(Mat3x3F.subMatrix(m, row, col));
      }
  
  
@@ -203,9 +203,9 @@ import { Mat2x2F } from "./Mat2x2F";
       * @param { Mat3x3F | Float32Array } m
       * @param { number } row
       * @param { number } col
-      * @returns { Mat2x2F | Float32Array } 
+      * @returns { Mat2x2 | Float32Array } 
       */
-     public static subMatrix(m: Mat3x3F | Float32Array, row: number, col: number): Mat2x2F | Float32Array
+     public static subMatrix(m: Mat3x3F | Float32Array, row: number, col: number): Mat2x2 | Float32Array
      {
          if (row > 2)
          {
@@ -216,7 +216,7 @@ import { Mat2x2F } from "./Mat2x2F";
              col = 2;
          }
  
-         const result = Mat2x2F.identity();
+         const result = Mat2x2.identity();
  
          let i = 0;
          let j = 0;

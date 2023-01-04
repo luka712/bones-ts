@@ -259,7 +259,17 @@ class GLTextureManager implements TextureManager
     */
     public async createTexture (data: TextureData, width: number, height: number, options?: TextureOptions): Promise<Texture2D>
     {
-        const tex = new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA);
+        if (!options)
+        {
+            options = {};
+        }
+
+        if (!options.textureSize)
+        {
+            options.textureSize = new Vec2(width, height);
+        }
+
+        const tex = new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA, options);
         await tex.initialize();
         return tex;
     }

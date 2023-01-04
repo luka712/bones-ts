@@ -16,20 +16,6 @@ export abstract class SpriteShader extends Shader
     public abstract useCamera (projection_matrix: Mat4x4, view_matrix: Mat4x4): void;
 
     /**
-     * Use the transform matrix.
-     *
-     * @param { Mat4x4 } transform_matrix
-     */
-    public abstract useTransform (transform_matrix: Mat4x4): void;
-
-    /**
-     * Sets the tint color.
-     * 
-     * @param { Color } color 
-     */
-    public abstract useTintColor (color: Color): void;
-
-    /**
      * Use the given texture for sprite.
      * 
      * @param texture {@link Texture2D} the texture. Either WebGL or WebGPU implementation.

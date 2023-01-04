@@ -39,3 +39,7 @@ We use https://typedoc.org/
 generate documentation with 
 
 ```npx typedoc src/index.ts```
+
+# TODO: 
+LINE RENDERING
+https://wwwtyro.net/2019/11/18/instanced-lines.html

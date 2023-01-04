@@ -45,12 +45,12 @@ export class Blend
     /**
      * Specifies how the red, green, blue, and alpha destination blending factors are computed.
      */
-    destFactor:  BlendFactor;
+    destFactor: BlendFactor;
 
     /**
      * A built-in state object with settings for blending with non-premultipled alpha, that is blending source and destination data using alpha while assuming the color data contains no alpha information.
      */
-    public static nonPremultiplied(): Blend 
+    public static nonPremultiplied (): Blend 
     {
         return new Blend(BlendFactor.SRC_ALPHA, BlendFactor.ONE_MINUS_SRC_ALPHA);
     }
@@ -58,7 +58,7 @@ export class Blend
     /**
      * A built-in state object with settings for additive blend, which is adding the destination data to the source data without using alpha.
      */
-    public static additive(): Blend 
+    public static additive (): Blend 
     {
         return new Blend(BlendFactor.SRC_ALPHA, BlendFactor.ONE);
     }
@@ -71,7 +71,7 @@ export enum BlendFactor
 {
     SRC_ALPHA,
     ONE_MINUS_SRC_ALPHA,
-    ONE 
+    ONE
 }
 
 /**
@@ -91,6 +91,32 @@ export enum BlendMode
  */
 export abstract class SpriteRenderer 
 {
+    /**
+     * Globally configurable draw origin. 
+     * By default (0,0) for top left corner. 
+     * (0.5, 0.5) will draw sprites from center.
+     * (1.0, 1.0) will draw sprites from bottom right corner.
+     * 
+     * Be mindfull or {@link SpriteRenderer.rotationAnchor} as rotation might not be properly set on change of origin.
+     * Also see and prefer using whenever possible
+     * - {@link SpriteRenderer.setupCenteredOriginRotation}
+     * - {@link SpriteRenderer.setupTopLeftOriginRotation}
+     */
+    public origin: Vec2 = Vec2.zero();
+
+    /**
+     * Globally configurable rotation anchor.
+     * By default (0,0) for top left corner. 
+     * (0.5, 0.5) will rotate sprites from center.
+     * (1.0, 1.0) will rotate sprites from bottom right corner.
+     *
+     * Be mindfull or {@link SpriteRenderer.origin} as it affects rotation anchor.
+     * Also see and prefer using whenever possible
+     * - {@link SpriteRenderer.setupCenteredOriginRotation}
+     * - {@link SpriteRenderer.setupTopLeftOriginRotation}
+     */
+    public rotationAnchor: Vec2 = Vec2.zero();
+
     /**
      * The life cycle state.
      */
@@ -112,13 +138,6 @@ export abstract class SpriteRenderer
     protected m_viewMatrix: Mat4x4;
 
     /**
-     * @brief Set the blend for sprite batch.
-     *
-     * @param mode
-     */
-    protected abstract setBlendingMode (mode: Blend): void;
-
-    /**
      * @brief Initialize the sprite batch manager. Initialize must be called in order to properly initialize all the variables.
      */
     public abstract initialize (): void;
@@ -132,7 +151,7 @@ export abstract class SpriteRenderer
      * Pass arbitrary data to sprite renderer if needed.
      * @param { T | unknown } data - any data required. This is called once per frame, right at the beginning of frame.
      */
-    public abstract beginRenderPass<T>(data?: T) : void;
+    public abstract beginRenderPass<T> (data?: T): void;
 
     /**
      * @brief Begins the sprite batch.
@@ -145,14 +164,13 @@ export abstract class SpriteRenderer
      * @param texture - which texture to draw.
      * @param draw_rect - the drawing rectangle
      * @param tint_color - the color to be used as tint color. 
-     * @param axis_of_rotation - if sprites needs to be rotated around arbitrary axis.
      * @param rotation_in_radians - how much to rotate, in radians.
-     * @param origin - origin of sprite, by default 0,0 for top left corner. 
+     * @param rotation_anchor - rotation origin of sprite, by default 0,0 for top left corner. 
      * 
      * @remarks 
-     * origin - passing 1 for x will create origin in right corner, passing 1 for y will create origin in bottom cornern.
+     * rotation_anchor - passing 1 for x will create origin in right corner, passing 1 for y will create origin in bottom corner.
      */
-    public abstract draw (texture: Texture2D, draw_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number, origin? : Vec2): void;
+    public abstract draw (texture: Texture2D, draw_rect: Rect, tint_color?: Color, rotation_in_radians?: number, rotation_anchor?: Vec2): void;
 
     /**
      * Draw the texture part specifed by source rectangle at specified draw rectangle, with optional tint color and rotation values.
@@ -165,7 +183,7 @@ export abstract class SpriteRenderer
      * @param { number|undefined} rotation_in_radians - how much to rotate, in radians.
      * TODO: origin
      */
-    public abstract drawSource(texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number) : void;
+    public abstract drawSource (texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void;
 
     /**
      * Draw the texture on given position.
@@ -173,11 +191,12 @@ export abstract class SpriteRenderer
      * @param position - the position to draw to.
      * @param tint_color - the tint color.
      * @param rotation_in_radians - rotation in radians.
-     * @param origin - origin of sprite, by default 0,0 for top left corner. 
+     * @param rotation_anchor - rotation origin of sprite, by default 0,0 for top left corner. 
+     * @param scale - the scale of a sprite. By default 1,1 for scaling.
      */
-    public abstract drawOnPosition(texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, origin?: Vec2) : void;
+    public abstract drawOnPosition (texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, rotation_anchor?: Vec2, scale_factor? : Vec2): void;
 
-        /**
+    /**
      * Draw a string.
      * @param { SpriteFont } font 
      * @param { string } text 
@@ -185,7 +204,8 @@ export abstract class SpriteRenderer
      * @param { number | null | never } scale - by default set to 1. This means that font is renderer in it's natural size.
      * @param { Color | null | never } color - by default white.
      */
-    public drawString (font: SpriteFont, text: string, position: Vec2, scale?: number, color?: Color): void {
+    public drawString (font: SpriteFont, text: string, position: Vec2, scale?: number, color?: Color): void
+    {
         // TODO: temporary, move later to webgl renderer
         throw new Error("Not implemented");
     }
@@ -207,5 +227,35 @@ export abstract class SpriteRenderer
     {
         this.m_projectionMatrix = Mat4x4.orthographic(0, width, height, 0, -1, 1) as Mat4x4;
         this.m_viewMatrix = Mat4x4.lookAt(Vec3.zero(), Vec3.negativeUnitZ(), Vec3.unitY()) as Mat4x4;
+    }
+
+    /**
+     * Sets {@link SpriteRenderer.origin} to (0.5, 0.5) and {@link SpriteRenderer.rotationAnchor} to (0,0) 
+     * so that sprite origin is at center and sprite is rotated around center point.
+     * 
+     * Hint:
+     * Use if you want to have sprites coordinates in center of sprite and rotate around center. 
+     */
+    public setupCenteredOriginRotation (): void 
+    {
+        this.origin.x = 0.5;
+        this.origin.y = 0.5;
+        this.rotationAnchor.x = 0.5;
+        this.rotationAnchor.y = 0.5;
+    }
+
+    /**
+     * Sets {@link SpriteRenderer.origin} to (0, 0) and {@link SpriteRenderer.rotationAnchor} to (0,0) 
+     * so that sprite origin is at top left corner and sprite is rotated around top left point point.
+     * 
+     * Hint:
+     * Use if you want to have sprites coordinates in top left cornern of sprite and rotate around that corner. 
+     */
+    public setupTopLeftOriginRotation (): void 
+    {
+        this.origin.x = 0;
+        this.origin.y = 0;
+        this.rotationAnchor.x = 0;
+        this.rotationAnchor.y = 0;
     }
 }

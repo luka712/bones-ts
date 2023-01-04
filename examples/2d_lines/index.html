@@ -1,0 +1,126 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            line1 = {
+                width: 10,
+                color: BonesFramework.Color.red(),
+                join: BonesFramework.LineJoin.ROUND
+            };
+
+            line2 = {
+                width: 10,
+                color: BonesFramework.Color.green(),
+                join: BonesFramework.LineJoin.MITER
+            }
+
+            line3 = {
+                width: 10,
+                color: BonesFramework.Color.blue(),
+                join: BonesFramework.LineJoin.BEVEL
+            }
+
+            createFolder (gui, line, index) {
+                const l1 = gui.addFolder(`Line ${index}`);
+
+                l1.add(this.line1, "width");
+                
+                // Color
+                const temp = {
+                    color: [line.color.r * 255, line.color.g * 255, line.color.b * 255]
+                }
+                l1.addColor(temp, "color").onChange(v => {
+                    line.color[0] = v[0] / 255;
+                    line.color[1] = v[1] / 255;
+                    line.color[2] = v[2] / 255;
+                });
+
+                l1.add(this.line1, "join", {
+                    'round': BonesFramework.LineJoin.ROUND,
+                    'miter': BonesFramework.LineJoin.MITER,
+                    'bevel': BonesFramework.LineJoin.BEVEL
+                });
+            }
+
+            initialize () {
+                const gui = new dat.GUI();
+                this.createFolder(gui, this.line1, 1);
+                this.createFolder(gui, this.line2, 2);
+                this.createFolder(gui, this.line3, 3);
+            }
+
+            update (delta_time) { }
+
+            draw () {
+                this.lineRenderer2D.begin();
+                this.lineRenderer2D.draw(
+                    [
+                        new BonesFramework.Vec2(100, 100),
+                        new BonesFramework.Vec2(200, 200),
+                        new BonesFramework.Vec2(300, 100),
+                        new BonesFramework.Vec2(400, 200),
+                        new BonesFramework.Vec2(500, 100),
+                        new BonesFramework.Vec2(600, 200),
+                    ],
+                    this.line1.width,
+                    this.line1.color,
+                    this.line1.join
+                );
+
+                this.lineRenderer2D.draw(
+                    [
+                        new BonesFramework.Vec2(100, 200),
+                        new BonesFramework.Vec2(200, 300),
+                        new BonesFramework.Vec2(300, 200),
+                        new BonesFramework.Vec2(400, 300),
+                        new BonesFramework.Vec2(500, 200),
+                        new BonesFramework.Vec2(600, 300),
+                    ],
+                    this.line2.width,
+                    this.line2.color,
+                    this.line2.join
+                );
+
+                this.lineRenderer2D.draw(
+                    [
+                        new BonesFramework.Vec2(100, 300),
+                        new BonesFramework.Vec2(200, 400),
+                        new BonesFramework.Vec2(300, 300),
+                        new BonesFramework.Vec2(400, 400),
+                        new BonesFramework.Vec2(500, 300),
+                        new BonesFramework.Vec2(600, 400),
+                    ],
+                    this.line3.width,
+                    this.line3.color,
+                    this.line3.join
+                )
+                this.lineRenderer2D.end();
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

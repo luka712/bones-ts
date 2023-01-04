@@ -1,3 +1,4 @@
+import { VERSION } from "ts-node";
 import { BaseMatrix } from "../BaseMatrix";
 import { MathUtil } from "../MathUtil";
 import { Quaternion } from "../quaternion/Quaternion";
@@ -117,11 +118,15 @@ export class Vec2 extends BaseMatrix<Vec2>
 
     /**
      * Copies the vector.
+     * @param out - optional, if passed in, result is saved to out vector.
      * @returns {@link Vec2}
      */
-    public copy (): Vec2 
+    public copy (out?: Vec2): Vec2 
     {
-        return new Vec2(this.x, this.y);
+        out = out ?? new Vec2(0, 0);
+        out[0] = this.x;
+        out[1] = this.y;
+        return out;
     }
 
     /**
@@ -131,6 +136,28 @@ export class Vec2 extends BaseMatrix<Vec2>
     public angle (): number 
     {
         return Math.atan2(this[1], this[0]);
+    }
+
+    /**
+     * Rotates the current vector around point and returns it.
+     * @param point - the point to rotate around.
+     * @param theta - the theta in radians.
+     * @returns - self
+     */
+    public rotateAroundPoint (point: Vec2, theta: number): Vec2 
+    {
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+
+        const ox = point[0];
+        const oy = point[1];
+
+        const x = this[0];
+        const y = this[1];
+
+        this[0] = c * (x - ox) - s * (y - oy) + ox;
+        this[1] = s * (x - ox) + c * (y - oy) + oy;
+        return this;
     }
 
     /**
@@ -370,10 +397,7 @@ export class Vec2 extends BaseMatrix<Vec2>
      */
     public static divideWithScalar (vector: Vec2, scalar: number, out?: Vec2): Vec2 
     {
-        if (!out)
-        {
-            out = new Vec2(0, 0);
-        }
+        out = out ?? new Vec2(0, 0);
 
         out[0] = vector[0] / scalar;
         out[1] = vector[1] / scalar;
@@ -422,6 +446,32 @@ export class Vec2 extends BaseMatrix<Vec2>
         out[0] = v[0] * (1.0 - b[1] - b[2]) + v[1] * (a[1] - a[2]);
         out[1] = v[0] * (a[1] + a[2]) + v[1] * (1.0 - a[0] - b[2]);
 
+        return out;
+    }
+
+    /**
+     * Rotates vector around point.
+     * @param v - vector to rotate.
+     * @param point - point to rotate around-
+     * @param theta - theta in radians.
+     * @param out - optional, if passed in, result is saved to out vector.
+     * @returns - {@link Vec2}
+     */
+    public static rotateAroundPoint (v: Vec2, point: Vec2, theta: number, out?: Vec2): Vec2 
+    {
+        out = out ?? new Vec2(0, 0);
+
+        const c = Math.cos(theta);
+        const s = Math.sin(theta);
+
+        const ox = point[0];
+        const oy = point[1];
+
+        const x = v[0];
+        const y = v[1];
+
+        out[0] = c * (x - ox) - s * (y - oy) + ox;
+        out[1] = s * (x - ox) + c * (y - oy) + oy;
         return out;
     }
 
@@ -495,6 +545,21 @@ export class Vec2 extends BaseMatrix<Vec2>
             out[1] = bounds.h;
         }
 
+        return out;
+    }
+
+    /**
+     * Copies a vector.
+     * @param v - vector to copy. 
+     * @param out - optional, if passed in, result is saved to out vector.
+     * @returns 
+     */
+    public static copy (v: Vec2, out?: Vec2): Vec2
+    {
+        out = out ?? new Vec2(0, 0);
+
+        out[0] = v[0];
+        out[1] = v[1];
         return out;
     }
 }

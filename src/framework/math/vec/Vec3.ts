@@ -69,6 +69,18 @@ export class Vec3 extends BaseMatrix<Vec3>
     }
 
     /**
+   * Sets the magnitude for self.
+   */
+    public setMagnitude (magnitude: number): Vec3 
+    {
+        this.normalize();
+        this[0] *= magnitude;
+        this[1] *= magnitude;
+        this[2] *= magnitude;
+        return this;
+    }
+
+    /**
      * Normalize self. Sets unit length of self to 1.
      */
     public normalize (): void 
@@ -243,12 +255,12 @@ export class Vec3 extends BaseMatrix<Vec3>
 
     /**
      * Subtracts two vectors.
-     * @param { Vec3 | Float32Array } a
-     * @param { Vec3 | Float32Array } b
-     * @param { Vec3 | Float32Array | undefined } out 
-     * @return { Vec3 | Float32Array }
+     * @param a
+     * @param b
+     * @param out - optional, if passed in, result is saved to out vector.
+     * @return { Vec3 }
      */
-    public static subtract (a: Vec3 | Float32Array, b: Vec3 | Float32Array, out?: Vec3 | Float32Array): Vec3 | Float32Array
+    public static subtract (a: Vec3, b: Vec3, out?: Vec3): Vec3 
     {
         out = out ?? Vec3.zero();
 
@@ -264,7 +276,7 @@ export class Vec3 extends BaseMatrix<Vec3>
      * Multiplies two vectors.
      * @param a - the a vector.
      * @param b - the b vector.
-     * @parma out - optional, if passed in, result is saved to out vector.
+     * @param out - optional, if passed in, result is saved to out vector.
      */
     public static multiply (a: Vec3, b: Vec3, out?: Vec3): Vec3 
     {
@@ -293,7 +305,44 @@ export class Vec3 extends BaseMatrix<Vec3>
         out[2] = v[2] * s;
 
         return out;
+    }
 
+    /**
+    * Add a vector multiplied by scalar to vector v.
+    * v += other * scalar
+    * 
+    * @param v - the vector.
+    * @param other - vector to be mulitipled by scalar and added to vector v.
+    * @param scalar - the scalar.
+    * @param out - optional out vector. If specified that vector is modified. Avoids allocating new vector.
+    */
+    public static addVec3MultipledWithScalar (v: Vec3, other: Vec3, scalar: number, out?: Vec3): Vec3
+    {
+        out = out ?? new Vec3(0, 0, 0);
+
+        out[0] = v[0] + other[0] * scalar;
+        out[1] = v[1] + other[1] * scalar;
+        out[2] = v[2] + other[2] * scalar;
+
+        return out;
+    }
+
+
+    /**
+     * Divides self with scalar and returns self.
+     * @param vector - vector to divide.
+     * @param scalar - scalar to divide with.
+     * @parma out - optional, if passed in, result is saved to out vector.
+     */
+    public static divideWithScalar (vector: Vec3, scalar: number, out?: Vec3): Vec3 
+    {
+        out = out ?? new Vec3(0, 0, 0);
+
+        out[0] = vector[0] / scalar;
+        out[1] = vector[1] / scalar;
+        out[2] = vector[2] / scalar;
+
+        return out;
     }
 
     /**
@@ -388,12 +437,12 @@ export class Vec3 extends BaseMatrix<Vec3>
 
     /**
      * Reflect vector v around normal n.
-     * @param { Vec3 | Float32Array } v
-     * @param { Vec3 | Float32Array } n
-     * @param { Vec3 | Float32Array | undefined } out 
-     * @returns { Vec3  | Float32Array } 
+     * @param v
+     * @param n
+     * @parma out - optional, if passed in, result is saved to out vector.
+     * @returns 
      */
-    public static reflect (v: Vec3 | Float32Array, n: Vec3 | Float32Array, out?: Vec3 | Float32Array): Vec3 | Float32Array
+    public static reflect (v: Vec3, n: Vec3, out?: Vec3): Vec3 
     {
         out = out ?? Vec3.zero();
 

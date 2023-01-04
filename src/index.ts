@@ -14,6 +14,7 @@ import { Vec2 } from "./framework/math/vec/Vec2";
 import { Time, TimeManager } from "./framework/bones_time";
 import { PostProcessPipelineFactory } from "./framework/post_process/pipelines/PostProcessPipelineFactory";
 import { PostProcessPipeline } from "./framework/post_process/pipelines/PostProcessPipeline";
+import { LineJoin } from "./framework/renderers/LineRenderer2D";
 
 export 
 {
@@ -56,6 +57,9 @@ export
 
     // post process data
     PostProcessPipeline,
+
+    // line rendering
+    LineJoin,
 
     // test scene/games.
     // TestGame, 
