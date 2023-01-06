@@ -11,7 +11,7 @@ import { GLShaderImplementation } from "./GLShaderImplementation";
 /**
  * The WebGL implementation of sprite shader.
  */
-export class GLSpriteShader extends SpriteShader 
+export class GLSpriteShader__Obsolete_05_01_2023 extends SpriteShader 
 {
  
     private m_shader: GLShaderImplementation;
@@ -41,8 +41,8 @@ export class GLSpriteShader extends SpriteShader
 
         await this.m_shader.initialize(vertex_source, fragment_source);
 
-        this.m_projectionLocation = this.m_shader.getUniformLocation("u_projection_matrix");
-        this.m_viewLocation = this.m_shader.getUniformLocation("u_view_matrix");
+        this.m_projectionLocation = this.m_shader.getUniformLocation("u_projectionMatrix");
+        this.m_viewLocation = this.m_shader.getUniformLocation("u_viewMatrix");
     }
 
     /**

@@ -1,0 +1,160 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            sprite1 = {
+                position: new BonesFramework.Vec2(100, 100),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite2 = {
+                position: new BonesFramework.Vec2(200, 100),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite3 = {
+                position: new BonesFramework.Vec2(300, 100),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            createFolder (gui, sprite, index) {
+                const lf = gui.addFolder(`Sprite ${index}`);
+
+                // POSITION
+                const pos_obj = {
+                    x: sprite.position.x,
+                    y: sprite.position.y,
+                };
+                const pf = lf.addFolder("position");
+                pf.add(pos_obj, "x").onChange(v => {
+                    sprite.position.x = v;
+                });
+                pf.add(pos_obj, "y").onChange(v => {
+                    sprite.position.y = v;
+                });
+
+                // ORIGIN
+                const origin_obj = {
+                    x: sprite.origin.x,
+                    y: sprite.origin.y,
+                };
+                const of = lf.addFolder("origin");
+                of.add(origin_obj, "x", 0, 1).onChange(v => {
+                    sprite.origin.x = v;
+                });
+                of.add(origin_obj, "y", 0, 1).onChange(v => {
+                    sprite.origin.y = v;
+                });
+
+                // ROTATION
+                lf.add(sprite, "rotation");
+
+                // COLOR 
+                const temp = {
+                    tintColor: [sprite.tintColor.r * 255, sprite.tintColor.g * 255, sprite.tintColor.b * 255],
+                }
+                lf.addColor(temp, "tintColor").onChange(v => {
+                    sprite.tintColor[0] = v[0] / 255;
+                    sprite.tintColor[1] = v[1] / 255;
+                    sprite.tintColor[2] = v[2] / 255;
+                });
+
+                // SCALE
+                const scale_obj = {
+                    x: sprite.scale.x,
+                    y: sprite.scale.y,
+                };
+                const sf = lf.addFolder("scale");
+                sf.add(scale_obj, "x", -10, 10).onChange(v => {
+                    sprite.scale.x = v;
+                });
+                sf.add(scale_obj, "y", -10, 10).onChange(v => {
+                    sprite.scale.y = v;
+                });
+
+
+            }
+
+            async initialize () {
+                const gui = new dat.GUI();
+
+                this.sprite1.texture = await this.textureManager.loadTexture2D("fox.png");
+                this.sprite2.texture = await this.textureManager.loadTexture2D("husky.png");
+                this.sprite3.texture = await this.textureManager.loadTexture2D("cat.png");
+
+                this.createFolder(gui, this.sprite1, 1);
+                this.createFolder(gui, this.sprite2, 2);
+                this.createFolder(gui, this.sprite3, 3);
+
+
+            }
+
+            update (delta_time) { }
+
+            draw () {
+
+                this.spriteRenderer.begin();
+
+                this.spriteRenderer.drawOnPosition(
+                    this.sprite1.texture,
+                    this.sprite1.position,
+                    this.sprite1.tintColor,
+                    this.sprite1.rotation,
+                    this.sprite1.origin,
+                    this.sprite1.scale);
+
+                this.spriteRenderer.drawOnPosition(
+                    this.sprite2.texture,
+                    this.sprite2.position,
+                    this.sprite2.tintColor,
+                    this.sprite2.rotation,
+                    this.sprite2.origin,
+                    this.sprite2.scale);
+
+                this.spriteRenderer.drawOnPosition(
+                    this.sprite3.texture,
+                    this.sprite3.position,
+                    this.sprite3.tintColor,
+                    this.sprite3.rotation,
+                    this.sprite3.origin,
+                    this.sprite3.scale);
+
+                this.spriteRenderer.end();
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

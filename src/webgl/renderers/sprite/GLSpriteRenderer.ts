@@ -1,14 +1,60 @@
-import { LifecycleState } from "../framework/bones_common";
-import { FileLoader } from "../framework/bones_loaders";
-import { IRenderer } from "../framework/bones_renderer";
-import { Blend, BlendFactor, SpriteRenderer } from "../framework/SpriteRenderer";
-import { Texture2D } from "../framework/bones_texture";
-import { WindowManager } from "../framework/Window";
-import { Rect } from "../framework/math/Rect";
-import { Vec3 } from "../framework/math/vec/Vec3";
-import { Color, Vec2 } from "../framework/bones_math";
-import { GLSpriteShader } from "./shaders/GLSpriteShader";
-import { GLBlendModeUtil } from "./renderers/common/GLBlendModeUtil";
+import { LifecycleState } from "../../../framework/bones_common";
+import { FileLoader } from "../../../framework/bones_loaders";
+import { IRenderer } from "../../../framework/bones_renderer";
+import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
+import { Texture2D } from "../../../framework/bones_texture";
+import { WindowManager } from "../../../framework/Window";
+import { Rect } from "../../../framework/math/Rect";
+import { Vec3 } from "../../../framework/math/vec/Vec3";
+import { Color, Vec2 } from "../../../framework/bones_math";
+import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
+import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
+
+
+const VERTEX_SOURCE = `#version 300 es
+
+layout (location = 0) in vec3 a_vertex; 
+layout (location = 1) in vec2 a_texCoords;
+layout (location = 2) in vec4 a_tintColor;
+
+out vec2 v_texCoords;
+out vec4 v_tintColor;
+
+uniform mat4 u_projectionMatrix;
+uniform mat4 u_viewMatrix;
+
+void main()
+{
+    v_texCoords = a_texCoords;
+    v_tintColor = a_tintColor;
+    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(a_vertex, 1.0);
+}`;
+
+const FRAGMENT_SOURCE = `#version 300 es        
+precision highp float;
+     
+in vec2 v_texCoords;
+in vec4 v_tintColor;
+
+uniform sampler2D u_texture;
+     
+layout(location = 0)out vec4 outColor;
+layout(location = 1)out vec4 outBrightColor;
+     
+void main() 
+{
+    outColor = texture(u_texture,v_texCoords) * v_tintColor;
+    float amount = dot(vec3(0.2126, 0.7152, 0.0722), outColor.rgb);
+    if(amount > 0.7)
+    {
+        outBrightColor = outColor;
+    }
+    else
+    {
+        outBrightColor = vec4(0.0, 0.0,0.0,1.0);
+    }
+}`;
+
 
 
 // in order to optimize, sprite renderer will render with really large buffer that needs to be setup properly
@@ -33,6 +79,11 @@ export class GLSpriteRenderer extends SpriteRenderer
     private m_buffer: WebGLBuffer; // keep only to clean it up
     private m_iBuffer: WebGLBuffer // keep only to clean it up
 
+    // Shader stuff
+    private m_shader : GLShaderImplementation;
+    private m_viewMatrixLocation: WebGLUniformLocation;
+    private m_projectionMatrixLocation: WebGLUniformLocation;
+
     // The big buffer that holds all the data.
     private m_data: Float32Array;
     // index of current instance. Must be less then NUM_MAX_INSTANCES
@@ -42,6 +93,8 @@ export class GLSpriteRenderer extends SpriteRenderer
 
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
+
+    private o_defaultBlend = Blend.nonPremultiplied();
 
     // Optimization vector, when passing to buffer.
     private o_v0: Vec2 = Vec2.zero();
@@ -139,17 +192,27 @@ export class GLSpriteRenderer extends SpriteRenderer
         this.m_iBuffer = i_buffer;
     }
 
+    private async initializeShaders (): Promise<void>
+    {
+        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SOURCE, FRAGMENT_SOURCE);
+
+        await shader.initialize();
+        // await shader.initialize(vertex_source, fragment_source);
+
+        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
+        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
+
+        this.m_shader = shader;
+    }
+
     /**
      * @brief Initialize the sprite batch manager. Initialize must be called in order to properly initialize all the variables.
      */
     public async initialize (): Promise<void>
     {
         this.m_state = LifecycleState.Initialized;
-
-        this.m_shader = new GLSpriteShader(this.m_gl, this.m_fileLoader);
-        await this.m_shader.initialize();
-
         this.initializeWebGLVaoAndBuffers();
+        this.initializeShaders();
     }
 
     /**
@@ -203,7 +266,9 @@ export class GLSpriteRenderer extends SpriteRenderer
 
             // change texture.
             this.m_currentTexture = texture;
-            this.m_shader.useSpriteTexture(texture);
+            // set active texture unit and bind texture.
+            texture.active(0);
+            texture.bind();
         }
     }
 
@@ -212,20 +277,20 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public begin (mode?: Blend): void
     {
+        const gl = this.m_gl;
+
         // reset stuff.
         this.m_currentTexture = null;
         this.m_currentInstanceIndex = 0;
 
-        if (mode)
-        {
-            GLBlendModeUtil.setBlendMode(this.m_gl, mode);
-        }
-
+        GLBlendModeUtil.setBlendMode(gl, mode ?? this.o_defaultBlend);
+        
         // bind vao
-        this.m_gl.bindVertexArray(this.m_vao);
+        gl.bindVertexArray(this.m_vao);
 
         this.m_shader.use();
-        this.m_shader.useCamera(this.m_projectionMatrix, this.m_viewMatrix);
+        gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, this.m_projectionMatrix);
+        gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, this.m_viewMatrix);
     }
 
     /**
@@ -489,5 +554,6 @@ export class GLSpriteRenderer extends SpriteRenderer
     public end (): void 
     {
         this.glDraw();
+        this.m_gl.bindTexture(this.m_gl.TEXTURE_2D, null);
     }
 }

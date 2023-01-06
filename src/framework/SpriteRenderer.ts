@@ -123,11 +123,6 @@ export abstract class SpriteRenderer
     protected m_state: LifecycleState;
 
     /**
-     * The shader used for sprites.
-     */
-    protected m_shader: SpriteShader;
-
-    /**
      * @brief The projection matrix.
      */
     protected m_projectionMatrix: Mat4x4;

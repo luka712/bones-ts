@@ -1,21 +1,16 @@
-import { Color, Mat4x4 } from "../../../../framework/bones_math";
-import { GLShaderImplementation } from "../../../shaders/GLShaderImplementation";
-import { ShaderSource } from "../../common/ShaderSource";
-import { GL_LINE_RENDERER_STRIDE } from "../GLLineRenderer2D";
-import { GLLineJoin, LineDrawAdditionalContext } from "../../../../framework/renderers/LineRenderer2D";
+import { GLLineJoin } from "../..";
+import { Mat4x4, Color } from "../../framework/bones_math";
+import { LineDrawAdditionalContext } from "../../framework/renderers/LineRenderer2D";
+import { ShaderSource } from "../../webgl/renderers/common/ShaderSource";
+import { GL_LINE_RENDERER_STRIDE } from "../../webgl/renderers/lines/GLLineRenderer2D";
+import { GLShaderImplementation } from "../../webgl/shaders/GLShaderImplementation";
 
-// vec2 a, vec2 b, 
-// NOTE! See GLLineRenderer2D !!! 4 because segment is 2 points of 2 floats
-const STRIDE = 4 * Float32Array.BYTES_PER_ELEMENT;
 
-// see https://wwwtyro.net/2019/11/18/instanced-lines.html
 const VERTEX_SHADER_SOURCE = `#version 300 es
 precision highp float;
 
 layout (location = 0) in vec2 a_position;
-layout (location = 1) in vec2 a_pointA;
-layout (location = 2) in vec2 a_pointB;
-layout (location = 3) in vec2 a_pointC;
+layout (location = 1) in vec2 a_point;
 
 uniform mat4 u_projectionMatrix;
 uniform mat4 u_viewMatrix;
@@ -23,37 +18,17 @@ uniform float u_width;
 
 void main() 
 {
-    float width = u_width;
-
-    // gl_PointSize = 10.0;
-
-    vec2 tangent = normalize(normalize(a_pointC - a_pointB) + normalize(a_pointB - a_pointA));
-    vec2 miter = vec2(-tangent.y, tangent.x);
-
-    vec2 ab = a_pointB - a_pointA;
-    vec2 cb = a_pointB - a_pointC;
-    vec2 ab_norm = normalize(vec2(-ab.y, ab.x));
-    vec2 cb_norm = -normalize(vec2(-cb.y, cb.x));
-
-    float sigma = sign(dot(ab + cb, miter));
-
-    vec2 p0 = 0.5 * width * sigma * (sigma < 0.0 ? ab_norm : cb_norm);
-    vec2 p1 = 0.5 * width * sigma * (sigma < 0.0 ? cb_norm : ab_norm);
-
-    vec2 point = a_pointB + a_position.x * p0 + a_position.y * p1;
-
-    gl_Position = u_projectionMatrix* u_viewMatrix* vec4(point, 0.0, 1.0);
+    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(u_width * a_position + a_point, 0.0, 1.0);
 }`;
 
 /**
- * Class that will create bevel line join for {@link GLLineRenderer2D}
+ * Class that will create round line join for {@link GLLineRenderer2D}
  */
-export class GLLineJoinBevel implements GLLineJoin
+export class GLLineJoinDiamondShape implements GLLineJoin
 {
     // gl 
     private m_gl: WebGL2RenderingContext
     private m_vao: WebGLVertexArrayObject;
-    private m_count: number;
 
     // shader
     private m_shader: GLShaderImplementation;
@@ -63,6 +38,11 @@ export class GLLineJoinBevel implements GLLineJoin
     private m_colorLocation: WebGLUniformLocation;
 
     /**
+     * If defined this color is used, if not, color from line is used.
+     */
+    public color?: Color;
+
+    /**
      * Initialize the buffers.
      * @param points_buffer - the buffer, initialized by {@link GLLineRenderer2D} which holds points data.
      */
@@ -70,12 +50,14 @@ export class GLLineJoinBevel implements GLLineJoin
     {
         const gl = this.m_gl;
 
-        // set of coefficients for miter basis vectors
-        const ceoff_data = [
-            0, 0,
+        const geometry = new Float32Array([
+            0, -1,
             1, 0,
+            0, 1,
+            0, -1,
+            -1, 0,
             0, 1
-        ];
+        ])
 
         const vao = gl.createVertexArray();
         gl.bindVertexArray(vao);
@@ -83,36 +65,23 @@ export class GLLineJoinBevel implements GLLineJoin
         // generate the geometry buffer.
         const geo_buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, geo_buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ceoff_data), gl.STATIC_DRAW);
+        gl.bufferData(gl.ARRAY_BUFFER, geometry, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-        // no division, each instance has same position.
-        gl.vertexAttribDivisor(0, 0);
 
         // just bind the points buffer. We only care about point from that buffer.
         gl.bindBuffer(gl.ARRAY_BUFFER, points_buffer);
 
-        // point a
+        // point 
         gl.enableVertexAttribArray(1);
-        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, GL_LINE_RENDERER_STRIDE, 0);
+        // skip first 2, since that is a line end, not an intersection.
+        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, GL_LINE_RENDERER_STRIDE, 2 * Float32Array.BYTES_PER_ELEMENT);
         gl.vertexAttribDivisor(1, 1);
-
-        // point b
-        gl.enableVertexAttribArray(2);
-        gl.vertexAttribPointer(2, 2, gl.FLOAT, false, GL_LINE_RENDERER_STRIDE, 2 * Float32Array.BYTES_PER_ELEMENT);
-        gl.vertexAttribDivisor(2, 1);
-
-        // point c
-        gl.enableVertexAttribArray(3);
-        // note that offset is 6, because middle point is duplicated.
-        gl.vertexAttribPointer(3, 2, gl.FLOAT, false, GL_LINE_RENDERER_STRIDE, 6 * Float32Array.BYTES_PER_ELEMENT);
-        gl.vertexAttribDivisor(3, 1);
 
         // unbind
         gl.bindVertexArray(null);
 
         this.m_vao = vao;
-        this.m_count = 3; // number of vertices
     }
 
     /**
@@ -146,20 +115,28 @@ export class GLLineJoinBevel implements GLLineJoin
      */
     public draw (instance_index: number, projection_matrix: Mat4x4, view_matrix: Mat4x4, width: number, color: Color, ctx: LineDrawAdditionalContext): void 
     {
+        // if stroked draw, but line is not a stroke, don't do anything
+        if (ctx.hasStroke)
+        {
+            if (ctx.isStroke) return;
+         
+            // if stroke, use this for width.
+            width = ctx.strokeLineWidth;
+        }
+
         const gl = this.m_gl;
 
         gl.bindVertexArray(this.m_vao);
 
         this.m_shader.use();
 
-        // camera
+        // uniforms
         gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, projection_matrix);
         gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, view_matrix);
         gl.uniform1f(this.m_widthLocation, width);
-        gl.uniform4fv(this.m_colorLocation, color);
+        gl.uniform4fv(this.m_colorLocation, this.color ? this.color : color);
 
         // draw
-        gl.drawArraysInstanced(gl.TRIANGLES, 0, this.m_count, instance_index - 1);
-
+        gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, instance_index - 1);
     }
 }

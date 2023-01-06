@@ -1,17 +1,18 @@
+import { strict } from "assert";
 import { Color, Vec2 } from "../../../framework/bones_math";
 import { Framework } from "../../../framework/Framework";
-import { LineJoin, LineRenderer2D } from "../../../framework/renderers/LineRenderer2D";
+import { GLLineJoin, LineDrawAdditionalContext, LineCapsType, LineJoinType, LineRenderer2D, GLLineCaps } from "../../../framework/renderers/LineRenderer2D";
 import { Blend } from "../../../framework/SpriteRenderer";
 import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
 import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
 import { ShaderSource } from "../common/ShaderSource";
+import { GLLineCapsRound } from "./caps/GLLineCapsRound";
+import { GLLineCapsSquare } from "./caps/GLLineCapsSquare";
 import { GLLineJoinBevel } from "./joins/GLLineJoinBevel";
 import { GLLineJoinMiter } from "./joins/GLLineJoinMiter";
 import { GLLineJoinRound } from "./joins/GLLineJoinRound";
 
 // HOW IT WORKS
-
-
 // it renders a quad
 // quad triangles are renderer same for each instance
 // the rest of data, such as point a positon, point b position, weight and color is set per instance
@@ -23,8 +24,8 @@ layout (location = 0) in vec2 a_position;
 layout (location = 1) in vec2 a_pointA;
 layout (location = 2) in vec2 a_pointB; 
 
-uniform mat4 u_projection_matrix;
-uniform mat4 u_view_matrix;
+uniform mat4 u_projectionMatrix;
+uniform mat4 u_viewMatrix;
 uniform float u_width;
 
 void main()
@@ -37,7 +38,7 @@ void main()
     vec2 y_basis = normalize(vec2(-x_basis.y, x_basis.x));
 
     vec2 point = a_pointA + x_basis * a_position.x + y_basis * width * a_position.y; 
-    gl_Position = u_projection_matrix * u_view_matrix * vec4(point, 0.0, 1.0);
+    gl_Position = u_projectionMatrix* u_viewMatrix* vec4(point, 0.0, 1.0);
 }
 `;
 
@@ -49,6 +50,8 @@ export const GL_LINE_RENDERER_STRIDE = 4 * Float32Array.BYTES_PER_ELEMENT;
 
 export class GLLineRenderer2D extends LineRenderer2D
 {
+  
+
     // private 
     private m_gl: WebGL2RenderingContext;
 
@@ -65,16 +68,35 @@ export class GLLineRenderer2D extends LineRenderer2D
     private m_widthLocation: WebGLUniformLocation;
     private m_colorLocation: WebGLUniformLocation;
 
+    // ctx
+    private m_drawCtx = {
+        hasStroke: false,
+        isStroke: false,
+        strokeLineWidth: 0
+    }
+
     // default
     private o_color = Color.white();
+    private o_strokeColor = Color.black();
+    private o_singleLine = [
+        Vec2.zero(), Vec2.zero()
+    ];
 
     /**
      * Defines a join to be used between lines.
      */
     private m_join = {
-        [LineJoin.ROUND]: new GLLineJoinRound(),
-        [LineJoin.MITER]: new GLLineJoinMiter(),
-        [LineJoin.BEVEL]: new GLLineJoinBevel(),
+        [LineJoinType.ROUND]: new GLLineJoinRound(),
+        [LineJoinType.MITER]: new GLLineJoinMiter(),
+        [LineJoinType.BEVEL]: new GLLineJoinBevel(),
+    }
+
+    /**
+     * Defines how line endings look.
+     */
+    private m_caps = {
+        [LineCapsType.ROUND]: new GLLineCapsRound(),
+        [LineCapsType.SQUARE]: new GLLineCapsSquare()
     }
 
     constructor(framework: Framework)
@@ -155,20 +177,20 @@ export class GLLineRenderer2D extends LineRenderer2D
         {
             this.m_join[key].initialize(gl, points_buffer);
         }
+        for (let key in this.m_caps)
+        {
+            this.m_caps[key].initialize(gl);
+        }
     }
 
     private async initializeShaders (): Promise<void>
     {
-        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SHADER_SOURCE, ShaderSource.UNIFORM_COLOR_FRAGMENT_SOURCE);
-
-        //const vertex_source = await this.m_fileLoader.loadFile("assets/framework/shaders/shapes/lines2D_v_webgl.glsl")
-        //const fragment_source = await this.m_fileLoader.loadFile("assets/framework/shaders/shapes/lines2D_f_webgl.glsl");
+        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SHADER_SOURCE, ShaderSource.COMMON_COLOR_FRAGMENT_SHADER);
 
         await shader.initialize();
-        // await shader.initialize(vertex_source, fragment_source);
 
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_view_matrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projection_matrix", true);
+        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
+        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
         this.m_widthLocation = shader.getUniformLocation("u_width", true);
         this.m_colorLocation = shader.getUniformLocation("u_color", true);
 
@@ -181,11 +203,28 @@ export class GLLineRenderer2D extends LineRenderer2D
         await this.initializeShaders();
     }
 
+    /**
+     * @inheritdoc
+     */
+    public async useCustomLineJoin (join: GLLineJoin): Promise<void>
+    {
+        await join.initialize(this.m_gl, this.m_pointsBuffer);
+        this.m_join[LineJoinType.CUSTOM] = join;
+    }
+
+     /**
+     * @inheritdoc
+     */
+    public async useCustomLineCaps (caps: GLLineCaps): Promise<void>
+    {
+        await caps.initialize(this.m_gl);
+        this.m_caps[LineCapsType.CUSTOM] = caps;
+    }
 
     /**
     * Call gl to draw. 
     */
-    private glDraw (join: LineJoin, width: number, color: Color): void 
+    private glDraw (join: LineJoinType, width: number, color: Color): void 
     {
         const gl = this.m_gl;
 
@@ -206,7 +245,10 @@ export class GLLineRenderer2D extends LineRenderer2D
         // draw
         gl.drawArraysInstanced(gl.TRIANGLES, 0, 6, this.m_currentInstanceIndex);
 
-        this.m_join[join].draw(this.m_currentInstanceIndex, this.m_projectionMatrix, this.m_viewMatrix, width, color);
+        if (join != LineJoinType.NONE)
+        {
+            this.m_join[join].draw(this.m_currentInstanceIndex, this.m_projectionMatrix, this.m_viewMatrix, width, color, this.m_drawCtx);
+        }
 
         // reset index.
         this.m_currentInstanceIndex = 0;
@@ -229,18 +271,16 @@ export class GLLineRenderer2D extends LineRenderer2D
      * @param width - the width of a line. By default 10.
      * @param color - the color of a line, by default white.
      * @param join - the type of a line join.
+     * @param caps - the type of a line ending.
      */
-    private drawInner (points: Array<Vec2>, width = 10, color: Color = null, join: LineJoin): void 
+    private drawInner (points: Array<Vec2>, width = 10, color: Color = null, join: LineJoinType, caps: LineCapsType): void 
     {
         const gl = this.m_gl;
 
         // reset stuff.
         this.m_currentInstanceIndex = 0;
 
-        if (!color)
-        {
-            color = this.o_color;
-        }
+        color = color ?? this.o_color;
 
         // data
         const d = this.m_linesData;
@@ -269,20 +309,60 @@ export class GLLineRenderer2D extends LineRenderer2D
         }
 
         this.glDraw(join, width, color);
+
+        // Draw the line endings.
+        if (caps != LineCapsType.NONE)
+        {
+            this.m_caps[caps].draw(points, this.m_projectionMatrix, this.m_viewMatrix, width, color, this.m_drawCtx);
+        }
     }
 
     /**
      * @inheritdoc
      */
-    public draw (points: Array<Vec2>, width = 10, color: Color = null, join: LineJoin = LineJoin.ROUND): void 
+    public draw (points: Array<Vec2>, width = 10, color: Color = null, join: LineJoinType = LineJoinType.ROUND, caps: LineCapsType = LineCapsType.SQUARE): void 
     {
-        this.drawInner(points, width, color, join);
+        this.drawInner(points, width, color, join, caps);
     }
 
     /**
      * @inheritdoc
      */
-    public end (): void 
+    public drawWithStroke (points: Array<Vec2>,
+        width: number = 10, stroke_width: number = 5,
+        color: Color = null, stroke_color: Color = null,
+        join: LineJoinType = LineJoinType.ROUND,
+        caps: LineCapsType = LineCapsType.SQUARE): void 
+    {
+        stroke_color = stroke_color ?? this.o_strokeColor;
+
+        this.m_drawCtx.hasStroke = true;
+        this.m_drawCtx.isStroke = true;
+        this.m_drawCtx.strokeLineWidth = width + stroke_width;
+
+        // first draw stroke
+        this.drawInner(points, width + stroke_width, stroke_color, join, caps);
+
+        // the inner line
+        this.m_drawCtx.isStroke = false;
+        this.drawInner(points, width, color, join, caps);
+
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public drawSingle (start: Vec2, end: Vec2, width = 10, color: Color = null, caps: LineCapsType = LineCapsType.SQUARE): void
+    {
+        this.o_singleLine[0] = start;
+        this.o_singleLine[1] = end;
+        this.drawInner(this.o_singleLine, width, color, LineJoinType.NONE, caps);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public end (): void
     {
     }
 }

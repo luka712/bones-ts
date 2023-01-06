@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
-    <script src="../../dist/index.js"></script>
+    <script src="../../../../dist/index.js"></script>
 </head>
 
 <body>
@@ -19,31 +19,40 @@
 
         class Game extends BonesFramework.Framework {
 
+            linesPlugin = new BonesFramework.BonesLinesPlugin()
+            diamondShape = null;
+            diamondShapeEnds = null;
+
+
             line1 = {
                 width: 10,
                 strokeWidth: 5,
                 color: BonesFramework.Color.red(),
-                strokeColor:  BonesFramework.Color.black(),
-                join: BonesFramework.LineJoin.ROUND,
-                caps: BonesFramework.LineCaps.ROUND 
+                strokeColor: BonesFramework.Color.black(),
+                join: BonesFramework.LineJoin.CUSTOM,
+                caps: BonesFramework.LineCaps.CUSTOM,
+                diamondColor: BonesFramework.Color.celeste()
             };
 
             line2 = {
                 width: 10,
                 strokeWidth: 5,
                 color: BonesFramework.Color.green(),
-                strokeColor:  BonesFramework.Color.black(),
-                join: BonesFramework.LineJoin.MITER,
-                caps: BonesFramework.LineCaps.SQUARE 
+                strokeColor: BonesFramework.Color.black(),
+                join: BonesFramework.LineJoin.CUSTOM,
+                caps: BonesFramework.LineCaps.CUSTOM,
+                diamondColor: BonesFramework.Color.darkSlateGray()
+
             }
 
             line3 = {
                 width: 10,
                 strokeWidth: 5,
                 color: BonesFramework.Color.blue(),
-                strokeColor:  BonesFramework.Color.black(),
-                join: BonesFramework.LineJoin.BEVEL,
-                caps: BonesFramework.LineCaps.NONE 
+                strokeColor: BonesFramework.Color.black(),
+                join: BonesFramework.LineJoin.CUSTOM,
+                caps: BonesFramework.LineCaps.CUSTOM,
+                diamondColor: BonesFramework.Color.grayishBlue()
             }
 
             createFolder (gui, line, index) {
@@ -51,11 +60,12 @@
 
                 lf.add(line, "width");
                 lf.add(line, "strokeWidth");
-                
+
                 // Color
                 const temp = {
                     color: [line.color.r * 255, line.color.g * 255, line.color.b * 255],
                     strokeColor: [line.strokeColor.r * 255, line.strokeColor.g * 255, line.strokeColor.b * 255],
+                    diamondColor: [line.diamondColor.r * 255, line.diamondColor.g * 255, line.diamondColor.b * 255],
                 }
                 lf.addColor(temp, "color").onChange(v => {
                     line.color[0] = v[0] / 255;
@@ -67,21 +77,39 @@
                     line.strokeColor[1] = v[1] / 255;
                     line.strokeColor[2] = v[2] / 255;
                 });
+                lf.addColor(temp, "diamondColor").onChange(v => {
+                    line.diamondColor[0] = v[0] / 255;
+                    line.diamondColor[1] = v[1] / 255;
+                    line.diamondColor[2] = v[2] / 255;
+                });
 
                 lf.add(line, "join", {
                     'round': BonesFramework.LineJoin.ROUND,
                     'miter': BonesFramework.LineJoin.MITER,
-                    'bevel': BonesFramework.LineJoin.BEVEL
+                    'bevel': BonesFramework.LineJoin.BEVEL,
+                    'custom': BonesFramework.LineJoin.CUSTOM,
                 });
 
-                lf.add(line , "caps", {
+                lf.add(line, "caps", {
                     'round': BonesFramework.LineCaps.ROUND,
                     'square': BonesFramework.LineCaps.SQUARE,
-                    'none': BonesFramework.LineCaps.NONE
+                    'none': BonesFramework.LineCaps.NONE,
+                    'custom': BonesFramework.LineCaps.CUSTOM
                 });
             }
 
-            initialize () {
+            setup () {
+                this.addPlugin("lines", this.linesPlugin)
+            }
+
+            async initialize () {
+
+                this.diamondShape = this.linesPlugin.createWebGLDiamonShapeJoin()
+                await this.lineRenderer2D.useCustomLineJoin(this.diamondShape)
+
+                this.diamondShapeEnds = this.linesPlugin.createWebGLDiamonShapeCaps();
+                await this.lineRenderer2D.useCustomLineCaps(this.diamondShapeEnds);
+
                 const gui = new dat.GUI();
                 this.createFolder(gui, this.line1, 1);
                 this.createFolder(gui, this.line2, 2);
@@ -92,6 +120,9 @@
 
             draw () {
                 this.lineRenderer2D.begin();
+
+                this.diamondShape.color = this.line1.diamondColor;
+                this.diamondShapeEnds.color = this.line1.diamondColor;
                 this.lineRenderer2D.drawWithStroke(
                     [
                         new BonesFramework.Vec2(100, 100),
@@ -109,6 +140,8 @@
                     this.line1.caps,
                 );
 
+                this.diamondShape.color = this.line2.diamondColor;
+                this.diamondShapeEnds.color = this.line2.diamondColor;
                 this.lineRenderer2D.drawWithStroke(
                     [
                         new BonesFramework.Vec2(100, 200),
@@ -126,6 +159,8 @@
                     this.line2.caps,
                 );
 
+                this.diamondShape.color = this.line3.diamondColor;
+                this.diamondShapeEnds.color = this.line3.diamondColor;
                 this.lineRenderer2D.drawWithStroke(
                     [
                         new BonesFramework.Vec2(100, 300),

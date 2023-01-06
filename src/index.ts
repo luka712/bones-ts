@@ -14,7 +14,8 @@ import { Vec2 } from "./framework/math/vec/Vec2";
 import { Time, TimeManager } from "./framework/bones_time";
 import { PostProcessPipelineFactory } from "./framework/post_process/pipelines/PostProcessPipelineFactory";
 import { PostProcessPipeline } from "./framework/post_process/pipelines/PostProcessPipeline";
-import { LineJoin } from "./framework/renderers/LineRenderer2D";
+import { GLLineJoin, GLLineCaps, LineCapsType, LineJoinType, LineRenderer2D } from "./framework/renderers/LineRenderer2D";
+import { BonesLinesPlugin } from "./plugin_lines/BonesLinesPlugin";
 
 export 
 {
@@ -59,9 +60,16 @@ export
     PostProcessPipeline,
 
     // line rendering
-    LineJoin,
+    LineRenderer2D,
+    LineJoinType as LineJoin,
+    LineCapsType as LineCaps,
+    GLLineJoin,
+    GLLineCaps,
 
     // test scene/games.
     // TestGame, 
     // WebGPUTestGame,
+
+    // PLUGINS - todo, plugins should not be part of an engine, refactor later.
+    BonesLinesPlugin,
 }

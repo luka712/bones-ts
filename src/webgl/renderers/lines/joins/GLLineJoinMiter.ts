@@ -2,7 +2,7 @@ import { Color, Mat4x4 } from "../../../../framework/bones_math";
 import { GLShaderImplementation } from "../../../shaders/GLShaderImplementation";
 import { ShaderSource } from "../../common/ShaderSource";
 import { GL_LINE_RENDERER_STRIDE } from "../GLLineRenderer2D";
-import { GLLineJoin } from "./GLLineJoin";
+import { GLLineJoin, LineDrawAdditionalContext } from "../../../../framework/renderers/LineRenderer2D";
 
 
 // see https://wwwtyro.net/2019/11/18/instanced-lines.html
@@ -10,12 +10,12 @@ const VERTEX_SHADER_SOURCE = `#version 300 es
 precision highp float;
 
 layout (location = 0) in vec3 a_position;
-layout (location = 1) in vec2 a_point;
-layout (location = 2) in vec2 b_point;
-layout (location = 3) in vec2 c_point;
+layout (location = 1) in vec2 a_pointA;
+layout (location = 2) in vec2 a_pointB;
+layout (location = 3) in vec2 a_pointC;
 
-uniform mat4 u_projection_matrix;
-uniform mat4 u_view_matrix;
+uniform mat4 u_projectionMatrix;
+uniform mat4 u_viewMatrix;
 uniform float u_width;
 
 void main() 
@@ -24,11 +24,11 @@ void main()
 
     // gl_PointSize = 10.0;
 
-    vec2 tangent = normalize(normalize(c_point - b_point) + normalize(b_point - a_point));
+    vec2 tangent = normalize(normalize(a_pointC - a_pointB) + normalize(a_pointB - a_pointA));
     vec2 miter = vec2(-tangent.y, tangent.x);
 
-    vec2 ab = b_point - a_point;
-    vec2 cb = b_point - c_point;
+    vec2 ab = a_pointB - a_pointA;
+    vec2 cb = a_pointB - a_pointC;
     vec2 ab_norm = normalize(vec2(-ab.y, ab.x));
     vec2 cb_norm = -normalize(vec2(-cb.y, cb.x));
 
@@ -38,9 +38,9 @@ void main()
     vec2 p1 = 0.5 * miter * sigma * width / dot(miter, ab_norm);
     vec2 p2 = 0.5 * width * sigma * (sigma < 0.0 ? cb_norm : ab_norm);
 
-    vec2 point = b_point + a_position.x * p0 + a_position.y * p1 + a_position.z * p2;
+    vec2 point = a_pointB + a_position.x * p0 + a_position.y * p1 + a_position.z * p2;
 
-    gl_Position = u_projection_matrix * u_view_matrix * vec4(point, 0.0, 1.0);
+    gl_Position = u_projectionMatrix* u_viewMatrix* vec4(point, 0.0, 1.0);
 }`;
 
 /**
@@ -121,11 +121,11 @@ export class GLLineJoinMiter implements GLLineJoin
      */
     private async initializeShaders (): Promise<void>
     {
-        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SHADER_SOURCE, ShaderSource.UNIFORM_COLOR_FRAGMENT_SOURCE);
+        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SHADER_SOURCE, ShaderSource.COMMON_COLOR_FRAGMENT_SHADER);
         await shader.initialize();
 
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_view_matrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projection_matrix", true);
+        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
+        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
         this.m_widthLocation = shader.getUniformLocation("u_width", true);
         this.m_colorLocation = shader.getUniformLocation("u_color", true);
 
@@ -145,7 +145,7 @@ export class GLLineJoinMiter implements GLLineJoin
     /**
      * @inheritdoc
      */
-    public draw (instance_index: number, projection_matrix: Mat4x4, view_matrix: Mat4x4, width: number, color: Color): void 
+    public draw (instance_index: number, projection_matrix: Mat4x4, view_matrix: Mat4x4, width: number, color: Color, ctx: LineDrawAdditionalContext): void 
     {
         const gl = this.m_gl;
 

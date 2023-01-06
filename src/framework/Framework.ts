@@ -1,7 +1,7 @@
 import { GLEffectFactory } from "../webgl/GLPostProcessManager";
 import { WebGL2Renderer } from "../webgl/WebGL2Renderer";
 import { GLTextureManager } from "../webgl/GLTexture";
-import { GLTextRenderer } from "../webgl/GLTextRenderer";
+import { GLTextRenderer } from "../webgl/GLTextRenderer__Obsolete_";
 import { Config } from "./bones_config";
 import { InputManager } from "./input/InputManager";
 import { FileLoader, ImageLoader } from "./bones_loaders";
@@ -25,8 +25,9 @@ import { WebGPUTextRenderer } from "../webgpu/WebGPUTextRenderer";
 import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
 import { GLPipelineFactory } from "../webgl/post_process/pipelines/GLPipelineFactory";
 import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager";
-import { GLSpriteRenderer } from "../webgl/GLSpriteRenderer";
+import { GLSpriteRenderer } from "../webgl/renderers/sprite/GLSpriteRenderer";
 import { GLLineRenderer2D } from "../webgl/renderers/lines/GLLineRenderer2D";
+import { LineRenderer2D } from "./renderers/LineRenderer2D";
 
 
 export interface GameJoltCredentials 
@@ -123,9 +124,8 @@ abstract class Framework
 
     /**
      * The line renderer.
-     * @todo experimental.
      */
-    public readonly lineRenderer2D: GLLineRenderer2D;
+    public readonly lineRenderer2D: LineRenderer2D;
 
     /**
      * The text render manager.
@@ -220,7 +220,7 @@ abstract class Framework
             this.textureManager = new GLTextureManager(gl, this.imageLoader);
             this.spriteRenderer = new GLSpriteRenderer(gl, this.window, this.renderer, this.fileLoader);
             this.renderer.spriteRenderer = this.spriteRenderer;
-            this.textRenderManager = new GLTextRenderer(gl, this.window, this.renderer, this.fileLoader);
+            // this.textRenderManager = new GLTextRenderer(gl, this.window, this.renderer, this.fileLoader);
             this.postProcessManager = new GLPostProcessManager(this.window, this.renderer, gl);
             this.effects = new GLEffectFactory(this.renderer, this.timeManager, this.fileLoader, this.textureManager, gl);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
@@ -353,13 +353,12 @@ abstract class Framework
 
         await this.renderer.initialize();
         this.textureManager?.initialize();
-       // await this.spriteRenderer?.initialize();
-       // await this.textRenderManager?.initialize();
+        await this.spriteRenderer?.initialize();
+        // await this.textRenderManager?.initialize();
         await this.config.initialize();
         this.fontManager?.initialize();
-       //  await this.postProcessManager?.initialize();
-
-       await this.lineRenderer2D.initialize();
+        await this.postProcessManager?.initialize();
+        await this.lineRenderer2D.initialize();
 
         // this.inputManager.initialize();
 
@@ -407,7 +406,7 @@ abstract class Framework
         // Destroy all the manager/variables that implement destroy.
         this.renderer.destroy();
         this.spriteRenderer.destroy();
-        this.textRenderManager.destroy();
+       //  this.textRenderManager.destroy();
     }
 
     //#region Abstract Method. Must be initialized when overriden.
