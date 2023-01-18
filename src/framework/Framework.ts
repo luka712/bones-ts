@@ -28,6 +28,9 @@ import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager
 import { GLSpriteRenderer } from "../webgl/renderers/sprite/GLSpriteRenderer";
 import { GLLineRenderer2D } from "../webgl/renderers/lines/GLLineRenderer2D";
 import { LineRenderer2D } from "./renderers/LineRenderer2D";
+import { GLRectangleRenderer } from "../webgl/renderers/rectangle/GLRectangleRenderer";
+import { RectangleRenderer } from "./renderers/RectangleRenderer";
+import { GLEllipseRenderer } from "../webgl/renderers/ellipse/GLEllipseRenderer";
 
 
 export interface GameJoltCredentials 
@@ -126,6 +129,16 @@ abstract class Framework
      * The line renderer.
      */
     public readonly lineRenderer2D: LineRenderer2D;
+
+    /**
+     * The rectangle renderer.
+     */
+    public readonly rectangleRenderer: RectangleRenderer;
+
+    /**
+     * The ellipse/circle renderer.
+     */
+    public readonly ellipseRenderer: GLEllipseRenderer;
 
     /**
      * The text render manager.
@@ -229,6 +242,8 @@ abstract class Framework
 
             // various renderers. Use factory to create one instead.
             this.lineRenderer2D = new GLLineRenderer2D(this);
+            this.rectangleRenderer = new GLRectangleRenderer(this);
+            this.ellipseRenderer = new GLEllipseRenderer(this);
         }
     }
 
@@ -359,6 +374,8 @@ abstract class Framework
         this.fontManager?.initialize();
         await this.postProcessManager?.initialize();
         await this.lineRenderer2D.initialize();
+        await this.rectangleRenderer.initialize();
+        await this.ellipseRenderer.initialize();
 
         // this.inputManager.initialize();
 

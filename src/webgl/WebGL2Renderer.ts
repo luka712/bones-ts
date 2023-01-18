@@ -1,5 +1,6 @@
 import { Color, Vec2 } from "../framework/bones_math";
 import { IRenderer } from "../framework/bones_renderer";
+import { Camera2D } from "../framework/renderers/common/Camera2D";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
 import { WindowManager } from "../framework/Window";
 
@@ -57,7 +58,9 @@ export class WebGL2Renderer implements IRenderer
         {
             this.m_bufferSize[0] = event.width;
             this.m_bufferSize[1] = event.height;
+            Camera2D.resize(event.width, event.height);
         });
+        Camera2D.resize(m_window.width, m_window.height);
     }
 
     public async initialize(): Promise<void>

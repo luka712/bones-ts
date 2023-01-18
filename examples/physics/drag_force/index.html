@@ -1,0 +1,126 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../../dist/index.js"></script>
+</head>
+
+<body>
+    <p>Example demonstrates drag force. Gravity is applied to ball objects, once the ball hits blue area, drag force is applied.</p>
+    <p>Click to restart simulation.</p>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        const ballSize = {
+            minSize: 5,
+            maxSize: 35 
+        };
+
+        const physicsValues = {
+            dragForceCoeff: 0.04,
+            gravityStrength: 9.8
+        }
+
+        class Particle {
+            constructor(renderer) {
+                this.renderer = renderer;
+                this.physics = new BonesFramework.Physics2D();
+                this.physics.position = new BonesFramework.Vec2(Math.random() * 800, 10);
+                this.physics.mass = Math.random() * (ballSize.maxSize - ballSize.minSize) + ballSize.minSize;
+                this.physics.bounds = new BonesFramework.Rect(0,0, 800, 600 - this.physics.mass / 2);
+            }
+
+            update (dt) {
+                this.physics.update(dt);
+            }
+
+            draw () {
+                const pos = this.physics.position;
+                const r = this.physics.mass;
+                this.renderer.draw(pos.x, pos.y, r, r)
+            }
+
+        }
+
+        const MAX_PARTICLES = 10;
+        const PIXELS_PER_METER = 10;
+
+
+        class Game extends BonesFramework.Framework {
+
+            particles = []
+            fluidColor = BonesFramework.Color.blue();
+            gravity = new BonesFramework.Vec2(0, 9.8 * PIXELS_PER_METER);
+
+            createFolder (gui) {
+                gui.add(physicsValues, "dragForceCoeff", 0, 0.3, 0.01);
+                gui.add(physicsValues, "gravityStrength");
+            }
+
+            initialize () {
+                const gui = new dat.GUI();
+                this.createFolder(gui);
+
+                for (let i = 0; i < MAX_PARTICLES; i++) {
+                    this.particles.push(new Particle(
+                        this.ellipseRenderer
+                    ));
+                }
+
+                window.onmousedown = () => {
+                    for (const p of this.particles) {
+                        p.physics.velocity.setLengthToZero();
+                        p.physics.position = new BonesFramework.Vec2(Math.random() * 800, 10);
+                    }
+                }
+            }
+
+            update (dt) {
+
+                const dt_ms = dt / 1000;
+
+                for (const p of this.particles) {
+                    
+                    this.gravity.y = physicsValues.gravityStrength * PIXELS_PER_METER;
+                    p.physics.applyWeightForce(this.gravity);
+
+                    // if in liquid
+                    if(p.physics.position.y >= 300){
+                        p.physics.applyDragForce(physicsValues.dragForceCoeff);
+                    }
+                    p.update(dt_ms)
+                }
+            }
+
+            draw () {
+
+                this.rectangleRenderer.begin();
+                this.rectangleRenderer.draw(0, 300, 800, 300, this.fluidColor);
+                this.rectangleRenderer.end();
+
+                this.ellipseRenderer.begin();
+
+                for (const p of this.particles) {
+                    p.draw()
+                }
+                this.ellipseRenderer.end();
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

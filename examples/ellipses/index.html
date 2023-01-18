@@ -1,0 +1,137 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            ellipse1 = {
+                x: 100,
+                y: 100,
+                width: 20,
+                height: 16,
+                color: BonesFramework.Color.green(),
+                stroke_width: 2,
+                stroke_color: BonesFramework.Color.black(),
+            }
+
+            ellipse2 = {
+                x: 250,
+                y: 100,
+                width: 20,
+                height: 20,
+                color: BonesFramework.Color.blue(),
+                stroke_width: 2,
+                stroke_color: BonesFramework.Color.black(),
+            }
+
+            ellipse3 = {
+                x: 400,
+                y: 100,
+                width: 16,
+                height: 20,
+                color: BonesFramework.Color.red(),
+                stroke_width: 2,
+                stroke_color: BonesFramework.Color.black(),
+            }
+
+
+
+            createFolder (gui, ellipse, index) {
+                const lf = gui.addFolder(`ellipse ${index}`);
+
+                lf.add(ellipse, "x");
+                lf.add(ellipse, "y");
+                lf.add(ellipse, "width");
+                lf.add(ellipse, "height");
+
+
+                // Color
+                const temp = {
+                    color: [ellipse.color.r * 255, ellipse.color.g * 255, ellipse.color.b * 255],
+                    stroke_color: [ellipse.stroke_color.r * 255, ellipse.stroke_color.g * 255, ellipse.stroke_color.b * 255],
+                }
+                lf.addColor(temp, "color").onChange(v => {
+                    ellipse.color[0] = v[0] / 255;
+                    ellipse.color[1] = v[1] / 255;
+                    ellipse.color[2] = v[2] / 255;
+                });
+
+                const sf = lf.addFolder("stroke");
+                sf.add(ellipse, "stroke_width");
+                sf.addColor(temp, "stroke_color").onChange(v => {
+                    ellipse.stroke_color[0] = v[0] / 255;
+                    ellipse.stroke_color[1] = v[1] / 255;
+                    ellipse.stroke_color[2] = v[2] / 255;
+                });
+
+
+            }
+
+            initialize () {
+                const gui = new dat.GUI();
+                this.createFolder(gui, this.ellipse1, 1);
+                this.createFolder(gui, this.ellipse2, 2);
+                this.createFolder(gui, this.ellipse3, 3);
+            }
+
+            update (delta_time) { }
+
+            draw () {
+                this.ellipseRenderer.begin();
+
+                this.ellipseRenderer.drawWithStroke(
+                    this.ellipse1.x,
+                    this.ellipse1.y,
+                    this.ellipse1.width,
+                    this.ellipse1.height,
+                    this.ellipse1.color,
+                    this.ellipse1.stroke_width,
+                    this.ellipse1.stroke_color
+                    );
+
+                    this.ellipseRenderer.drawWithStroke(
+                    this.ellipse2.x,
+                    this.ellipse2.y,
+                    this.ellipse2.width,
+                    this.ellipse2.height,
+                    this.ellipse2.color,
+                    this.ellipse2.stroke_width,
+                    this.ellipse2.stroke_color);
+
+                    this.ellipseRenderer.drawWithStroke(
+                    this.ellipse3.x,
+                    this.ellipse3.y,
+                    this.ellipse3.width,
+                    this.ellipse3.height,
+                    this.ellipse3.color,
+                    this.ellipse3.stroke_width,
+                    this.ellipse3.stroke_color);
+
+                this.ellipseRenderer.end();
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

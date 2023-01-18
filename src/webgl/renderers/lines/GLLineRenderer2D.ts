@@ -329,7 +329,7 @@ export class GLLineRenderer2D extends LineRenderer2D
      * @inheritdoc
      */
     public drawWithStroke (points: Array<Vec2>,
-        width: number = 10, stroke_width: number = 5,
+        width: number = 10, stroke_width: number = 2,
         color: Color = null, stroke_color: Color = null,
         join: LineJoinType = LineJoinType.ROUND,
         caps: LineCapsType = LineCapsType.SQUARE): void 
@@ -341,11 +341,11 @@ export class GLLineRenderer2D extends LineRenderer2D
         this.m_drawCtx.strokeLineWidth = width + stroke_width;
 
         // first draw stroke
-        this.drawInner(points, width + stroke_width, stroke_color, join, caps);
+        this.drawInner(points, width, stroke_color, join, caps);
 
         // the inner line
         this.m_drawCtx.isStroke = false;
-        this.drawInner(points, width, color, join, caps);
+        this.drawInner(points, width - stroke_width, color, join, caps);
 
     }
 

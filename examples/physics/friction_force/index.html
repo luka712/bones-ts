@@ -1,0 +1,157 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../../dist/index.js"></script>
+</head>
+
+<body>
+    <p>Example demonstrates friction force. Click on ball to apply force. Modify friction force via UI widget.</p>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        const physicsValues = {
+            frictionForceCoeff: 1.05,
+        }
+
+        class Particle {
+
+            color = BonesFramework.Color.white();
+
+            constructor(renderer) {
+                this.renderer = renderer;
+
+                // Physics
+                this.physics = new BonesFramework.Physics2D();
+                this.physics.boundsBehaviour = BonesFramework.PhysicsBoundsBehavior.ChangeDirection;
+                this.physics.position = new BonesFramework.Vec2(Math.random() * 800, Math.random() * 600);
+                this.physics.mass = 20;
+                const halfSize = this.physics.mass / 2;
+                this.physics.bounds = new BonesFramework.Rect(halfSize, halfSize, 800 - halfSize, 600 - halfSize);
+
+                // collider
+                this.collider = new BonesFramework.CircleCollider2D();
+                this.collider.position = this.physics.position;
+                this.collider.radius = halfSize;
+            }
+
+            update (dt) {
+                this.physics.update(dt);
+            }
+
+            draw () {
+                const pos = this.physics.position;
+                const r = this.physics.mass;
+                this.renderer.draw(pos.x, pos.y, r, r, this.color);
+            }
+
+        }
+
+        const PIXELS_PER_METER = 10;
+
+
+        class Game extends BonesFramework.Framework {
+
+            particleSelected = false;
+            particle = null;
+
+            createFolder (gui) {
+                gui.add(physicsValues, "frictionForceCoeff", 0, 10, 0.1);
+            }
+
+            initialize () {
+                const gui = new dat.GUI();
+                this.createFolder(gui);
+
+                this.particle = new Particle(this.ellipseRenderer);
+
+                window.onmousedown = (event) => {
+                    const ms = this.input.getMouseState();
+                    const p = this.particle;
+
+
+                    if (!this.particleSelected) {
+
+                        // if not selected and colliding, select
+                        if (p.collider.collidesPoint(ms.position)) {
+                            this.particleSelected = true;
+                        }
+                    }
+                    else {
+                        // if already selected, and down again, change color to white
+                        this.particleSelected = false;
+                        p.color = BonesFramework.Color.white();
+
+                        const f = BonesFramework.Vec2.subtract(p.physics.position, ms.position);
+                        f.multiplyWithScalar(1000);
+                        p.physics.applyForce(f);
+                    }
+                }
+
+                window.onmousemove = (event) => {
+                    const ms = this.input.getMouseState();
+                    const p = this.particle;
+
+                    if (!this.particleSelected) {
+                        if (p.collider.collidesPoint(ms.position)) {
+                            p.color = BonesFramework.Color.yellow();
+                        }
+                        else {
+                            p.color = BonesFramework.Color.white();
+                        }
+                    }
+                }
+            }
+
+            update (dt) {
+
+                const dt_ms = dt / 1000;
+
+                const p = this.particle;
+                p.physics.applyFrictionForce(physicsValues.frictionForceCoeff * 1000);
+
+                p.update(dt_ms)
+
+            }
+
+            draw () {
+
+                this.ellipseRenderer.begin();
+
+                const p = this.particle;
+                p.draw();
+
+                this.ellipseRenderer.end();
+
+                if(this.particleSelected)
+                {
+                    const ms = this.input.getMouseState();
+
+                    this.lineRenderer2D.begin();
+                    this.lineRenderer2D.draw(
+                    [
+                       p.physics.position, 
+                       ms.position,
+                    ],2);
+                    this.lineRenderer2D.end();
+                }
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

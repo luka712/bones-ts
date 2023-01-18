@@ -356,8 +356,8 @@ export class Vec2 extends BaseMatrix<Vec2>
 
         if (l != 0)
         {
-            out[0] /= l;
-            out[1] /= l;
+            out[0] = v[0] / l;
+            out[1] = v[1] / l;
         }
 
         return out;
