@@ -6,6 +6,7 @@
 // position = vel * dt
 
 import { Vec2, Rect } from "../bones_math";
+import { MathUtil } from '../math/MathUtil';
 
 export enum PhysicsBoundsBehavior
 {
@@ -231,6 +232,56 @@ export class Physics2D
            this.o_vec.multiplyWithScalar(-coefficient);
 
            this.applyForce(this.o_vec);
+    }
+
+    /**
+     * Applies the gravitational force towards other object.
+     * @param other - the other physics object.
+     * @param gravityConstant - the gravity constants. Use it to control gravity strength between two objects.
+     * @param minDistance - clamp lower distance bound between objects.
+     * @param maxDistance - clamp upper distance bound between objects.
+     */
+    public applyGravitationalForce(other: Physics2D, gravityConstant: number, minDistance: number , maxDistance: number) : void 
+    {
+        // calculate the distance between two objects
+        Vec2.subtract(other.position, this.position, this.o_vec);
+        let distanceSq = this.o_vec.magnitudeSq();
+
+        // clamp the value of a distance, between min and max ( to allow for some interesting visual effects )
+        distanceSq = MathUtil.clamp(distanceSq, minDistance, maxDistance);
+
+        // calculate the direction of attraction force.
+        this.o_vec.normalize(); // direction can be just o_vec, since previous value is not needed anymore.
+
+        // calcualte the strength of attraction force
+        const attrMag = gravityConstant * (this.mass * other.mass) / distanceSq;
+
+        // final force
+        this.o_vec.multiplyWithScalar(attrMag);
+        this.applyForce(this.o_vec);
+    }
+
+    /**
+     * Applies the spring force to an object.
+     * @param anchor - the anchor. Object to which spring would be attached to.
+     * @param restLength - the length of a rest position. Where would spring be at equlibrium.
+     * @param coeff - the spring coeff. How stiff spring is.
+     */
+    public applySpringForce(anchor: Vec2, restLength: number, coeff: number) : void 
+    {
+        // distance between anchor and self position
+        Vec2.subtract(this.position, anchor, this.o_vec);
+
+        // spring displacement considering the rest length 
+        const displacement = this.o_vec.magnitude() - restLength;
+
+        // calculate the direction and the magnitude of the spring force.
+        this.o_vec.normalize(); // can be used now for direction
+        const springMag = -coeff * displacement;
+
+        // final spring force
+        this.o_vec.multiplyWithScalar(springMag);
+        this.applyForce(this.o_vec);
     }
 }
 

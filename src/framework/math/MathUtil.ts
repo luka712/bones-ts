@@ -1,3 +1,4 @@
+import { stat } from 'fs';
 
 /**
  * The math utility functions.
@@ -65,5 +66,18 @@ export class MathUtil
     public static lerp(start: number, end: number, amount: number) : number 
     {
         return start + (end - start) * amount;
+    }
+
+    /**
+     * Clamps value between two values.
+     * @param value - the value.
+     * @param min - the minimum value.
+     * @param max - the maximum value.
+     * @returns - value, min if value is below min, max if value is above max.
+     */
+    public static clamp(value: number, min: number, max: number) : number 
+    {
+        value = Math.max(value, min);
+        return Math.min(value, max);
     }
 }

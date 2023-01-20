@@ -1,0 +1,134 @@
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+	<script src="../../../dist/index.js"></script>
+</head>
+
+<body>
+	<p>Example demonstrates gravitational force between two objects. Notice how object with larger mass exerts stronger gravitational pull on smaller object.</p>
+	<canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+	window.onload=() => {
+
+		const physicsValues={
+			gravityStrength: 30,
+			minDistance: 1,
+			maxDistance: 50
+		}
+
+		class Particle {
+			constructor(renderer) {
+				this.renderer=renderer;
+				this.physics=new BonesFramework.Physics2D();
+				this.physics.position=new BonesFramework.Vec2(Math.random()*800,Math.random()*600);
+				this.color=BonesFramework.Color.white();
+			}
+
+			update (dt) {
+				this.physics.update(dt);
+			}
+
+			draw () {
+				const pos=this.physics.position;
+				const r=this.physics.mass;
+				this.renderer.draw(pos.x,pos.y,r,r,this.color)
+			}
+
+		}
+
+		const MAX_PARTICLES=10;
+		const PIXELS_PER_METER=10;
+
+
+		class Game extends BonesFramework.Framework {
+
+			p1=null;
+			p2=null;
+
+
+			createParticleFolder (gui,p,i) {
+
+				const f=gui.addFolder(`particle ${i}`);
+
+				f.add(p.physics,"mass").onChange(v => {
+
+					p.physics.mass=v;
+					p.physics.bounds=new BonesFramework.Rect(p.physics.mass,p.physics.mass,800-p.physics.mass,600-p.physics.mass);
+				});
+
+
+				// Color
+				const temp={
+					color: [p.color.r*255,p.color.g*255,p.color.b*255],
+				}
+				f.addColor(temp,"color").onChange(v => {
+					p.color[0]=v[0]/255;
+					p.color[1]=v[1]/255;
+					p.color[2]=v[2]/255;
+				});
+
+			}
+
+			createFolder (gui) {
+				gui.add(physicsValues,"gravityStrength");
+				gui.add(physicsValues,"minDistance");
+				gui.add(physicsValues,"maxDistance");
+
+				this.createParticleFolder(gui,this.p1,1);
+				this.createParticleFolder(gui,this.p2,2);
+			}
+
+			initialize () {
+				const gui=new dat.GUI();
+
+				this.p1=new Particle(this.ellipseRenderer);
+				this.p2=new Particle(this.ellipseRenderer);
+
+				this.p1.physics.mass=30;
+				this.p1.physics.bounds=new BonesFramework.Rect(this.p1.physics.mass,this.p1.physics.mass,800-this.p1.physics.mass,600-this.p1.physics.mass);
+
+				this.p2.physics.mass=10;
+				this.p2.physics.bounds=new BonesFramework.Rect(this.p2.physics.mass,this.p2.physics.mass,800-this.p2.physics.mass,600-this.p2.physics.mass);
+
+				this.createFolder(gui);
+			}
+
+			update (dt) {
+
+				const dt_ms=dt/1000;
+
+				this.p1.physics.applyGravitationalForce(this.p2.physics,physicsValues.gravityStrength,physicsValues.minDistance,physicsValues.maxDistance);
+				this.p2.physics.applyGravitationalForce(this.p1.physics,physicsValues.gravityStrength,physicsValues.minDistance,physicsValues.maxDistance);
+
+				this.p1.update(dt_ms);
+				this.p2.update(dt_ms);
+			}
+
+			draw () {
+
+				this.ellipseRenderer.begin();
+
+				this.p1.draw();
+				this.p2.draw();
+
+				this.ellipseRenderer.end();
+			}
+		}
+
+		const framework=new Game(document.getElementById("canvas"));
+		framework.initializeFramework().then(x => {
+			framework.runFrameworkLoops();
+		});
+
+	}
+</script>
+
+</html>
