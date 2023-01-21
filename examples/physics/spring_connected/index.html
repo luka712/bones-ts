@@ -1,0 +1,222 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../../dist/index.js"></script>
+</head>
+
+<body>
+    <p>Example demonstrates spring force. Click on ball to apply force. Modify forces via UI widget.</p>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload=() => {
+
+        const physicsValues={
+            restLength: 30,
+            springForceCoeff: 40,
+            gravityStrength: 5,
+            dragForceCoeff: 0.75
+        }
+
+        class Particle {
+
+            color=BonesFramework.Color.white();
+
+            constructor(renderer) {
+                this.renderer=renderer;
+                this.selected=false;
+
+                // Physics
+                this.physics=new BonesFramework.Physics2D();
+                this.physics.position = BonesFramework.Vec2.zero();
+                this.physics.boundsBehaviour=BonesFramework.PhysicsBoundsBehavior.ChangeDirection;
+                this.physics.mass=20;
+                const halfSize=this.physics.mass/2;
+                this.physics.bounds=new BonesFramework.Rect(halfSize,halfSize,800-halfSize,600-halfSize);
+
+                // collider
+                this.collider=new BonesFramework.CircleCollider2D();
+                this.collider.position=this.physics.position;
+                this.collider.radius=halfSize;
+            }
+
+            update (dt) {
+                this.physics.update(dt);
+            }
+
+            draw () {
+                const pos=this.physics.position;
+                const r=this.physics.mass;
+
+                this.renderer.draw(pos.x,pos.y,r,r,this.color);
+
+            }
+
+
+        }
+
+        const PIXELS_PER_METER=10;
+        const NUM_OF_PARTICLES=6;
+
+
+        class Game extends BonesFramework.Framework {
+
+            particles=[];
+            anchor={
+                position: new BonesFramework.Vec2(400,100),
+                color: BonesFramework.Color.green()
+            };
+            red=BonesFramework.Color.red();
+            gravity=BonesFramework.Vec2.zero();
+
+            createFolder (gui) {
+                gui.add(physicsValues,"restLength");
+                gui.add(physicsValues,"springForceCoeff");
+                gui.add(physicsValues,"gravityStrength");
+                gui.add(physicsValues,"dragForceCoeff");
+            }
+
+            initialize () {
+                const gui=new dat.GUI();
+                this.createFolder(gui);
+
+                let y=100+physicsValues.restLength;
+                for(let i=0; i<NUM_OF_PARTICLES; i++) {
+                    const p=new Particle(this.ellipseRenderer);
+                    p.physics.position.x = 400;
+                    p.physics.position.y = y;
+                    y+=physicsValues.restLength;
+                    this.particles.push(p);
+                }
+                window.onmousedown=(event) => {
+                    const ms=this.input.getMouseState();
+
+                    for(const p of this.particles) {
+
+                        if(!p.selected) {
+
+                            // if not selected and colliding, select
+                            if(p.collider.collidesPoint(ms.position)) {
+                                p.selected=true;
+                            }
+                        }
+                        else {
+                            // if already selected, and down again, change color to white
+                            p.selected=false;
+
+                            const f=BonesFramework.Vec2.subtract(p.physics.position,ms.position);
+                            f.multiplyWithScalar(1000);
+                            p.physics.applyForce(f);
+                        }
+                    }
+                }
+
+                window.onmousemove=(event) => {
+                    const ms=this.input.getMouseState();
+
+                    for(const p of this.particles) {
+
+                        if(!p.selected) {
+                            if(p.collider.collidesPoint(ms.position)) {
+                                p.color=BonesFramework.Color.yellow();
+                            }
+                            else {
+                                p.color=BonesFramework.Color.white();
+                            }
+                        }
+                    }
+                }
+            }
+
+            update (dt) {
+
+                const dt_ms=dt/1000;
+
+                this.gravity.y=physicsValues.gravityStrength*PIXELS_PER_METER;
+
+                for(let i=0; i<NUM_OF_PARTICLES; i++) {
+
+                    const p=this.particles[i];
+
+                    p.physics.applyWeightForce(this.gravity);
+                    p.physics.applyDragForce(physicsValues.dragForceCoeff);
+
+                    if(i==0) {
+                        p.physics.applySpringForce(this.anchor.position,physicsValues.restLength,physicsValues.springForceCoeff);
+                    }
+                    else {
+                        p.physics.applySpringForce(this.particles[i-1].physics.position,physicsValues.restLength,physicsValues.springForceCoeff);
+                    }
+
+
+
+
+                    p.update(dt_ms)
+                }
+
+
+            }
+
+            draw () {
+
+                this.ellipseRenderer.begin();
+
+
+                this.ellipseRenderer.draw(this.anchor.position.x,this.anchor.position.y,5,5,this.anchor.color);
+
+                // draw particles
+                for(let i=0; i<NUM_OF_PARTICLES; i++) {
+                    const p=this.particles[i];
+                    p.draw();
+                }
+
+                this.ellipseRenderer.end();
+
+                this.lineRenderer2D.begin();
+
+                this.lineRenderer2D.draw(
+                    [
+                        this.particles[0].physics.position,
+                        this.anchor.position,
+                    ],2);
+
+                for(let i=1; i<NUM_OF_PARTICLES; i++) {
+                    const a=this.particles[i-1];
+                    const b=this.particles[i];
+
+                    this.lineRenderer2D.draw(
+                        [a.physics.position,b.physics.position],2
+                    );
+                }
+
+                for(const p of this.particles)
+                {
+                    if(p.selected){
+                        const ms = this.input.getMouseState();
+
+                        this.lineRenderer2D.draw([
+                            p.physics.position, ms.position
+                        ], 2, BonesFramework.Color.red())
+                    }
+                }
+
+                this.lineRenderer2D.end();
+            }
+        }
+
+        const framework=new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>
