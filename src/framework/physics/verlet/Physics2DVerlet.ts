@@ -1,6 +1,8 @@
 import { PhysicsBoundsBehavior, Rect } from '../../..';
 import { Vec2 } from '../../math/vec/Vec2';
+import { VELOCITY_EPSILON } from '../common/PhysicsConstants';
 import { Physics2DVerletContraint } from './Physics2DVerletConstraint';
+
 
 /**
  * Holds information about created physics components and their constraints.
@@ -27,6 +29,11 @@ export class Physics2DVerlet
 	 * How entity should behave within given bounds.
 	 */
 	public boundsBehaviour = PhysicsBoundsBehavior.Clamp;
+
+	/**
+	 * Friction factor.
+	 */
+	public frictionFactor = 1;
 
 	/**
 	 * List of attached constraints. Does nothing internally, needs to be updated by user.
@@ -131,8 +138,31 @@ export class Physics2DVerlet
 		const prevY = this.position[1];
 
 		const dtSq = deltaTime * deltaTime;
-		this.position[0] = this.position[0] * 2 - this.o_prevPos[0] + this.m_acceleration[0] * dtSq;
-		this.position[1] = this.position[1] * 2 - this.o_prevPos[1] + this.m_acceleration[1] * dtSq;
+
+		// Formula is here https://en.wikipedia.org/wiki/Verlet_integration where n is current step, n-1 is previous step, A is acceleration, dt is delta time
+		// pos(n) = pos(n) * 2 - pos(n-1) + A * (dt^2)
+		// this.position[0] = this.position[0] * 2 - this.o_prevPos[0] + this.m_acceleration[0] * dtSq;
+		// this.position[1] = this.position[1] * 2 - this.o_prevPos[1] + this.m_acceleration[1] * dtSq;
+
+		// but break it into step
+		let deltaStepX = this.position[0] - this.o_prevPos[0] + this.m_acceleration[0] * dtSq;
+		let deltaStepY = this.position[1] - this.o_prevPos[1] + this.m_acceleration[1] * dtSq;
+
+		deltaStepX *= this.frictionFactor;
+		deltaStepY *= this.frictionFactor;
+
+		// avoid dithering of physics, use really small steps.
+		if (this.m_acceleration[0] != 0 && Math.abs(deltaStepX) < VELOCITY_EPSILON)
+		{
+			deltaStepX = 0;
+		}
+		if (this.m_acceleration[1] != 0 && Math.abs(deltaStepY) < VELOCITY_EPSILON)
+		{
+			deltaStepY = 0;
+		}
+
+		this.position[0] += deltaStepX;
+		this.position[1] += deltaStepY;
 
 		this.o_prevPos[0] = prevX;
 		this.o_prevPos[1] = prevY;

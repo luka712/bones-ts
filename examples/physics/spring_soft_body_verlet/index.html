@@ -21,11 +21,10 @@
     window.onload=() => {
 
         const physicsValues={
-            restLength: 100,
-            springForceCoeff: 150,
             gravityStrength: 50,
-            dragForceCoeff: 0.4,
-            particleMass: 20
+            particleMass: 20,
+            forceStrength: 10000,
+            frictionFactor: 0.99
         }
 
         class Particle {
@@ -64,10 +63,15 @@
             gravity=BonesFramework.Vec2.zero();
 
             createFolder (gui) {
-                gui.add(physicsValues,"restLength");
-                gui.add(physicsValues,"springForceCoeff");
+                gui.add(physicsValues, "forceStrength")
                 gui.add(physicsValues,"gravityStrength");
-                gui.add(physicsValues,"dragForceCoeff");
+                gui.add(physicsValues,"frictionFactor").onChange(v => 
+                {
+                    for(const p of this.particles)
+                    {
+                        p.physics.frictionFactor = v;
+                    }
+                })
             }
 
             initialize () {
@@ -84,6 +88,7 @@
 
                     // phyics
                     p.physics=physicsVerlet[i];
+                    p.physics.frictionFactor = physicsValues.frictionFactor;
                     const halfSize=physicsValues.particleMass/2;
                     p.physics.bounds=new BonesFramework.Rect(halfSize,halfSize,800-halfSize,600-halfSize);
 
@@ -113,7 +118,7 @@
                             p.selected=false;
 
                             const f=BonesFramework.Vec2.subtract(p.physics.position,ms.position);
-                            f.multiplyWithScalar(1000);
+                            f.multiplyWithScalar(physicsValues.forceStrength);
                             p.physics.applyForce(f);
                         }
                     }
@@ -153,7 +158,7 @@
 
 
                 for(const c of this.constraints) {
-                    c.update(dt);
+                    c.update(dt_ms);
                 }
 
 
