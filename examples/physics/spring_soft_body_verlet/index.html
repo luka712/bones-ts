@@ -1,0 +1,213 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../../dist/index.js"></script>
+</head>
+
+<body>
+    <p>Example demonstrates spring force. Click on ball to apply force. Modify forces via UI widget.</p>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+
+
+    window.onload=() => {
+
+        const physicsValues={
+            restLength: 100,
+            springForceCoeff: 150,
+            gravityStrength: 50,
+            dragForceCoeff: 0.4,
+            particleMass: 20
+        }
+
+        class Particle {
+
+            color=BonesFramework.Color.white();
+
+            constructor(renderer) {
+                this.renderer=renderer;
+                this.selected=false;
+            }
+
+            update (dt) {
+                this.physics.update(dt);
+            }
+
+            draw () {
+                const pos=this.physics.position;
+                const r=this.physics.mass;
+
+                this.renderer.draw(pos.x,pos.y,physicsValues.particleMass,physicsValues.particleMass,this.color);
+            }
+
+
+        }
+
+        const PIXELS_PER_METER=10;
+        const NUM_OF_PARTICLES=4;
+
+
+        class Game extends BonesFramework.Framework {
+
+            particles=[];
+            constraints=[];
+
+            red=BonesFramework.Color.red();
+            gravity=BonesFramework.Vec2.zero();
+
+            createFolder (gui) {
+                gui.add(physicsValues,"restLength");
+                gui.add(physicsValues,"springForceCoeff");
+                gui.add(physicsValues,"gravityStrength");
+                gui.add(physicsValues,"dragForceCoeff");
+            }
+
+            initialize () {
+                const gui=new dat.GUI();
+                this.createFolder(gui);
+
+                const result=BonesFramework.Physics2DVerlet.createSoftBodyRect(new BonesFramework.Rect(100,100,100,100));
+                const physicsVerlet=result.physicsComponents;
+                this.constraints=result.physicsConstraintComponents;
+
+                for(let i=0; i<4; i++) {
+
+                    const p=new Particle(this.ellipseRenderer);
+
+                    // phyics
+                    p.physics=physicsVerlet[i];
+                    const halfSize=physicsValues.particleMass/2;
+                    p.physics.bounds=new BonesFramework.Rect(halfSize,halfSize,800-halfSize,600-halfSize);
+
+                    // collider
+                    // collider
+                    p.collider=new BonesFramework.CircleCollider2D();
+                    p.collider.position=p.physics.position;
+                    p.collider.radius=halfSize;
+
+                    this.particles.push(p);
+                }
+
+                window.onmousedown=(event) => {
+                    const ms=this.input.getMouseState();
+
+                    for(const p of this.particles) {
+
+                        if(!p.selected) {
+
+                            // if not selected and colliding, select
+                            if(p.collider.collidesPoint(ms.position)) {
+                                p.selected=true;
+                            }
+                        }
+                        else {
+                            // if already selected, and down again, change color to white
+                            p.selected=false;
+
+                            const f=BonesFramework.Vec2.subtract(p.physics.position,ms.position);
+                            f.multiplyWithScalar(1000);
+                            p.physics.applyForce(f);
+                        }
+                    }
+
+                }
+
+                window.onmousemove=(event) => {
+                    const ms=this.input.getMouseState();
+
+                    for(const p of this.particles) {
+
+                        if(!p.selected) {
+                            if(p.collider.collidesPoint(ms.position)) {
+                                p.color=BonesFramework.Color.yellow();
+                            }
+                            else {
+                                p.color=BonesFramework.Color.white();
+                            }
+                        }
+                    }
+                }
+            }
+
+            update (dt) {
+
+                const dt_ms=dt/1000;
+
+                this.gravity.y=physicsValues.gravityStrength*PIXELS_PER_METER;
+
+                for(let i=0; i<NUM_OF_PARTICLES; i++) {
+
+                    const p=this.particles[i];
+
+                    p.physics.applyWeightForce(this.gravity);
+                    p.update(dt_ms)
+                }
+
+
+                for(const c of this.constraints) {
+                    c.update(dt);
+                }
+
+
+            }
+
+            draw () {
+
+                this.ellipseRenderer.begin();
+
+                // draw particles
+                for(let i=0; i<NUM_OF_PARTICLES; i++) {
+                    const p=this.particles[i];
+                    p.draw();
+                }
+
+                this.ellipseRenderer.end();
+
+                this.lineRenderer2D.begin();
+
+                for(let i=0; i<NUM_OF_PARTICLES; i++) {
+
+                    for(let j=0; j<NUM_OF_PARTICLES; j++) {
+
+                        if(i==j) continue;
+
+                        const a=this.particles[i];
+                        const b=this.particles[j];
+
+                        this.lineRenderer2D.draw(
+                            [a.physics.position,b.physics.position],2
+                        );
+                    }
+                }
+
+                for(const p of this.particles) {
+                    if(p.selected) {
+                        const ms=this.input.getMouseState();
+
+                        this.lineRenderer2D.draw([
+                            p.physics.position,ms.position
+                        ],2,BonesFramework.Color.red())
+                    }
+                }
+
+                this.lineRenderer2D.end();
+            }
+        }
+
+        const framework=new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

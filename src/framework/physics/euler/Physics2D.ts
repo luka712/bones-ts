@@ -5,27 +5,10 @@
 // velocity  = acc * dt
 // position = vel * dt
 
-import { Vec2, Rect } from "../bones_math";
-import { MathUtil } from '../math/MathUtil';
+import { PhysicsBoundsBehavior } from "../common/PhysicsBoundsBehavior";
+import { Vec2, Rect } from "../../bones_math";
+import { MathUtil } from '../../math/MathUtil';
 
-export enum PhysicsBoundsBehavior
-{
-    /**
-     * Clamps to bounds.
-     */
-    Clamp,
-
-    /**
-     * Does nothing with bounds.
-     */
-    None,
-
-    /**
-     * If left/right bounds are hit, changes x direction.
-     * If top/bottom bounds are hit, changes y direction.
-     */
-    ChangeDirection,
-}
 
 /**
  * Physics using Euler integration.
@@ -74,10 +57,7 @@ export class Physics2D
      */
     private m_boundsBehaviourMethod = {
         // clamp to bounds.
-        [PhysicsBoundsBehavior.Clamp]: () =>
-        {
-            this.position.clampToBounds(this.bounds);
-        },
+        [PhysicsBoundsBehavior.Clamp]: () => this.position.clampToBounds(this.bounds),
         [PhysicsBoundsBehavior.None]: () => { },
         [PhysicsBoundsBehavior.ChangeDirection]: () => 
         {
@@ -153,15 +133,15 @@ export class Physics2D
         this.m_netForce.add(force);
     }
 
-    
+
     /**
      * Applies a weight force to the physics engine. 
      * Gravitational force is multiplied by particle mass.
      * @param gravitational_force 
      */
-    public applyWeightForce(gravitational_force: Vec2)
+    public applyWeightForce (gravitational_force: Vec2)
     {
-         // add gravity 
+        // add gravity 
         // weight = gravitational_force * mass 
         // note that later it's divided by mass, therefore gravitational force will cancel out.
         Vec2.multiplyWithScalar(gravitational_force, this.mass, this.o_vec);
@@ -198,7 +178,7 @@ export class Physics2D
      * @param cross_sectional_area - frontal area of the object that is pushing through the liquid (or gas).
      * @param coefficient - coefficient of drag.
      */
-    public applyRealDragForce(density: number, cross_sectional_area: number, coefficient: number ) : void 
+    public applyRealDragForce (density: number, cross_sectional_area: number, coefficient: number): void 
     {
         const mag_sq = this.velocity.magnitudeSq();
         if (mag_sq > 0)
@@ -217,21 +197,21 @@ export class Physics2D
         }
     }
 
-  
+
     /**
      * Applies the simplified friction force.
      * @param coefficient  - the friction force coefficient.
      */
-    public applyFrictionForce(coefficient: number): void 
+    public applyFrictionForce (coefficient: number): void 
     {
-           // calculate the friction direction.
-           // is it the force opposite of direction * coeff.
+        // calculate the friction direction.
+        // is it the force opposite of direction * coeff.
 
-           // it is F = |v|^2 * c * -1
-           this.o_vec = Vec2.normalize(this.velocity, this.o_vec);
-           this.o_vec.multiplyWithScalar(-coefficient);
+        // it is F = |v|^2 * c * -1
+        this.o_vec = Vec2.normalize(this.velocity, this.o_vec);
+        this.o_vec.multiplyWithScalar(-coefficient);
 
-           this.applyForce(this.o_vec);
+        this.applyForce(this.o_vec);
     }
 
     /**
@@ -241,7 +221,7 @@ export class Physics2D
      * @param minDistance - clamp lower distance bound between objects.
      * @param maxDistance - clamp upper distance bound between objects.
      */
-    public applyGravitationalForce(other: Physics2D, gravityConstant: number, minDistance: number , maxDistance: number) : void 
+    public applyGravitationalForce (other: Physics2D, gravityConstant: number, minDistance: number, maxDistance: number): void 
     {
         // calculate the distance between two objects
         Vec2.subtract(other.position, this.position, this.o_vec);
@@ -267,7 +247,7 @@ export class Physics2D
      * @param restLength - the length of a rest position. Where would spring be at equlibrium.
      * @param coeff - the spring coeff. How stiff spring is.
      */
-    public applySpringForce(anchor: Vec2, restLength: number, coeff: number) : void 
+    public applySpringForce (anchor: Vec2, restLength: number, coeff: number): void 
     {
         // distance between anchor and self position
         Vec2.subtract(this.position, anchor, this.o_vec);

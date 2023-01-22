@@ -16,8 +16,10 @@ import { PostProcessPipelineFactory } from "./framework/post_process/pipelines/P
 import { PostProcessPipeline } from "./framework/post_process/pipelines/PostProcessPipeline";
 import { GLLineJoin, GLLineCaps, LineCapsType, LineJoinType, LineRenderer2D } from "./framework/renderers/LineRenderer2D";
 import { BonesLinesPlugin } from "./plugin_lines/BonesLinesPlugin";
-import { Physics2D, PhysicsBoundsBehavior } from "./framework/physics/Physics2D";
+import { Physics2D } from "./framework/physics/euler/Physics2D";
 import { CircleCollider2D } from "./framework/collision/CircleCollider2D";
+import { Physics2DVerlet } from './framework/physics/verlet/Physics2DVerlet';
+import { PhysicsBoundsBehavior } from "./framework/physics/common/PhysicsBoundsBehavior";
 
 export 
 {
@@ -70,6 +72,7 @@ export
 
     // Physics
     Physics2D,
+    Physics2DVerlet,
     PhysicsBoundsBehavior,
 
     // Colliders
