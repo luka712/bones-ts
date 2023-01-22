@@ -1,13 +1,20 @@
 import { Physics2DVerlet } from './Physics2DVerlet';
 import { Vec2 } from '../../math/vec/Vec2';
-import { Rect } from '../../math/Rect';
 
 export class Physics2DVerletContraint 
 {
 	// for optimization stuff
 	private o_vec: Vec2 = Vec2.zero();
 
-	constructor(private a: Physics2DVerlet, private b: Physics2DVerlet, private length: number)
+	/**
+	 * The constructor.
+	 * @param a - the first physics component.
+	 * @param b - the second physics component.
+	 * @param length - the length between physics components.
+	 * @param aIsAnchor - if a is anchor, no force is exerted on a.
+	 * @param bIsAnchor - if b is anchor, no force is exerted on b.
+	 */
+	constructor(private a: Physics2DVerlet, private b: Physics2DVerlet, private length: number, private aIsAnchor = false, private bIsAnchor = false)
 	{
 
 	}
@@ -28,10 +35,16 @@ export class Physics2DVerletContraint
 		const offsetX = this.o_vec[0] * diffFactor;
 		const offsetY = this.o_vec[1] * diffFactor;
 
-		this.a.position[0] += offsetX;
-		this.a.position[1] += offsetY;
-		this.b.position[0] -= offsetX;
-		this.b.position[1] -= offsetY;
+		if (!this.aIsAnchor)
+		{
+			this.a.position[0] += offsetX;
+			this.a.position[1] += offsetY;
+		}
+		if (!this.bIsAnchor)
+		{
+			this.b.position[0] -= offsetX;
+			this.b.position[1] -= offsetY;
+		}
 	}
 
 	/**
@@ -41,7 +54,7 @@ export class Physics2DVerletContraint
 	 * @param bottomRight
 	 * @param bottomLeft
 	 */
-	public static createSoftBodyRect (topLeft: Physics2DVerlet, topRight: Physics2DVerlet, bottomRight: Physics2DVerlet, bottomLeft:Physics2DVerlet): Array<Physics2DVerletContraint> 
+	public static createSoftBodyRect (topLeft: Physics2DVerlet, topRight: Physics2DVerlet, bottomRight: Physics2DVerlet, bottomLeft: Physics2DVerlet): Array<Physics2DVerletContraint> 
 	{
 		const a = new Physics2DVerletContraint(topLeft, topRight, topLeft.position.distance(topRight.position));
 		const b = new Physics2DVerletContraint(topRight, bottomRight, topRight.position.distance(bottomRight.position));
@@ -57,6 +70,6 @@ export class Physics2DVerletContraint
 		bottomRight.constraints.push(c);
 		bottomLeft.constraints.push(d);
 
-		return [a,b,c,d, ac, bd];
+		return [a, b, c, d, ac, bd];
 	}
 }
