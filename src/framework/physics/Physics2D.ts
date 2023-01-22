@@ -28,7 +28,7 @@ export enum PhysicsBoundsBehavior
 }
 
 /**
- * Physics component.
+ * Physics using Euler integration.
  */
 export class Physics2D 
 {
