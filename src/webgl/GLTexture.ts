@@ -56,6 +56,8 @@ export class GLTexture2D extends Texture2D
             this.height = texture_options.textureSize.y;
         }
 
+        const gl = this.m_gl;
+
         this.m_gl.pixelStorei(this.m_gl.UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
 
         this.m_glTexture = this.m_gl.createTexture();
@@ -82,7 +84,7 @@ export class GLTexture2D extends Texture2D
         this.m_gl.generateMipmap(this.m_gl.TEXTURE_2D);
 
         // set the texture wrapping parameters
-        let wrap = this.m_gl.CLAMP_TO_EDGE;
+        let wrap: GLenum = this.m_gl.CLAMP_TO_EDGE;
         if (texture_options?.textureWrap == TextureWrap.Repeat)
         {
             wrap = this.m_gl.REPEAT;
@@ -96,14 +98,14 @@ export class GLTexture2D extends Texture2D
         this.m_gl.texParameteri(this.m_gl.TEXTURE_2D, this.m_gl.TEXTURE_WRAP_T, wrap);
 
         // set the texture filtering parameters
-        let filtering = this.m_gl.NEAREST;
+        let filtering : GLenum = this.m_gl.NEAREST;
         if (texture_options?.textureFiltering == TextureFiltering.Bilinear)
         {
             filtering = this.m_gl.LINEAR;
         }
 
-        this.m_gl.texParameteri(this.m_gl.TEXTURE_2D, this.m_gl.TEXTURE_MIN_FILTER, filtering);
-        this.m_gl.texParameteri(this.m_gl.TEXTURE_2D, this.m_gl.TEXTURE_MAG_FILTER, filtering);
+        this.m_gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filtering);
+        this.m_gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filtering);
 
         this.m_state = LifecycleState.Created;
     }

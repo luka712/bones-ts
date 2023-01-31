@@ -42,6 +42,20 @@ class Rect
     }
 
     /**
+     * Checks rectangle against position with x and y
+     * @param x 
+     * @param y 
+     * @returns true if colliding
+     */
+    public intersectsPosition(x: number, y: number) : boolean 
+    {
+        return this.x <= x 
+        && this.x + this.w > x
+        && this.y + this.h > y
+        && this.y <= y;
+    }
+
+    /**
      * Enlarges self with specified width and height.
      * @param width - width amount.
      * @param height - height amount.

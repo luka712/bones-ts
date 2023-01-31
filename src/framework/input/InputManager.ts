@@ -36,21 +36,23 @@ class KeyboardStateImplementation implements KeyboardState
 
 
     /**
-     * Check if key is up.
-     * @param key 
-     */
-    public isKeyUp (key: Keys | string): boolean
+    * @inheritdoc
+    */
+    public isKeyUp (key: Keys | string, caseSensitive = true): boolean
     {
-        return !this.isKeyDown(key);
+        return !this.isKeyDown(key, caseSensitive);
     }
 
     /**
-     * Checks if key of keyboard state is down.
-     * @param key - the key {@see Keys}
-     * @returns 
+     * @inheritdoc
      */
-    public isKeyDown (key: Keys | string): boolean 
+    public isKeyDown (key: Keys | string, caseSensitive = true): boolean 
     {
+        if (!caseSensitive)
+        {
+            return this.m_isKeyDown[key.toLowerCase()] || this.m_isKeyDown[key.toUpperCase()];
+        }
+
         return this.m_isKeyDown[key] === true;
     }
 
@@ -118,7 +120,7 @@ export class GamePadStateImplementation implements GamePadState
     /**
      * The pressed D-Pad buttons.
      */
-    public pressedDPadButtons: DPadButtons = 0;
+    public pressedDPadButtons: DPadButtons = DPadButtons.None;
 
     /**
      * Checks if D-Pad button is down.
@@ -132,7 +134,7 @@ export class GamePadStateImplementation implements GamePadState
     /**
      * The state of face buttons.
      */
-    public pressedFaceButtons: FaceButtons = 0;
+    public pressedFaceButtons: FaceButtons = FaceButtons.None;
 
     /**
      * Checks if face button is down.
@@ -211,20 +213,49 @@ export class InputManager
         // https://stackoverflow.com/questions/15631991/how-to-register-onkeydown-event-for-html5-canvas
         this.m_canvas.tabIndex = 1000;
 
-        m_canvas.onclick = (event) =>
+        m_canvas.onmousedown = (event) =>
         {
-            this.m_mouseState.leftButtonDown = event.button == 0;
-            this.m_mouseState.leftButtonUp = !this.m_mouseState.leftButtonDown;
-
-            this.m_mouseState.rightButtonDown = event.button == 1;
-            this.m_mouseState.rightButtonDown = !this.m_mouseState.rightButtonDown;
+            switch (event.button)
+            {
+                // left button clicked
+                case 0:
+                    this.m_mouseState.leftButtonDown = true;
+                    this.m_mouseState.leftButtonUp = false;
+                    break;
+                // right button clicked
+                case 1:
+                    this.m_mouseState.rightButtonDown = true;
+                    this.m_mouseState.rightButtonDown = false;
+                    break;
+            }
 
             this.m_onClickEvent.leftClick = this.m_mouseState.leftButtonDown;
             this.m_onClickEvent.rightClick = this.m_mouseState.rightButtonDown;
 
             this.m_onClickSubscribers.forEach(x => x(this.m_onClickEvent));
-
         };
+
+        m_canvas.onmouseup = event =>
+        {
+            switch (event.button)
+            {
+                // left button released
+                case 0:
+                    this.m_mouseState.leftButtonDown = false;
+                    this.m_mouseState.leftButtonUp = true;
+                    break;
+                // right button released
+                case 1:
+                    this.m_mouseState.rightButtonDown = false;
+                    this.m_mouseState.rightButtonDown = true;
+                    break;
+            }
+
+            this.m_onClickEvent.leftClick = this.m_mouseState.leftButtonDown;
+            this.m_onClickEvent.rightClick = this.m_mouseState.rightButtonDown;
+
+            this.m_onClickSubscribers.forEach(x => x(this.m_onClickEvent));
+        }
 
         m_canvas.onkeydown = (event) =>
         {
@@ -310,12 +341,6 @@ export class InputManager
      */
     public afterUpdate (): void
     {
-        this.m_mouseState.leftButtonDown = false;
-        this.m_mouseState.leftButtonUp = !this.m_mouseState.leftButtonDown;
-
-        this.m_mouseState.rightButtonDown = false;
-        this.m_mouseState.rightButtonUp = !this.m_mouseState.rightButtonDown;
-
         this.m_mouseState.deltaX = 0;
         this.m_mouseState.deltaY = 0;
 

@@ -2,21 +2,26 @@
   "name": "bones-framework-ts",
   "version": "0.0.1",
   "description": "The Typescript implementation of Bones Framework",
-  "main": "dist/index.js",
-  "browser": "dist/index.js",
+  "main": "dist/index.umd.js",
+  "browser": "dist/index.mjs",
   "typings": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
-    "build": "npx webpack"
+    "build": "npx webpack",
+    "typescript": "tsc"
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.0.0",
     "@types/node": "^18.0.4",
     "@webgpu/types": "^0.1.21",
     "dat.gui": "^0.7.9",
     "dat.gui.image": "^1.0.4",
+    "rollup-plugin-typescript2": "^0.34.1",
     "ts-loader": "^9.2.6",
+    "tslib": "^2.5.0",
     "typedoc": "^0.23.15",
-    "typescript": "^4.7.4",
+    "typescript": "^4.9.5",
+    "vite": "^4.0.4",
     "webpack": "^5.65.0",
     "webpack-cli": "^4.10.0"
   },

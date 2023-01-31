@@ -170,15 +170,14 @@ export abstract class SpriteRenderer
     /**
      * Draw the texture part specifed by source rectangle at specified draw rectangle, with optional tint color and rotation values.
      * To be used when part of texture needs to be drawn.
-     * @param { Texture2D } texture - which texture to draw.
-     * @param { Rect } draw_rect - the drawing rectangle
-     * @param { Rect } source_rect - defines which part from texture to select.
-     * @param { Vec2|undefined } tint_color - the color to be used as tint color. 
-     * @param { Vec3|undefined } axis_of_rotation - if sprites needs to be rotated around arbitrary axis.
-     * @param { number|undefined} rotation_in_radians - how much to rotate, in radians.
-     * TODO: origin
+     * @param texture - which texture to draw.
+     * @param drawRect - the drawing rectangle
+     * @param sourceRect - defines which part from texture to select.
+     * @param tintColor - the color to be used as tint color. 
+     * @param rotationInRadians - how much to rotate, in radians.
+     * @param rotation_anchor - rotation origin of sprite, by default 0,0 for top left corner. 
      */
-    public abstract drawSource (texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void;
+    public abstract drawSource (texture: Texture2D, drawRect: Rect, sourceRect: Rect, tintColor?: Color, rotationInRadians?: number, rotationAnchor?: Vec2): void;
 
     /**
      * Draw the texture on given position.

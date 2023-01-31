@@ -9,16 +9,18 @@ export interface KeyboardState
     /**
     * Checks if key of keyboard state is down.
     * @param key - the key {@link Keys}
+    * @param caseSensitive - option, by default true. If true, checks exact key. Pass false to check for lower or upper.
     * @returns true if down.
     */
-    isKeyDown (key: Keys | string): boolean;
+    isKeyDown (key: Keys | string, caseSensitive?: boolean): boolean;
 
     /**
      * Checks if key is up.
      * @param key - the key {@link Keys}
+     * @param caseSensitive - option, by default true. If true, checks exact key. Pass false to check for lower or upper.
      * @returns true if up.
      */
-    isKeyUp (key: Keys | string): boolean;
+    isKeyUp (key: Keys | string,  caseSensitive?: boolean): boolean;
 }
 
 

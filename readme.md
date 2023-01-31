@@ -1,5 +1,5 @@
 
-### Build 
+### Build (webpack) (deprecated)
 
 npm install
 npm run build
@@ -7,10 +7,22 @@ npm run build
 then simply in root use some server, such as 
 http-server 
 
-### Release 
+
+##### Release (webpack) (deprecated)
 
 - Debug - simply change 'mode' in 'webpack.config.js' to 'none' and run 'npm run build'
 - Production - simply change 'mode' in 'webpack.config.js' to 'production' and run 'npm run build' 
+
+### Build (vite)
+
+```vite build```
+
+to run simpy use 
+```vite``` 
+
+##### Typescript definition
+simply run ```tsc```
+
 
 ### Variables 
 

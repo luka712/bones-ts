@@ -44,6 +44,7 @@ layout(location = 1)out vec4 outBrightColor;
 void main() 
 {
     outColor = texture(u_texture,v_texCoords) * v_tintColor;
+    outColor.rgb *= outColor.a;
     float amount = dot(vec3(0.2126, 0.7152, 0.0722), outColor.rgb);
     if(amount > 0.7)
     {
@@ -80,7 +81,7 @@ export class GLSpriteRenderer extends SpriteRenderer
     private m_iBuffer: WebGLBuffer // keep only to clean it up
 
     // Shader stuff
-    private m_shader : GLShaderImplementation;
+    private m_shader: GLShaderImplementation;
     private m_viewMatrixLocation: WebGLUniformLocation;
     private m_projectionMatrixLocation: WebGLUniformLocation;
 
@@ -284,7 +285,7 @@ export class GLSpriteRenderer extends SpriteRenderer
         this.m_currentInstanceIndex = 0;
 
         GLBlendModeUtil.setBlendMode(gl, mode ?? this.o_defaultBlend);
-        
+
         // bind vao
         gl.bindVertexArray(this.m_vao);
 
@@ -304,9 +305,13 @@ export class GLSpriteRenderer extends SpriteRenderer
      * @param rotation_anchor - rotation anchor
      * @param tint_color - tint color
      */
-    private drawInner (i: number, x: number, y: number, w: number, h: number, rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void 
+    private drawInner (i: number, x: number, y: number, w: number, h: number,
+        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void 
     {
         const d = this.m_data;
+
+        x += w * .5;
+        y += h * .5;
 
         // bottom left corner
         this.o_v0[0] = x;
@@ -407,6 +412,129 @@ export class GLSpriteRenderer extends SpriteRenderer
     }
 
     /**
+     * Draw inner is just helper function to lower code bloat. Increases the current index on each draw.
+     * @param i - pass here index multiplied by stride: this.m_currentInstanceIndex * STRIDE
+     * @param x - the x position
+     * @param y - the y position
+     * @param w - the sprite width
+     * @param h - the sprite height
+     * @param sourceRect - the source rectangle.
+     * @param rotation_in_radians - rotation theta
+     * @param rotation_anchor - rotation anchor
+     * @param tint_color - tint color
+     */
+    private drawInnerSource (i: number,
+        x: number, y: number, w: number, h: number,
+        sourceRect: Rect,
+        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void 
+    {
+        const d = this.m_data;
+
+        // bottom left corner
+        this.o_v0[0] = x;
+        this.o_v0[1] = y;
+
+        // top left corner
+        this.o_v1[0] = x;
+        this.o_v1[1] = y + h;
+
+        // top right corner
+        this.o_v2[0] = x + w;
+        this.o_v2[1] = y + h;
+
+        // bottom right corner.
+        this.o_v3[0] = x + w;
+        this.o_v3[1] = y;
+
+        // rotate 
+        if (rotation_in_radians)
+        {
+            // TOP LEFT CORNER BY DEFAULT.
+            this.o_rotOrigin[0] = x + w * this.rotationAnchor[0];
+            this.o_rotOrigin[1] = y + h * this.rotationAnchor[1];
+
+            // correct of origin is present.
+            if (rotation_anchor)
+            {
+                this.o_rotOrigin[0] += w * rotation_anchor[0];
+                this.o_rotOrigin[1] += h * rotation_anchor[1];
+            }
+
+            this.o_v0.rotateAroundPoint(this.o_rotOrigin, rotation_in_radians);
+            this.o_v1.rotateAroundPoint(this.o_rotOrigin, rotation_in_radians);
+            this.o_v2.rotateAroundPoint(this.o_rotOrigin, rotation_in_radians);
+            this.o_v3.rotateAroundPoint(this.o_rotOrigin, rotation_in_radians);
+        }
+
+        // use default if not set.
+        tint_color = tint_color ?? this.o_defaultTintColor;
+
+        const tx = sourceRect.x / this.m_currentTexture.width;
+        const ty = sourceRect.y / this.m_currentTexture.height;
+
+        const tx2 = tx + (sourceRect.w / this.m_currentTexture.width);
+        const ty2 = ty + (sourceRect.h / this.m_currentTexture.height);
+
+        // -0.5, -0.5, 0, 0, 0,			// bottom left corner
+        // v0
+        d[i] = this.o_v0[0];
+        d[i + 1] = this.o_v0[1];
+        d[i + 2] = 0;
+        // tc0
+        d[i + 3] = tx;
+        d[i + 4] = ty2;
+        // color0
+        d[i + 5] = tint_color.r;
+        d[i + 6] = tint_color.g;
+        d[i + 7] = tint_color.b;
+        d[i + 8] = tint_color.a;
+
+        // -0.5, 0.5, 0, 0, 1,			// top left corner
+        // v1
+        d[i + 9] = this.o_v1[0];
+        d[i + 10] = this.o_v1[1];
+        d[i + 11] = 0;
+        // tc1
+        d[i + 12] = tx;
+        d[i + 13] = ty;
+        // color1
+        d[i + 14] = tint_color.r;
+        d[i + 15] = tint_color.g;
+        d[i + 16] = tint_color.b;
+        d[i + 17] = tint_color.a;
+
+        // 0.5, 0.5, 0, 1, 1,			// top right corner
+        // v2
+        d[i + 18] = this.o_v2[0];
+        d[i + 19] = this.o_v2[1];
+        d[i + 20] = 0;
+        // tc2
+        d[i + 21] = tx2;
+        d[i + 22] = ty;
+        // color2
+        d[i + 23] = tint_color.r;
+        d[i + 24] = tint_color.g;
+        d[i + 25] = tint_color.b;
+        d[i + 26] = tint_color.a;
+
+        // 0.5, -0.5, 0, 1, 0			// bottom right corner
+        // v3
+        d[i + 27] = this.o_v3[0];
+        d[i + 28] = this.o_v3[1];
+        d[i + 29] = 0;
+        // tc3
+        d[i + 30] = tx2;
+        d[i + 31] = ty2;
+        // color3
+        d[i + 32] = tint_color.r;
+        d[i + 33] = tint_color.g;
+        d[i + 34] = tint_color.b;
+        d[i + 35] = tint_color.a;
+
+        this.m_currentInstanceIndex++;
+    }
+
+    /**
      * {@inheritDoc SpriteRenderer}
      */
     public draw (texture: Texture2D, draw_rect: Rect, tint_color: Color, rotation_in_radians?: number, rotation_anchor?: Vec2): void
@@ -443,71 +571,39 @@ export class GLSpriteRenderer extends SpriteRenderer
     /**
      * @inheritdoc
      */
-    public drawSource (texture: Texture2D, draw_rect: Rect, source_rect: Rect, tint_color?: Color, axis_of_rotation?: Vec3, rotation_in_radians?: number): void
+    public drawSource (texture: Texture2D, drawRect: Rect, sourceRect: Rect, tintColor?: Color, rotationInRadians?: number, rotationAnchor?: Vec2): void
     {
-        //     if (texture != this.o_currentTexture)
-        //     {
-        //         this.o_currentTexture = texture;
-        //         this.m_shader.useSpriteTexture(texture);
-        //     }
+        this.handleTexture(texture);
 
-        //     const offset_x = draw_rect.w * 0.5;
-        //     const offset_y = draw_rect.h * 0.5;
+        const i = this.m_currentInstanceIndex * STRIDE;
 
-        //     // First get required matrices.
-        //     Mat4x4.scaleMatrix(draw_rect.w, draw_rect.h, 1.0, this.o_scale);
-        //     // !! if rotation in radians is anything besides 0
-        //     if (axis_of_rotation && rotation_in_radians)
-        //     {
-        //         Mat4x4.rotationMatrix(rotation_in_radians, axis_of_rotation, this.o_rotation);
-        //     }
-        //     else
-        //     {
-        //         Mat4x4.identity(this.o_rotation);
-        //     }
+        // instance count is too high, must draw.
+        if (i > NUM_MAX_INSTANCES) 
+        {
+            this.glDraw();
+        }
 
-        //     // transform will already contain translation here, saves 1 operation.
-        //     Mat4x4.translationMatrix(draw_rect.x + offset_x, draw_rect.y + offset_y, 0, this.o_transform);
+        // /******************* SETUP OPTIMIZATION VECTORS ******************/
+        // it's easier to reason with vector.
 
-        //     // now multiply transform with translation with other matrices.
-        //     Mat4x4.multiply(this.o_transform, this.o_rotation, this.o_transform);
-        //     Mat4x4.multiply(this.o_transform, this.o_scale, this.o_transform);
+        // TODO: use first with passed
+        // const origin = origin ?? this.origin;
+        const origin = this.origin;
 
-        //     this.m_shader.useTransform(this.o_transform);
-        //     this.m_shader.useTintColor(tint_color ?? this.o_defaultTintColor);
+        // move to top left by default
+        const x = drawRect.x - drawRect.w * .5;
+        const y = drawRect.y - drawRect.h * .5;
 
-        //     // find texture coordinages from source rectangle
-        //     // update VBO for each character
-        //     const x = source_rect.x / texture.width;
-        //     const y = source_rect.y / texture.height;
+        const w = drawRect.w;
+        const h = drawRect.h;
 
-        //     // where does it end
-        //     const x2 = x + (source_rect.w / texture.width);
-        //     const y2 = y + (source_rect.h / texture.height);
+        // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
+        this.drawInnerSource(
+            i,
+            x, y, w, h,
+            sourceRect,
+            rotationInRadians, rotationAnchor, tintColor);
 
-        //     // top left 
-        //     this.o_texCoords[0] = x;
-        //     this.o_texCoords[1] = y;
-
-        //     // bottom left 
-        //     this.o_texCoords[2] = x;
-        //     this.o_texCoords[3] = y2;
-
-        //     // bottom right 
-        //     this.o_texCoords[4] = x2;
-        //     this.o_texCoords[5] = y2;
-
-        //     // bottom right 
-        //     this.o_texCoords[6] = x2;
-        //     this.o_texCoords[7] = y;
-
-        //     this.m_mutableBuffer.bind();
-
-        //     // texture buffer is at index 1, since it is passed as second. They are bound to index, according to order being passed in.
-        //     this.m_mutableBuffer.bindBuffer(1);
-        //     // 8 tex coords with size of 4 bytes
-        //     this.m_mutableBuffer.bufferSubData(this.o_texCoords, 4 * 8);
-        //     this.m_mutableBuffer.draw();
     }
 
     /**

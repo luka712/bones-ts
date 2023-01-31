@@ -1,5 +1,5 @@
 import { Framework } from "./framework/Framework";
-import { Texture2D, TextureManager } from "./framework/bones_texture";
+import { Texture2D, TextureFiltering, TextureManager, TextureOptions } from "./framework/bones_texture";
 import { Vec3 } from "./framework/math/vec/Vec3";
 import { Blend, BlendFactor, SpriteRenderer } from "./framework/SpriteRenderer";
 import { InputManager } from "./framework/input/InputManager";
@@ -21,28 +21,22 @@ import { CircleCollider2D } from "./framework/collision/CircleCollider2D";
 import { Physics2DVerlet } from './framework/physics/verlet/Physics2DVerlet';
 import { PhysicsBoundsBehavior } from "./framework/physics/common/PhysicsBoundsBehavior";
 
-export 
+export
 {
     Framework,
-    
-    // components
-    SpriteRenderer,
-    TextureManager,
-    InputManager,
-    TimeManager,
-    PostProcessPipelineFactory as PipelineFactory,
 
-    // input manager data
-    KeyboardState,
-    MouseState,
-    GamePadState,
-    Keys,
+    // components
+    SpriteRenderer, InputManager,
+    TimeManager,
+    PostProcessPipelineFactory as PipelineFactory, Keys,
     GamePadIndex,
     DPadButtons,
     FaceButtons,
-    
+
     // tex releated data
     Texture2D,
+    TextureOptions,
+    TextureFiltering,
 
     // math related data
     Rect,
@@ -58,7 +52,7 @@ export
     BlendFactor,
 
     // time manager data
-    Time, 
+    Time,
 
     // post process data
     PostProcessPipeline,
@@ -67,9 +61,6 @@ export
     LineRenderer2D,
     LineJoinType as LineJoin,
     LineCapsType as LineCaps,
-    GLLineJoin,
-    GLLineCaps,
-
     // Physics
     Physics2D,
     Physics2DVerlet,
@@ -77,12 +68,19 @@ export
 
     // Colliders
     CircleCollider2D,
-    
+
 
     // test scene/games.
     // TestGame, 
     // WebGPUTestGame,
-
     // PLUGINS - todo, plugins should not be part of an engine, refactor later.
-    BonesLinesPlugin,
-}
+    BonesLinesPlugin
+};
+export type {
+    TextureManager,
+    // input manager data
+    KeyboardState,
+    MouseState,
+    GamePadState, GLLineJoin,
+    GLLineCaps
+};

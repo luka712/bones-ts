@@ -29,6 +29,10 @@ export enum Keys
  */
  export enum DPadButtons 
  {
+    /**
+     * Default, represents no button
+     */
+    None = 0,
      // order is important.
      Up = 1, Down = 2, Left = 4, Right = 8
  }
@@ -38,6 +42,10 @@ export enum Keys
   */
  export enum FaceButtons 
  {
+    /**
+     * Default, represents no button
+     */
+    None = 0,
      // order is important.
      A = 1, B = 2, X = 4, Y = 8, Select = 16,
  }

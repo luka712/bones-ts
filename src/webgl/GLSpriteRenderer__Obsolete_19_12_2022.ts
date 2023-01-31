@@ -293,7 +293,7 @@
 //         this.o_texCoords[4] = x2;
 //         this.o_texCoords[5] = y2;
 
-//         // bottom right 
+//         // top right 
 //         this.o_texCoords[6] = x2;
 //         this.o_texCoords[7] = y;
 

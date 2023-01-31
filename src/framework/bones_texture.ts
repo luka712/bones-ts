@@ -117,7 +117,7 @@ abstract class Texture2D
 /**
  * @brief The texture manager interface.
  */
-interface TextureManager
+ interface TextureManager
 {
 
     /**
@@ -206,13 +206,16 @@ interface TextureManager
     destroy (): void;
 };
 
-export 
+export
 {
-    TextureData,
     Texture2D,
-    TextureManager,
     TextureChannel,
     TextureOptions,
     TextureFiltering,
     TextureWrap
-}
+};
+
+export type {
+    TextureData,
+    TextureManager
+};
