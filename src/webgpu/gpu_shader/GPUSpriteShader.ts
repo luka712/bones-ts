@@ -7,6 +7,7 @@ import { SpriteShader } from "../../framework/shaders/SpriteShader";
 import { WebGPUTexture2D } from "../textures/WebGPUTexture";
 import { GPUShader, GPU_BIND_GROUP_OFFSET } from "./GPUShader";
 
+// OBSOLETE
 export class GPUSpriteShader extends GPUShader implements SpriteShader
 {
     /**

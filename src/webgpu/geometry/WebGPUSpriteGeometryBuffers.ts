@@ -4,7 +4,7 @@
 import { QuadGeometry } from "../../framework/bones_geometry";
 import { WebGPURendererContext } from "../WebGPURenderer";
 
-
+// OBSOLETE
 export class WebGPUSpriteGeometryBuffer
 {
     private m_verticesBuffer: GPUBuffer;

@@ -1,96 +1,43 @@
+import { text } from "stream/consumers";
 import { LifecycleState } from "../../../framework/bones_common";
-import { FileLoader } from "../../../framework/bones_loaders";
+import { Color, Rect } from "../../../framework/bones_math";
 import { IRenderer } from "../../../framework/bones_renderer";
-import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
 import { Texture2D } from "../../../framework/bones_texture";
+import { Vec2 } from "../../../framework/math/vec/Vec2";
+import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
 import { WindowManager } from "../../../framework/Window";
-import { Rect } from "../../../framework/math/Rect";
-import { Vec3 } from "../../../framework/math/vec/Vec3";
-import { Color, Vec2 } from "../../../framework/bones_math";
-import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
-import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
-
-
-const VERTEX_SOURCE = `#version 300 es
-
-layout (location = 0) in vec3 a_vertex; 
-layout (location = 1) in vec2 a_texCoords;
-layout (location = 2) in vec4 a_tintColor;
-
-out vec2 v_texCoords;
-out vec4 v_tintColor;
-
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_viewMatrix;
-
-void main()
-{
-    v_texCoords = a_texCoords;
-    v_tintColor = a_tintColor;
-    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(a_vertex, 1.0);
-}`;
-
-const FRAGMENT_SOURCE = `#version 300 es        
-precision highp float;
-     
-in vec2 v_texCoords;
-in vec4 v_tintColor;
-
-uniform sampler2D u_texture;
-     
-layout(location = 0)out vec4 outColor;
-layout(location = 1)out vec4 outBrightColor;
-     
-void main() 
-{
-    outColor = texture(u_texture,v_texCoords) * v_tintColor;
-    outColor.rgb *= outColor.a;
-    float amount = (outColor.r + out_color.g + outColor.b) / 3.0;
-    if(amount > 0.7)
-    {
-        outBrightColor = outColor;
-    }
-    else
-    {
-        outBrightColor = vec4(0.0, 0.0,0.0,1.0);
-    }
-}`;
-
-
+import { WebGPUTexture2D } from "../../textures/WebGPUTexture";
+import { WebGPURendererContext } from "../../WebGPURenderer";
+import { createSpriteRenderPipeline, STRIDE, WebGPUSpriteRendererPart } from "./WebGPUSpriteUtil";
 
 // in order to optimize, sprite renderer will render with really large buffer that needs to be setup properly
-// buffer will support configurable number of instances.
+// buffer will support configurable number of instances. If one needs to render, larger number of instance, either configure 
+// sprite renderer, or create new instance of it.
 const NUM_MAX_INSTANCES = 1000;
-// pos3, tc2, color4
-const STRIDE = 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT + 4 * Float32Array.BYTES_PER_ELEMENT;
 
 //************* WORKS AS FOLLOWS ***********************/
-// create big buffer that holds vertices and indices
-// instance data is written into buffer
-// if begin() is called instance count is restarted and data needs to be drawn
-// if texture is changed, instance count is restarted and data needs to be drawn
-// otherwise write into giant buffer until max count 
-// if max count is hit, restart instnace count and draw
+// create staging buffers 
+// create part pipeline ( here each part pipeline will be pipeline, buffers, layouts ) per texture 
+// so for each texture there will be pipeline
+// when drawing, use whole pipeline.
 
-
-export class GLSpriteRenderer extends SpriteRenderer
+export class WebGPUSpriteRenderer extends SpriteRenderer
 {
-    // WEBGL allocated data.
-    private m_vao: WebGLVertexArrayObject; // actually used.
-    private m_buffer: WebGLBuffer; // keep only to clean it up
-    private m_iBuffer: WebGLBuffer // keep only to clean it up
+    // WebGPU allocated data.
+    // we keep multiple buffers, in order to reuse buffers, otherwise new buffer would have to be created each frame.
+    private m_stagingBuffers: Array<GPUBuffer> = []; // the staging data buffers, use them to write data into them, and to copy from staging buffer to main buffer.
 
-    // Shader stuff
-    private m_shader: GLShaderImplementation;
-    private m_viewMatrixLocation: WebGLUniformLocation;
-    private m_projectionMatrixLocation: WebGLUniformLocation;
+    /**
+     * Parts need to be created for each texture.
+     * Cache parts per texture.
+     */
+    private m_parts: { [id: string]: WebGPUSpriteRendererPart } = {};
+    private m_currentPart: WebGPUSpriteRendererPart;
 
-    // The big buffer that holds all the data.
-    private m_data: Float32Array;
     // index of current instance. Must be less then NUM_MAX_INSTANCES
     private m_currentInstanceIndex = 0;
     // the current texure
-    private m_currentTexture?: Texture2D;
+    private m_currentTexture?: WebGPUTexture2D;
 
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
@@ -104,7 +51,7 @@ export class GLSpriteRenderer extends SpriteRenderer
     private o_v3: Vec2 = Vec2.zero();
     private o_rotOrigin: Vec2 = Vec2.zero();
 
-    constructor(private m_gl: WebGL2RenderingContext, public readonly window: WindowManager, public readonly renderer: IRenderer, private m_fileLoader: FileLoader)
+    constructor(private m_ctx: WebGPURendererContext, public readonly window: WindowManager, public readonly renderer: IRenderer)
     {
         super();
 
@@ -118,92 +65,38 @@ export class GLSpriteRenderer extends SpriteRenderer
 
 
     /**
-     * Creates and returns the data arrays.
+     * Set the texture coords data.
+     * @param data 
      */
-    private createDataArrays (): { indices: Uint32Array, data: Float32Array }
+    public writeDataIntoBuffer (attributeBuffer: GPUBuffer, attributeData: Float32Array): void 
     {
-        const indices = new Uint32Array(NUM_MAX_INSTANCES * 6); // 6 for quad indices
-        const data = new Float32Array(NUM_MAX_INSTANCES * STRIDE); // 4 for quad, pos_v3 * 4 + tex_v2 * 4 + color_v4 * 4
+        // 1. get or create staging buffer ( write ) 
 
-        let i_index = 0;
-        for (let i = 0; i < NUM_MAX_INSTANCES * 6; i += 6)
+        // try find one write buffer
+        let writeBuffer = this.m_stagingBuffers.pop();
+
+        // if it does not exist, create one
+        if (!writeBuffer)
         {
-            // Should be something like
-            // 0, 1, 2, first triangle (bottom left - top left - top right)
-            // 0, 2, 3  second triangle (bottom left - top right - bottom right))
-
-            // first triangle
-            indices[i] = i_index;
-            indices[i + 1] = i_index + 1;
-            indices[i + 2] = i_index + 2;
-
-            // second triangle
-            indices[i + 3] = i_index;
-            indices[i + 4] = i_index + 2;
-            indices[i + 5] = i_index + 3;
-
-            i_index += 4;
+            writeBuffer = this.m_ctx.device.createBuffer({
+                size: attributeBuffer.size,
+                usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
+                mappedAtCreation: true,
+            });
         }
 
-        this.m_data = data;
+        // 2. write data into staging buffer.
+        const array = new Float32Array(writeBuffer.getMappedRange());
+        array.set(attributeData);
+        writeBuffer.unmap();
 
-        return { indices, data }
-    }
+        // 3. encode a command
+        const command_encoder = this.m_ctx.device.createCommandEncoder();
+        // 4 for number of vertexes
+        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (this.m_currentInstanceIndex + 1) * STRIDE  * 4);
+        this.m_ctx.device.queue.submit([command_encoder.finish()]);
 
-    /**
-     * Creates the vao object and buffers.
-     */
-    private initializeWebGLVaoAndBuffers (): void 
-    {
-        const gl = this.m_gl;
-
-        const data = this.createDataArrays();
-
-        // create vertex array object, which holds buffers.
-        const vao = gl.createVertexArray();
-        gl.bindVertexArray(vao);
-
-        // create index buffer.
-        const i_buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, i_buffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, data.indices, gl.STATIC_DRAW); // STATIC_DRAW - only needs to be set once.
-
-        // create position and vertices buffer
-        const buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-        gl.bufferData(gl.ARRAY_BUFFER, data.data, gl.DYNAMIC_DRAW); // DYNAMIC_DRAW - will be set and used often. 
-
-        // positions. Layout location = 0
-        gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE, 0);
-        gl.enableVertexAttribArray(0);
-
-        // textures. Layout location = 1
-        gl.vertexAttribPointer(1, 2, gl.FLOAT, false, STRIDE, 3 * Float32Array.BYTES_PER_ELEMENT);
-        gl.enableVertexAttribArray(1);
-
-        // tint color. Layout location = 2
-        gl.vertexAttribPointer(2, 4, gl.FLOAT, false, STRIDE, 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT);
-        gl.enableVertexAttribArray(2);
-
-        // unbind vao.
-        gl.bindVertexArray(null);
-
-        this.m_vao = vao;
-        this.m_buffer = buffer;
-        this.m_iBuffer = i_buffer;
-    }
-
-    private async initializeShaders (): Promise<void>
-    {
-        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SOURCE, FRAGMENT_SOURCE);
-
-        await shader.initialize();
-        // await shader.initialize(vertex_source, fragment_source);
-
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
-
-        this.m_shader = shader;
+        writeBuffer.mapAsync(GPUMapMode.WRITE).then(() => this.m_stagingBuffers.push(writeBuffer));
     }
 
     /**
@@ -212,8 +105,6 @@ export class GLSpriteRenderer extends SpriteRenderer
     public async initialize (): Promise<void>
     {
         this.m_state = LifecycleState.Initialized;
-        this.initializeWebGLVaoAndBuffers();
-        this.initializeShaders();
     }
 
     /**
@@ -221,7 +112,7 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public destroy (): void
     {
-        this.m_shader.destroy();
+        // TODO: destroy resources.
     }
 
     /**
@@ -234,18 +125,49 @@ export class GLSpriteRenderer extends SpriteRenderer
     }
 
     /**
-     * Call gl to draw. 
+     * Call to gpu draw.
+     * Here setup use pipeline, which was created when texture was changed,
+     * write into buffers and bind everything.
      */
-    private glDraw (): void 
+    private gpuDraw (): void 
     {
-        const gl = this.m_gl;
+        const renderPass = this.m_ctx.currentRenderPassEncoder;
+        const device = this.m_ctx.device;
+
+        // extrude parts for simplicity, use raw gpu call
+        const pipeline = this.m_currentPart.pipeline;
+        const cameraBuffer = this.m_currentPart.cameraUniformBuffer;
+        const cameraBindGroup = this.m_currentPart.cameraBindGroup;
+        const textureBindGroup = this.m_currentPart.textureBindGroup;
+        const attributeBuffer = this.m_currentPart.attributesBuffer;
+        const indicesBuffer = this.m_currentPart.indicesBuffer;
+        const data = this.m_currentPart.attributesData;
+
+        // camera matrices need only to change when texture is changed, since new pipeline is used.
+        const projectionMat = this.m_projectionMatrix;
+        const viewMat = this.m_viewMatrix;
+
+        // use this pipeline
+        renderPass.setPipeline(pipeline);
+
+        // buffer is of size 128 for 2 matrices of 64 (mat4x4)
+        device.queue.writeBuffer(cameraBuffer, 0, projectionMat.buffer, projectionMat.byteOffset, projectionMat.byteLength);
+        device.queue.writeBuffer(cameraBuffer, 64, viewMat.buffer, viewMat.byteOffset, viewMat.byteLength);
+
+        // it is at bind group 0
+        renderPass.setBindGroup(0, cameraBindGroup);
+        renderPass.setBindGroup(1, textureBindGroup);
 
         // buffer subdata
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.m_buffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.m_data, 0, this.m_currentInstanceIndex * STRIDE);
+        this.writeDataIntoBuffer(attributeBuffer, data);
 
-        // draw
-        gl.drawElements(gl.TRIANGLES, this.m_currentInstanceIndex * 6, gl.UNSIGNED_INT, 0);
+        // set vertex bind group
+        renderPass.setIndexBuffer(indicesBuffer, "uint32");
+        renderPass.setVertexBuffer(0, attributeBuffer);
+
+        // draw, num of indices, num of instances.
+        const index = 1 + this.m_currentInstanceIndex;
+        renderPass.drawIndexed(6 * index, index);
 
         // reset index.
         this.m_currentInstanceIndex = 0;
@@ -258,18 +180,23 @@ export class GLSpriteRenderer extends SpriteRenderer
      * .
      * @param texture 
      */
-    private handleTexture (texture: Texture2D): void 
+    private handleTexture (texture: WebGPUTexture2D): void 
     {
         if (texture != this.m_currentTexture)
         {
-            // texture is changed, must draw
-            this.glDraw();
-
-            // change texture.
             this.m_currentTexture = texture;
-            // set active texture unit and bind texture.
-            texture.active(0);
-            texture.bind();
+
+            // custom defined pipeline part
+            this.m_currentPart = this.m_parts[texture.id];
+
+            // texture is changed, must draw
+            if (!this.m_currentPart)
+            {
+                this.m_currentPart = createSpriteRenderPipeline(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
+                this.m_parts[texture.id] = this.m_currentPart;
+            }
+
+            this.gpuDraw();
         }
     }
 
@@ -278,20 +205,12 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public begin (mode?: Blend): void
     {
-        const gl = this.m_gl;
-
         // reset stuff.
         this.m_currentTexture = null;
         this.m_currentInstanceIndex = 0;
 
-        GLBlendModeUtil.setBlendMode(gl, mode ?? this.o_defaultBlend);
+        // GLBlendModeUtil.setBlendMode(gl, mode ?? this.o_defaultBlend);
 
-        // bind vao
-        gl.bindVertexArray(this.m_vao);
-
-        this.m_shader.use();
-        gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, this.m_projectionMatrix);
-        gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, this.m_viewMatrix);
     }
 
     /**
@@ -306,9 +225,9 @@ export class GLSpriteRenderer extends SpriteRenderer
      * @param tint_color - tint color
      */
     private drawInner (i: number, x: number, y: number, w: number, h: number,
-        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void 
+        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void
     {
-        const d = this.m_data;
+        const d = this.m_currentPart.attributesData;
 
         x += w * .5;
         y += h * .5;
@@ -426,9 +345,9 @@ export class GLSpriteRenderer extends SpriteRenderer
     private drawInnerSource (i: number,
         x: number, y: number, w: number, h: number,
         sourceRect: Rect,
-        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void 
+        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void
     {
-        const d = this.m_data;
+        const d = this.m_currentPart.attributesData;
 
         // bottom left corner
         this.o_v0[0] = x;
@@ -539,15 +458,9 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public draw (texture: Texture2D, draw_rect: Rect, tint_color: Color, rotation_in_radians?: number, rotation_anchor?: Vec2): void
     {
-        this.handleTexture(texture);
+        this.handleTexture(texture as WebGPUTexture2D);
 
         const i = this.m_currentInstanceIndex * STRIDE;
-
-        // instance count is too high, must draw.
-        if (i > NUM_MAX_INSTANCES) 
-        {
-            this.glDraw();
-        }
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -565,7 +478,6 @@ export class GLSpriteRenderer extends SpriteRenderer
 
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tint_color);
-
     }
 
     /**
@@ -573,15 +485,9 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public drawSource (texture: Texture2D, drawRect: Rect, sourceRect: Rect, tintColor?: Color, rotationInRadians?: number, rotationAnchor?: Vec2): void
     {
-        this.handleTexture(texture);
+        this.handleTexture(texture as WebGPUTexture2D);
 
         const i = this.m_currentInstanceIndex * STRIDE;
-
-        // instance count is too high, must draw.
-        if (i > NUM_MAX_INSTANCES) 
-        {
-            this.glDraw();
-        }
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -611,15 +517,9 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     public drawOnPosition (texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, rotation_anchor?: Vec2, scale_factor?: Vec2): void
     {
-        this.handleTexture(texture);
+        this.handleTexture(texture as WebGPUTexture2D);
 
-        const i = this.m_currentInstanceIndex * STRIDE;
-
-        // instance count is too high, must draw.
-        if (i > NUM_MAX_INSTANCES) 
-        {
-            this.glDraw();
-        }
+        let i = this.m_currentInstanceIndex * STRIDE;
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -647,9 +547,8 @@ export class GLSpriteRenderer extends SpriteRenderer
     /**
      * @brief End the sprite rendering.
      */
-    public end (): void 
+    public end (): void
     {
-        this.glDraw();
-        this.m_gl.bindTexture(this.m_gl.TEXTURE_2D, null);
+        this.gpuDraw();
     }
 }

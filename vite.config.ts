@@ -6,6 +6,7 @@ import typescript from 'rollup-plugin-typescript2'
 
 export default defineConfig({
   build: {
+    minify: false,
     lib: {
       // Could also be a dictionary or array of multiple entry points
       entry: resolve(__dirname, 'src/index.ts'),

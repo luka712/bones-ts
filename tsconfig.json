@@ -54,7 +54,7 @@
         // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
         /* Advanced Options */
         "forceConsistentCasingInFileNames": true, /* Disallow inconsistently-cased references to the same file. */
-        "types": ["jest", "node", "opentype", "earcut", "dat.gui", "./node_modules/@webgpu/types",]
+        "types": ["vite/client", "jest", "node",  "./node_modules/@webgpu/types",]
     },
     "include": [
         "src/**/*.ts"

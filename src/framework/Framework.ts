@@ -31,6 +31,7 @@ import { LineRenderer2D } from "./renderers/LineRenderer2D";
 import { GLRectangleRenderer } from "../webgl/renderers/rectangle/GLRectangleRenderer";
 import { RectangleRenderer } from "./renderers/RectangleRenderer";
 import { GLEllipseRenderer } from "../webgl/renderers/ellipse/GLEllipseRenderer";
+import { WebGPUSpriteRenderer } from "../webgpu/renderers/sprite/WebGPUSpriteRenderer";
 
 
 export interface GameJoltCredentials 
@@ -64,7 +65,7 @@ export interface FrameworkOptions
     /**
      * Which renderer to use.
      */
-    renderer?: UseRendererOption;
+    renderer?: UseRendererOption | string;
 }
 
 /**
@@ -215,7 +216,7 @@ abstract class Framework
             const device = (this.renderer as WebGPURenderer).device;
             this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
-            // this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context, this.renderer as WebGPURenderer, this.fileLoader);
+             this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context, this.window, this.renderer as WebGPURenderer);
             this.textRenderManager = new WebGPUTextRenderer(this.renderer as WebGPURenderer, this.window, this.fileLoader);
 
             // TODO: temp
@@ -373,9 +374,9 @@ abstract class Framework
         await this.config.initialize();
         this.fontManager?.initialize();
         await this.postProcessManager?.initialize();
-        await this.lineRenderer2D.initialize();
-        await this.rectangleRenderer.initialize();
-        await this.ellipseRenderer.initialize();
+        await this.lineRenderer2D?.initialize();
+        await this.rectangleRenderer?.initialize();
+        await this.ellipseRenderer?.initialize();
 
         // this.inputManager.initialize();
 

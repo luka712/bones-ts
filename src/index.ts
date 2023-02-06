@@ -1,4 +1,4 @@
-import { Framework } from "./framework/Framework";
+import { Framework, FrameworkOptions, UseRendererOption } from "./framework/Framework";
 import { Texture2D, TextureFiltering, TextureManager, TextureOptions } from "./framework/bones_texture";
 import { Vec3 } from "./framework/math/vec/Vec3";
 import { Blend, BlendFactor, SpriteRenderer } from "./framework/SpriteRenderer";
@@ -24,6 +24,7 @@ import { PhysicsBoundsBehavior } from "./framework/physics/common/PhysicsBoundsB
 export
 {
     Framework,
+    UseRendererOption,
 
     // components
     SpriteRenderer, InputManager,
@@ -77,6 +78,9 @@ export
     BonesLinesPlugin
 };
 export type {
+    // Framework 
+    FrameworkOptions,
+
     TextureManager,
     // input manager data
     KeyboardState,
