@@ -153,7 +153,7 @@ export class WebGPURenderer implements IRenderer
             const format = navigator.gpu.getPreferredCanvasFormat();
             this.m_gpuContext.configure({
                 device: this.device,
-                alphaMode: "premultiplied",
+                alphaMode: "opaque",
                 size: [this.m_canvas.width * window.devicePixelRatio, this.m_canvas.height * window.devicePixelRatio],
                 // format: format,
                 format: 'bgra8unorm',
@@ -164,9 +164,8 @@ export class WebGPURenderer implements IRenderer
         // DEPTH TEXTURE
         const depth_texture = this.device.createTexture({
             size: [this.m_bufferSize.x, this.m_bufferSize.y, 1],
-            dimension: '2d',
             format: 'depth24plus-stencil8',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC
+            usage: GPUTextureUsage.RENDER_ATTACHMENT 
         });
         this.m_depthTextureView = depth_texture.createView();
     }

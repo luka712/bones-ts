@@ -5,56 +5,12 @@ import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
 import { Texture2D } from "../../../framework/bones_texture";
 import { WindowManager } from "../../../framework/Window";
 import { Rect } from "../../../framework/math/Rect";
-import { Vec3 } from "../../../framework/math/vec/Vec3";
 import { Color, Vec2 } from "../../../framework/bones_math";
 import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
 import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
+import  vertexSource  from "./shaders/vspriteshader.glsl?raw"
+import  fragmentSource  from "./shaders/fspriteshader.glsl?raw"
 
-
-const VERTEX_SOURCE = `#version 300 es
-
-layout (location = 0) in vec3 a_vertex; 
-layout (location = 1) in vec2 a_texCoords;
-layout (location = 2) in vec4 a_tintColor;
-
-out vec2 v_texCoords;
-out vec4 v_tintColor;
-
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_viewMatrix;
-
-void main()
-{
-    v_texCoords = a_texCoords;
-    v_tintColor = a_tintColor;
-    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(a_vertex, 1.0);
-}`;
-
-const FRAGMENT_SOURCE = `#version 300 es        
-precision highp float;
-     
-in vec2 v_texCoords;
-in vec4 v_tintColor;
-
-uniform sampler2D u_texture;
-     
-layout(location = 0)out vec4 outColor;
-layout(location = 1)out vec4 outBrightColor;
-     
-void main() 
-{
-    outColor = texture(u_texture,v_texCoords) * v_tintColor;
-    outColor.rgb *= outColor.a;
-    float amount = (outColor.r + out_color.g + outColor.b) / 3.0;
-    if(amount > 0.7)
-    {
-        outBrightColor = outColor;
-    }
-    else
-    {
-        outBrightColor = vec4(0.0, 0.0,0.0,1.0);
-    }
-}`;
 
 
 
@@ -195,7 +151,7 @@ export class GLSpriteRenderer extends SpriteRenderer
 
     private async initializeShaders (): Promise<void>
     {
-        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SOURCE, FRAGMENT_SOURCE);
+        const shader = new GLShaderImplementation(this.m_gl, vertexSource, fragmentSource);
 
         await shader.initialize();
         // await shader.initialize(vertex_source, fragment_source);

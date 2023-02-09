@@ -1,4 +1,3 @@
-import { text } from "stream/consumers";
 import { LifecycleState } from "../../../framework/bones_common";
 import { Color, Rect } from "../../../framework/bones_math";
 import { IRenderer } from "../../../framework/bones_renderer";
@@ -93,7 +92,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         // 3. encode a command
         const command_encoder = this.m_ctx.device.createCommandEncoder();
         // 4 for number of vertexes
-        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (this.m_currentInstanceIndex + 1) * STRIDE  * 4);
+        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (this.m_currentInstanceIndex + 1) * STRIDE * 4);
         this.m_ctx.device.queue.submit([command_encoder.finish()]);
 
         writeBuffer.mapAsync(GPUMapMode.WRITE).then(() => this.m_stagingBuffers.push(writeBuffer));
@@ -166,8 +165,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         renderPass.setVertexBuffer(0, attributeBuffer);
 
         // draw, num of indices, num of instances.
-        const index = 1 + this.m_currentInstanceIndex;
-        renderPass.drawIndexed(6 * index, index);
+        renderPass.drawIndexed(this.m_currentInstanceIndex * 6);
 
         // reset index.
         this.m_currentInstanceIndex = 0;
@@ -184,19 +182,24 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     {
         if (texture != this.m_currentTexture)
         {
+            // if there is a texture, it must be drawn.
+            if (this.m_currentTexture)
+            {
+                this.gpuDraw();
+            }
+
+            // now store in current texture
             this.m_currentTexture = texture;
 
             // custom defined pipeline part
             this.m_currentPart = this.m_parts[texture.id];
 
-            // texture is changed, must draw
+            // if there is no part for this texture, create one
             if (!this.m_currentPart)
             {
                 this.m_currentPart = createSpriteRenderPipeline(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
                 this.m_parts[texture.id] = this.m_currentPart;
             }
-
-            this.gpuDraw();
         }
     }
 
@@ -205,7 +208,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     public begin (mode?: Blend): void
     {
-        // reset stuff.
+        // reset stuff and instance index.
         this.m_currentTexture = null;
         this.m_currentInstanceIndex = 0;
 
@@ -487,14 +490,8 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     {
         this.handleTexture(texture as WebGPUTexture2D);
 
+        // find current index, but take into account stride.
         const i = this.m_currentInstanceIndex * STRIDE;
-
-        // /******************* SETUP OPTIMIZATION VECTORS ******************/
-        // it's easier to reason with vector.
-
-        // TODO: use first with passed
-        // const origin = origin ?? this.origin;
-        const origin = this.origin;
 
         // move to top left by default
         const x = drawRect.x - drawRect.w * .5;

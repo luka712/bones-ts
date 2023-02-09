@@ -51,9 +51,9 @@ fn fs_main(
 {
     var out: FSResult;
     out.o_color = textureSample(u_texture, u_sampler, v_texCoords) * v_tintColor;
-    out.o_color.r *= out.o_color.a;
-    out.o_color.g *= out.o_color.a;
-    out.o_color.b *= out.o_color.a;
+    // out.o_color.r *= out.o_color.a;
+    // out.o_color.g *= out.o_color.a;
+    // out.o_color.b *= out.o_color.a;
 
     // bright color
     var amount = (out.o_color.r + out.o_color.g + out.o_color.b) / 3.0;

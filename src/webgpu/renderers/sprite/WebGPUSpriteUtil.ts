@@ -71,7 +71,7 @@ function createBuffers (device: GPUDevice, maxInstances: number)
     return {
         indicesBuffer,
         dataBuffer,
-        attributesData: data 
+        attributesData: data
     }
 }
 
@@ -121,15 +121,17 @@ export function createSpriteRenderPipeline (device: GPUDevice, texture: WebGPUTe
             format: 'bgra8unorm',
             blend: {
                 // https://learnopengl.com/Advanced-OpenGL/Blending#:~:text=Blending%20in%20OpenGL%20is%20commonly,behind%20it%20with%20varying%20intensity.
+                // https://wgpu.rs/doc/src/wgpu_types/lib.rs.html#1496
                 color: {
-                    srcFactor: 'src-alpha',
+                    srcFactor: "src-alpha",
                     dstFactor: 'one-minus-src-alpha',
-                    operation: 'add'
+                    operation: "add"
                 },
                 alpha: {
-                    srcFactor: 'one',
-                    dstFactor: 'one-minus-src-alpha',
-                    operation: 'add'
+                    // Blend state of (1 * src) + ((1 - src_alpha) * dst)
+                    srcFactor: "one",
+                    dstFactor: "one",
+                    operation: "add"
                 },
             },
             writeMask: GPUColorWrite.ALL,
@@ -218,14 +220,14 @@ export function createSpriteRenderPipeline (device: GPUDevice, texture: WebGPUTe
         vertex: vertexState,
         fragment: fragmentState,
         primitive: {
-            topology: 'triangle-list'
+            topology: 'triangle-list',
+            cullMode: "back",
         },
         depthStencil: {
+            format: "depth24plus-stencil8",
             depthWriteEnabled: true,
-            depthCompare: 'less',
-            format: 'depth24plus-stencil8'
-
-        },
+            depthCompare: "less-equal", // Very important, must be less equal otherwise it won't be able to resolve depths with same z depth value
+        }, 
     };
 
     const pipeline = device.createRenderPipeline(pipelineDesc);
