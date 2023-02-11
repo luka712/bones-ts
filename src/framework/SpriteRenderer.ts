@@ -123,14 +123,10 @@ export abstract class SpriteRenderer
     protected m_state: LifecycleState;
 
     /**
-     * @brief The projection matrix.
+     * @brief The projection view matrix.
      */
-    protected m_projectionMatrix: Mat4x4;
+    protected m_projectionViewMatrix: Mat4x4;
 
-    /**
-     * @brief The view matrix.
-     */
-    protected m_viewMatrix: Mat4x4;
 
     /**
      * @brief Initialize the sprite batch manager. Initialize must be called in order to properly initialize all the variables.
@@ -219,8 +215,10 @@ export abstract class SpriteRenderer
      */
     public resize (width: number, height: number): void 
     {
-        this.m_projectionMatrix = Mat4x4.orthographic(0, width, height, 0, -1, 1) as Mat4x4;
-        this.m_viewMatrix = Mat4x4.lookAt(Vec3.zero(), Vec3.negativeUnitZ(), Vec3.unitY()) as Mat4x4;
+        const projection = Mat4x4.orthographic(0, width, height, 0, -1, 1);
+        const view = Mat4x4.lookAt(Vec3.zero(), Vec3.negativeUnitZ(), Vec3.unitY());
+
+        this.m_projectionViewMatrix =   projection.multiply(view);
     }
 
     /**

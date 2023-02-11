@@ -38,8 +38,7 @@ export class GLSpriteRenderer extends SpriteRenderer
 
     // Shader stuff
     private m_shader: GLShaderImplementation;
-    private m_viewMatrixLocation: WebGLUniformLocation;
-    private m_projectionMatrixLocation: WebGLUniformLocation;
+    private m_projectionViewMatrixLocation: WebGLUniformLocation;
 
     // The big buffer that holds all the data.
     private m_data: Float32Array;
@@ -156,8 +155,7 @@ export class GLSpriteRenderer extends SpriteRenderer
         await shader.initialize();
         // await shader.initialize(vertex_source, fragment_source);
 
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
+        this.m_projectionViewMatrixLocation = shader.getUniformLocation("u_global.projectionViewMatrix", true);
 
         this.m_shader = shader;
     }
@@ -246,8 +244,7 @@ export class GLSpriteRenderer extends SpriteRenderer
         gl.bindVertexArray(this.m_vao);
 
         this.m_shader.use();
-        gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, this.m_projectionMatrix);
-        gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, this.m_viewMatrix);
+        gl.uniformMatrix4fv(this.m_projectionViewMatrixLocation, false, this.m_projectionViewMatrix);
     }
 
     /**

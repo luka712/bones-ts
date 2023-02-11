@@ -20,7 +20,7 @@
         class Game extends BonesFramework.Framework {
 
             sprite1 = {
-                position: new BonesFramework.Vec2(160, 100),
+                position: new BonesFramework.Vec2(100, 100),
                 tintColor: BonesFramework.Color.white(),
                 rotation: 0,
                 origin: new BonesFramework.Vec2(0.5, 0.5),
@@ -37,6 +37,54 @@
 
             sprite3 = {
                 position: new BonesFramework.Vec2(300, 100),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite4 = {
+                position: new BonesFramework.Vec2(100, 200),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite5 = {
+                position: new BonesFramework.Vec2(200, 200),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite6 = {
+                position: new BonesFramework.Vec2(300, 200),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite7 = {
+                position: new BonesFramework.Vec2(100, 300),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite8 = {
+                position: new BonesFramework.Vec2(200, 300),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                origin: new BonesFramework.Vec2(0.5, 0.5),
+                scale: new BonesFramework.Vec2(3, 3)
+            }
+
+            sprite9 = {
+                position: new BonesFramework.Vec2(300, 300),
                 tintColor: BonesFramework.Color.white(),
                 rotation: 0,
                 origin: new BonesFramework.Vec2(0.5, 0.5),
@@ -104,46 +152,59 @@
             async initialize () {
                 const gui = new dat.GUI();
 
-                this.sprite1.texture = await this.textureManager.loadTexture2D("fox.png");
-                this.sprite2.texture = await this.textureManager.loadTexture2D("husky.png");
-                this.sprite3.texture = await this.textureManager.loadTexture2D("cat.png");
+                const t1 = await this.textureManager.loadTexture2D("fox.png");
+                const t2 = await this.textureManager.loadTexture2D("husky.png");
+                const t3 = await this.textureManager.loadTexture2D("cat.png");
+
+                this.sprite1.texture = t1;
+                this.sprite2.texture = t2;
+                this.sprite3.texture = t3;
+
+                this.sprite4.texture = t1;
+                this.sprite5.texture = t2;
+                this.sprite6.texture = t3;
+
+                this.sprite7.texture = t1;
+                this.sprite8.texture = t2;
+                this.sprite9.texture = t3;
 
                 this.createFolder(gui, this.sprite1, 1);
                 this.createFolder(gui, this.sprite2, 2);
                 this.createFolder(gui, this.sprite3, 3);
-
+                this.createFolder(gui, this.sprite4, 4);
+                this.createFolder(gui, this.sprite5, 5);
+                this.createFolder(gui, this.sprite6, 6);
+                this.createFolder(gui, this.sprite7, 7);
+                this.createFolder(gui, this.sprite8, 8);
+                this.createFolder(gui, this.sprite9, 9);
 
             }
 
             update (delta_time) { }
 
+            renderSprite(sprite) {
+                this.spriteRenderer.drawOnPosition(
+                    sprite.texture,
+                    sprite.position,
+                    sprite.tintColor,
+                    sprite.rotation,
+                    sprite.origin,
+                    sprite.scale);
+            }
+
             draw () {
 
                 this.spriteRenderer.begin();
 
-                this.spriteRenderer.drawOnPosition(
-                    this.sprite1.texture,
-                    this.sprite1.position,
-                    this.sprite1.tintColor,
-                    this.sprite1.rotation,
-                    this.sprite1.origin,
-                    this.sprite1.scale);
-
-                this.spriteRenderer.drawOnPosition(
-                    this.sprite2.texture,
-                    this.sprite2.position,
-                    this.sprite2.tintColor,
-                    this.sprite2.rotation,
-                    this.sprite2.origin,
-                    this.sprite2.scale);
-
-                this.spriteRenderer.drawOnPosition(
-                    this.sprite3.texture,
-                    this.sprite3.position,
-                    this.sprite3.tintColor,
-                    this.sprite3.rotation,
-                    this.sprite3.origin,
-                    this.sprite3.scale);
+                this.renderSprite(this.sprite1);
+                this.renderSprite(this.sprite2);
+                this.renderSprite(this.sprite3);
+                this.renderSprite(this.sprite4);
+                this.renderSprite(this.sprite5);
+                this.renderSprite(this.sprite6);
+                this.renderSprite(this.sprite7);
+                this.renderSprite(this.sprite8);
+                this.renderSprite(this.sprite9);
 
                 this.spriteRenderer.end();
             }

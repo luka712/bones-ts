@@ -7,7 +7,7 @@ import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
 import { WindowManager } from "../../../framework/Window";
 import { WebGPUTexture2D } from "../../textures/WebGPUTexture";
 import { WebGPURendererContext } from "../../WebGPURenderer";
-import { createSpriteRenderPipeline, STRIDE, WebGPUSpriteRendererPart } from "./WebGPUSpriteUtil";
+import { ATTRIBUTES_STRIDE, WebGPUSpriteRendererPart, WebGPUSpriteUtil } from "./WebGPUSpriteUtil";
 
 // in order to optimize, sprite renderer will render with really large buffer that needs to be setup properly
 // buffer will support configurable number of instances. If one needs to render, larger number of instance, either configure 
@@ -28,15 +28,20 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
 
     /**
      * Parts need to be created for each texture.
-     * Cache parts per texture.
+     * Cache parts per texture. This will persist until destroy is called.
      */
-    private m_parts: { [id: string]: WebGPUSpriteRendererPart } = {};
-    private m_currentPart: WebGPUSpriteRendererPart;
+    private m_partsCache: { [id: string]: WebGPUSpriteRendererPart } = {};
 
-    // index of current instance. Must be less then NUM_MAX_INSTANCES
-    private m_currentInstanceIndex = 0;
-    // the current texure
-    private m_currentTexture?: WebGPUTexture2D;
+    /**
+     * Draw parts are parts that will be drawn and cleared in the end.
+     * Cleared when begin/end is called.
+     */
+    private m_drawParts: { [id: string]: WebGPUSpriteRendererPart } = {};
+
+    /**
+     * Keep track of last part, to be able to see if new parts needs to be added.
+     */
+    private m_lastPart?: WebGPUSpriteRendererPart;
 
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
@@ -67,14 +72,17 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      * Set the texture coords data.
      * @param data 
      */
-    public writeDataIntoBuffer (attributeBuffer: GPUBuffer, attributeData: Float32Array): void 
+    public writeDataIntoBuffer (part: WebGPUSpriteRendererPart): void 
     {
-        // 1. get or create staging buffer ( write ) 
+        // Get necessary data.
+        const attributeBuffer = part.attributesBuffer;
+        const attributeData = part.attributesData;
+        const instanceIndex = part.instanceIndex;
 
-        // try find one write buffer
+        // 1.try find one write buffer
         let writeBuffer = this.m_stagingBuffers.pop();
 
-        // if it does not exist, create one
+        // 2. if it does not exist, create one
         if (!writeBuffer)
         {
             writeBuffer = this.m_ctx.device.createBuffer({
@@ -84,15 +92,15 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
             });
         }
 
-        // 2. write data into staging buffer.
+        // 3. write data into staging buffer.
         const array = new Float32Array(writeBuffer.getMappedRange());
         array.set(attributeData);
         writeBuffer.unmap();
 
-        // 3. encode a command
+        // 4. encode a command
         const command_encoder = this.m_ctx.device.createCommandEncoder();
-        // 4 for number of vertexes
-        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (this.m_currentInstanceIndex + 1) * STRIDE * 4);
+        // 5 for number of vertexes
+        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (instanceIndex + 1) * ATTRIBUTES_STRIDE * 4);
         this.m_ctx.device.queue.submit([command_encoder.finish()]);
 
         writeBuffer.mapAsync(GPUMapMode.WRITE).then(() => this.m_stagingBuffers.push(writeBuffer));
@@ -128,47 +136,50 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      * Here setup use pipeline, which was created when texture was changed,
      * write into buffers and bind everything.
      */
-    private gpuDraw (): void 
+    private gpuDraw (part: WebGPUSpriteRendererPart): void 
     {
         const renderPass = this.m_ctx.currentRenderPassEncoder;
         const device = this.m_ctx.device;
 
         // extrude parts for simplicity, use raw gpu call
-        const pipeline = this.m_currentPart.pipeline;
-        const cameraBuffer = this.m_currentPart.cameraUniformBuffer;
-        const cameraBindGroup = this.m_currentPart.cameraBindGroup;
-        const textureBindGroup = this.m_currentPart.textureBindGroup;
-        const attributeBuffer = this.m_currentPart.attributesBuffer;
-        const indicesBuffer = this.m_currentPart.indicesBuffer;
-        const data = this.m_currentPart.attributesData;
+        const pipeline = part.pipeline;
+
+        // cameras 
+        const globalBuffer = part.globalUniformBuffer;
+        const globalBindGroup = part.globalBindGroup;
+
+
+        const textureBindGroup = part.textureBindGroup;
+        const attributeBuffer = part.attributesBuffer;
+        const indicesBuffer = part.indicesBuffer;
+
+        const instanceIndex = part.instanceIndex;
 
         // camera matrices need only to change when texture is changed, since new pipeline is used.
-        const projectionMat = this.m_projectionMatrix;
-        const viewMat = this.m_viewMatrix;
+        const projectionViewMat = this.m_projectionViewMatrix;
 
         // use this pipeline
         renderPass.setPipeline(pipeline);
 
-        // buffer is of size 128 for 2 matrices of 64 (mat4x4)
-        device.queue.writeBuffer(cameraBuffer, 0, projectionMat.buffer, projectionMat.byteOffset, projectionMat.byteLength);
-        device.queue.writeBuffer(cameraBuffer, 64, viewMat.buffer, viewMat.byteOffset, viewMat.byteLength);
+        // write global
+        // buffer is of size 64 for 1 projection/View matrix of 64 (mat4x4)
+        device.queue.writeBuffer(globalBuffer, 0, projectionViewMat.buffer, projectionViewMat.byteOffset, projectionViewMat.byteLength);
 
-        // it is at bind group 0
-        renderPass.setBindGroup(0, cameraBindGroup);
+        // write instance
+
+        // buffer subdata attributes
+        this.writeDataIntoBuffer(part);
+
+        // set bind groups
+        renderPass.setBindGroup(0, globalBindGroup);
         renderPass.setBindGroup(1, textureBindGroup);
-
-        // buffer subdata
-        this.writeDataIntoBuffer(attributeBuffer, data);
 
         // set vertex bind group
         renderPass.setIndexBuffer(indicesBuffer, "uint32");
         renderPass.setVertexBuffer(0, attributeBuffer);
 
         // draw, num of indices, num of instances.
-        renderPass.drawIndexed(this.m_currentInstanceIndex * 6);
-
-        // reset index.
-        this.m_currentInstanceIndex = 0;
+        renderPass.drawIndexed(instanceIndex * 6);
     }
 
     /**
@@ -180,25 +191,23 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     private handleTexture (texture: WebGPUTexture2D): void 
     {
-        if (texture != this.m_currentTexture)
+        if (texture != this.m_lastPart?.texture)
         {
-            // if there is a texture, it must be drawn.
-            if (this.m_currentTexture)
-            {
-                this.gpuDraw();
-            }
-
-            // now store in current texture
-            this.m_currentTexture = texture;
-
             // custom defined pipeline part
-            this.m_currentPart = this.m_parts[texture.id];
+            this.m_lastPart = this.m_partsCache[texture.id];
 
             // if there is no part for this texture, create one
-            if (!this.m_currentPart)
+            if (!this.m_lastPart)
             {
-                this.m_currentPart = createSpriteRenderPipeline(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
-                this.m_parts[texture.id] = this.m_currentPart;
+                // create part, assign texture to it and store it by texture id.
+                this.m_lastPart = WebGPUSpriteUtil.createSpriteRenderPart(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
+                this.m_partsCache[texture.id] = this.m_lastPart;
+            }
+
+            // Store if for drawing, if not already stored.
+            if (!this.m_drawParts[texture.id])
+            {
+                this.m_drawParts[texture.id] = this.m_partsCache[texture.id];
             }
         }
     }
@@ -208,12 +217,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     public begin (mode?: Blend): void
     {
-        // reset stuff and instance index.
-        this.m_currentTexture = null;
-        this.m_currentInstanceIndex = 0;
-
-        // GLBlendModeUtil.setBlendMode(gl, mode ?? this.o_defaultBlend);
-
+        this.m_lastPart = null;
     }
 
     /**
@@ -225,12 +229,12 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      * @param h - the sprite height
      * @param rotation_in_radians - rotation theta
      * @param rotation_anchor - rotation anchor
-     * @param tint_color - tint color
+     * @param tintColor - tint color
      */
     private drawInner (i: number, x: number, y: number, w: number, h: number,
-        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void
+        rotation_in_radians: number, rotation_anchor?: Vec2, tintColor?: Color): void
     {
-        const d = this.m_currentPart.attributesData;
+        const d = this.m_lastPart.attributesData;
 
         x += w * .5;
         y += h * .5;
@@ -272,7 +276,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         }
 
         // use default if not set.
-        tint_color = tint_color ?? this.o_defaultTintColor;
+        tintColor = tintColor ?? this.o_defaultTintColor;
 
         // -0.5, -0.5, 0, 0, 0,			// bottom left corner
         // v0
@@ -283,10 +287,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 3] = 0;
         d[i + 4] = 0;
         // color0
-        d[i + 5] = tint_color.r;
-        d[i + 6] = tint_color.g;
-        d[i + 7] = tint_color.b;
-        d[i + 8] = tint_color.a;
+        d[i + 5] = tintColor.r;
+        d[i + 6] = tintColor.g;
+        d[i + 7] = tintColor.b;
+        d[i + 8] = tintColor.a;
 
         // -0.5, 0.5, 0, 0, 1,			// top left corner
         // v1
@@ -297,10 +301,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 12] = 0;
         d[i + 13] = 1;
         // color1
-        d[i + 14] = tint_color.r;
-        d[i + 15] = tint_color.g;
-        d[i + 16] = tint_color.b;
-        d[i + 17] = tint_color.a;
+        d[i + 14] = tintColor.r;
+        d[i + 15] = tintColor.g;
+        d[i + 16] = tintColor.b;
+        d[i + 17] = tintColor.a;
 
         // 0.5, 0.5, 0, 1, 1,			// top right corner
         // v2
@@ -311,10 +315,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 21] = 1;
         d[i + 22] = 1;
         // color2
-        d[i + 23] = tint_color.r;
-        d[i + 24] = tint_color.g;
-        d[i + 25] = tint_color.b;
-        d[i + 26] = tint_color.a;
+        d[i + 23] = tintColor.r;
+        d[i + 24] = tintColor.g;
+        d[i + 25] = tintColor.b;
+        d[i + 26] = tintColor.a;
 
         // 0.5, -0.5, 0, 1, 0			// bottom right corner
         // v3
@@ -325,12 +329,12 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 30] = 1;
         d[i + 31] = 0;
         // color3
-        d[i + 32] = tint_color.r;
-        d[i + 33] = tint_color.g;
-        d[i + 34] = tint_color.b;
-        d[i + 35] = tint_color.a;
+        d[i + 32] = tintColor.r;
+        d[i + 33] = tintColor.g;
+        d[i + 34] = tintColor.b;
+        d[i + 35] = tintColor.a;
 
-        this.m_currentInstanceIndex++;
+        this.m_lastPart.instanceIndex++;
     }
 
     /**
@@ -343,14 +347,15 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      * @param sourceRect - the source rectangle.
      * @param rotation_in_radians - rotation theta
      * @param rotation_anchor - rotation anchor
-     * @param tint_color - tint color
+     * @param tintColor - tint color
      */
     private drawInnerSource (i: number,
         x: number, y: number, w: number, h: number,
         sourceRect: Rect,
-        rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void
+        rotation_in_radians: number, rotation_anchor?: Vec2, tintColor?: Color): void
     {
-        const d = this.m_currentPart.attributesData;
+        const d = this.m_lastPart.attributesData;
+        const texture = this.m_lastPart.texture;
 
         // bottom left corner
         this.o_v0[0] = x;
@@ -389,13 +394,13 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         }
 
         // use default if not set.
-        tint_color = tint_color ?? this.o_defaultTintColor;
+        tintColor = tintColor ?? this.o_defaultTintColor;
 
-        const tx = sourceRect.x / this.m_currentTexture.width;
-        const ty = sourceRect.y / this.m_currentTexture.height;
+        const tx = sourceRect.x / texture.width;
+        const ty = sourceRect.y / texture.height;
 
-        const tx2 = tx + (sourceRect.w / this.m_currentTexture.width);
-        const ty2 = ty + (sourceRect.h / this.m_currentTexture.height);
+        const tx2 = tx + (sourceRect.w / texture.width);
+        const ty2 = ty + (sourceRect.h / texture.height);
 
         // -0.5, -0.5, 0, 0, 0,			// bottom left corner
         // v0
@@ -406,10 +411,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 3] = tx;
         d[i + 4] = ty2;
         // color0
-        d[i + 5] = tint_color.r;
-        d[i + 6] = tint_color.g;
-        d[i + 7] = tint_color.b;
-        d[i + 8] = tint_color.a;
+        d[i + 5] = tintColor.r;
+        d[i + 6] = tintColor.g;
+        d[i + 7] = tintColor.b;
+        d[i + 8] = tintColor.a;
 
         // -0.5, 0.5, 0, 0, 1,			// top left corner
         // v1
@@ -420,10 +425,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 12] = tx;
         d[i + 13] = ty;
         // color1
-        d[i + 14] = tint_color.r;
-        d[i + 15] = tint_color.g;
-        d[i + 16] = tint_color.b;
-        d[i + 17] = tint_color.a;
+        d[i + 14] = tintColor.r;
+        d[i + 15] = tintColor.g;
+        d[i + 16] = tintColor.b;
+        d[i + 17] = tintColor.a;
 
         // 0.5, 0.5, 0, 1, 1,			// top right corner
         // v2
@@ -434,10 +439,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 21] = tx2;
         d[i + 22] = ty;
         // color2
-        d[i + 23] = tint_color.r;
-        d[i + 24] = tint_color.g;
-        d[i + 25] = tint_color.b;
-        d[i + 26] = tint_color.a;
+        d[i + 23] = tintColor.r;
+        d[i + 24] = tintColor.g;
+        d[i + 25] = tintColor.b;
+        d[i + 26] = tintColor.a;
 
         // 0.5, -0.5, 0, 1, 0			// bottom right corner
         // v3
@@ -448,22 +453,24 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 30] = tx2;
         d[i + 31] = ty2;
         // color3
-        d[i + 32] = tint_color.r;
-        d[i + 33] = tint_color.g;
-        d[i + 34] = tint_color.b;
-        d[i + 35] = tint_color.a;
+        d[i + 32] = tintColor.r;
+        d[i + 33] = tintColor.g;
+        d[i + 34] = tintColor.b;
+        d[i + 35] = tintColor.a;
 
-        this.m_currentInstanceIndex++;
+        this.m_lastPart.instanceIndex++;
     }
+
+
 
     /**
      * {@inheritDoc SpriteRenderer}
      */
-    public draw (texture: Texture2D, draw_rect: Rect, tint_color: Color, rotation_in_radians?: number, rotation_anchor?: Vec2): void
+    public draw (texture: Texture2D, draw_rect: Rect, tintColor: Color, rotation_in_radians?: number, rotation_anchor?: Vec2): void
     {
         this.handleTexture(texture as WebGPUTexture2D);
 
-        const i = this.m_currentInstanceIndex * STRIDE;
+        const i = this.m_lastPart.instanceIndex * ATTRIBUTES_STRIDE;
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -480,7 +487,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         const h = draw_rect.h;
 
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
-        this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tint_color);
+        this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tintColor);
     }
 
     /**
@@ -491,7 +498,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         this.handleTexture(texture as WebGPUTexture2D);
 
         // find current index, but take into account stride.
-        const i = this.m_currentInstanceIndex * STRIDE;
+        const i = this.m_lastPart.instanceIndex * ATTRIBUTES_STRIDE;
 
         // move to top left by default
         const x = drawRect.x - drawRect.w * .5;
@@ -512,11 +519,11 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     /**
      * @inheritdoc
      */
-    public drawOnPosition (texture: Texture2D, position: Vec2, tint_color?: Color, rotation_in_radians?: number, rotation_anchor?: Vec2, scale_factor?: Vec2): void
+    public drawOnPosition (texture: Texture2D, position: Vec2, tintColor?: Color, rotation_in_radians?: number, rotation_anchor?: Vec2, scale_factor?: Vec2): void
     {
         this.handleTexture(texture as WebGPUTexture2D);
 
-        let i = this.m_currentInstanceIndex * STRIDE;
+        let i = this.m_lastPart.instanceIndex * ATTRIBUTES_STRIDE;
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -538,7 +545,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         }
 
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
-        this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tint_color);
+        this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tintColor);
     }
 
     /**
@@ -546,6 +553,20 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     public end (): void
     {
-        this.gpuDraw();
+        // for each in draw parts
+        for (const key in this.m_drawParts)
+        {
+            const part = this.m_drawParts[key];
+
+            // if there is anything to draw, draw it and reset index.
+            if (part.instanceIndex > 0)
+            {
+                this.gpuDraw(part);
+                part.instanceIndex = 0;
+            }
+
+            // clear draw part
+            delete this.m_drawParts[key];
+        }
     }
 }
