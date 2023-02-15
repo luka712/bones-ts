@@ -15,8 +15,9 @@ import { Mat4x4, Color, Vec2 } from "..";
 
 /**
  * The GL text render manager.
+ * NOTE: Obsolete in favor of rendering with WebGPUSpriteRenderer
  */
-export class WebGPUTextRenderer extends TextRenderManager
+export class WebGPUTextRendererObsolete_2023_02_15 extends TextRenderManager
 {
     /**
      * The render pass encoder, needs to be passed in, so that items can be prepared for drawing.

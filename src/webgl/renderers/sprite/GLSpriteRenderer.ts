@@ -8,8 +8,10 @@ import { Rect } from "../../../framework/math/Rect";
 import { Color, Vec2 } from "../../../framework/bones_math";
 import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
 import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
-import  vertexSource  from "./shaders/vspriteshader.glsl?raw"
-import  fragmentSource  from "./shaders/fspriteshader.glsl?raw"
+import vertexSource from "./shaders/vspriteshader.glsl?raw"
+import fragmentSource from "./shaders/fspriteshader.glsl?raw"
+import { GLTexture2D } from "../../GLTexture";
+import { SpriteFont } from "../../../framework/fonts/SpriteFont";
 
 
 
@@ -31,6 +33,7 @@ const STRIDE = 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_E
 
 export class GLSpriteRenderer extends SpriteRenderer
 {
+
     // WEBGL allocated data.
     private m_vao: WebGLVertexArrayObject; // actually used.
     private m_buffer: WebGLBuffer; // keep only to clean it up
@@ -192,7 +195,16 @@ export class GLSpriteRenderer extends SpriteRenderer
      */
     private glDraw (): void 
     {
+        // no need to draw if 0.
+        if (this.m_currentInstanceIndex == 0) return;
+
         const gl = this.m_gl;
+
+        gl.bindVertexArray(this.m_vao);
+
+        // set active texture unit and bind texture.
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, (this.m_currentTexture as GLTexture2D).glTexture);
 
         // buffer subdata
         gl.bindBuffer(gl.ARRAY_BUFFER, this.m_buffer);
@@ -221,9 +233,6 @@ export class GLSpriteRenderer extends SpriteRenderer
 
             // change texture.
             this.m_currentTexture = texture;
-            // set active texture unit and bind texture.
-            texture.active(0);
-            texture.bind();
         }
     }
 
@@ -262,9 +271,6 @@ export class GLSpriteRenderer extends SpriteRenderer
         rotation_in_radians: number, rotation_anchor?: Vec2, tint_color?: Color): void 
     {
         const d = this.m_data;
-
-        x += w * .5;
-        y += h * .5;
 
         // bottom left corner
         this.o_v0[0] = x;
@@ -505,19 +511,8 @@ export class GLSpriteRenderer extends SpriteRenderer
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
 
-        // TODO: use first with passed
-        // const origin = origin ?? this.origin;
-        const origin = this.origin;
-
-        // move to top left by default
-        const x = draw_rect.x - draw_rect.w * .5;
-        const y = draw_rect.y - draw_rect.h * .5;
-
-        const w = draw_rect.w;
-        const h = draw_rect.h;
-
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
-        this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tint_color);
+        this.drawInner(i, draw_rect.x, draw_rect.y, draw_rect.w, draw_rect.h, rotation_in_radians, rotation_anchor, tint_color);
 
     }
 
@@ -539,21 +534,10 @@ export class GLSpriteRenderer extends SpriteRenderer
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
 
-        // TODO: use first with passed
-        // const origin = origin ?? this.origin;
-        const origin = this.origin;
-
-        // move to top left by default
-        const x = drawRect.x - drawRect.w * .5;
-        const y = drawRect.y - drawRect.h * .5;
-
-        const w = drawRect.w;
-        const h = drawRect.h;
-
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInnerSource(
             i,
-            x, y, w, h,
+            drawRect.x, drawRect.y, drawRect.w, drawRect.h,
             sourceRect,
             rotationInRadians, rotationAnchor, tintColor);
 
@@ -595,6 +579,112 @@ export class GLSpriteRenderer extends SpriteRenderer
 
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tint_color);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public drawString (font: SpriteFont, text: string, position: Vec2, tintColor?: Color, scale: number = 1): void
+    {
+        this.handleTexture(font.texture);
+
+        let i = this.m_currentInstanceIndex * STRIDE;
+
+        // instance count is too high, must draw.
+        if (i > NUM_MAX_INSTANCES) 
+        {
+            this.glDraw();
+            i = 0;
+        }
+
+        const d = this.m_data;
+
+        let x = Math.floor(position[0]);
+        let y = Math.floor(position[1]);
+
+        // iterate through all characters
+        const l = text.length;
+        for (let j = 0; j < l; j++)
+        {
+            i = this.m_currentInstanceIndex * STRIDE;
+
+            // instance count is too high, must draw.
+            if (i > NUM_MAX_INSTANCES) 
+            {
+                this.glDraw();
+                i = 0;
+            }
+
+            const c = text[j];
+            const ch = font.getFontCharacterInfo(c);
+
+            let _x = x;
+            let _y = y;
+
+            const w = Math.floor(ch.size[0] * scale);
+            const h = Math.floor(ch.size[1] * scale);
+
+            const texelsQuad = ch.textureCoords;
+
+            // -0.5, -0.5, 0, 0, 0,			// bottom left corner
+            // v0
+            d[i] = _x;
+            d[i + 1] = _y;
+            d[i + 2] = 0;
+            // tc0
+            d[i + 3] = texelsQuad.a[0];
+            d[i + 4] = texelsQuad.a[1];
+            // color0
+            d[i + 5] = tintColor.r;
+            d[i + 6] = tintColor.g;
+            d[i + 7] = tintColor.b;
+            d[i + 8] = tintColor.a;
+
+            // -0.5, 0.5, 0, 0, 1,			// top left corner
+            // v1
+            d[i + 9] = _x;
+            d[i + 10] = _y + h;
+            d[i + 11] = 0;
+            // tc1
+            d[i + 12] = texelsQuad.b[0];
+            d[i + 13] = texelsQuad.b[1];
+            // color1
+            d[i + 14] = tintColor.r;
+            d[i + 15] = tintColor.g;
+            d[i + 16] = tintColor.b;
+            d[i + 17] = tintColor.a;
+
+            // 0.5, 0.5, 0, 1, 1,			// top right corner
+            // v2
+            d[i + 18] = _x + w;
+            d[i + 19] = _y + h;
+            d[i + 20] = 0;
+            // tc2
+            d[i + 21] = texelsQuad.c[0];
+            d[i + 22] = texelsQuad.c[1];
+            // color2
+            d[i + 23] = tintColor.r;
+            d[i + 24] = tintColor.g;
+            d[i + 25] = tintColor.b;
+            d[i + 26] = tintColor.a;
+
+            // 0.5, -0.5, 0, 1, 0			// bottom right corner
+            // v3
+            d[i + 27] = _x + w;
+            d[i + 28] = _y;
+            d[i + 29] = 0;
+            // tc3
+            d[i + 30] = texelsQuad.d[0];
+            d[i + 31] = texelsQuad.d[1];
+            // color3
+            d[i + 32] = tintColor.r;
+            d[i + 33] = tintColor.g;
+            d[i + 34] = tintColor.b;
+            d[i + 35] = tintColor.a;
+
+            this.m_currentInstanceIndex++;
+            x += Math.floor(ch.advance[0] * scale);
+        }
     }
 
     /**

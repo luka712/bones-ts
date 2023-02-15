@@ -188,17 +188,8 @@ export abstract class SpriteRenderer
 
     /**
      * Draw a string.
-     * @param { SpriteFont } font 
-     * @param { string } text 
-     * @param { Vec2 } position 
-     * @param { number | null | never } scale - by default set to 1. This means that font is renderer in it's natural size.
-     * @param { Color | null | never } color - by default white.
      */
-    public drawString (font: SpriteFont, text: string, position: Vec2, scale?: number, color?: Color): void
-    {
-        // TODO: temporary, move later to webgl renderer
-        throw new Error("Not implemented");
-    }
+    public abstract drawString (font: SpriteFont, text: string, position: Vec2, tintColor?: Color, scale?: number): void;
 
     /**
      * @brief End the sprite rendering.

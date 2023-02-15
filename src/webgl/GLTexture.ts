@@ -11,7 +11,7 @@ import { Texture2D, TextureManager, TextureChannel, TextureData, TextureFilterin
  */
 export class GLTexture2D extends Texture2D
 {
-    private m_glTexture: WebGLTexture;
+    private _glTexture: WebGLTexture;
     private m_state: LifecycleState;
 
 
@@ -23,8 +23,10 @@ export class GLTexture2D extends Texture2D
      */
     public get handle (): WebGLTexture 
     {
-        return this.m_glTexture;
+        return this._glTexture;
     }
+
+    public get glTexture(): WebGLTexture { return this._glTexture; }
 
     /**
      * Construct a texture
@@ -35,7 +37,7 @@ export class GLTexture2D extends Texture2D
      * @param { TextureChannel } channel // TODO: can be passed from texture optionsb
      * @param { TextureFiltering } texture_filtering 
      */
-    constructor(private m_gl: WebGL2RenderingContext, source: TextureData | null, channel: TextureChannel, texture_options?: TextureOptions)
+    constructor(private m_gl: WebGL2RenderingContext, source: TextureData | null, texture_options?: TextureOptions)
     {
         super();
         if (source instanceof HTMLImageElement || source instanceof HTMLCanvasElement)
@@ -60,8 +62,10 @@ export class GLTexture2D extends Texture2D
 
         this.m_gl.pixelStorei(this.m_gl.UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
 
-        this.m_glTexture = this.m_gl.createTexture();
-        this.m_gl.bindTexture(this.m_gl.TEXTURE_2D, this.m_glTexture);
+        this._glTexture = this.m_gl.createTexture();
+        this.m_gl.bindTexture(this.m_gl.TEXTURE_2D, this._glTexture);
+
+        const channel = texture_options?.textureFormat ?? TextureChannel.RGBA;
 
         // TODO: handle this cases with some map!!!
         if (channel == TextureChannel.RGBA)
@@ -128,7 +132,7 @@ export class GLTexture2D extends Texture2D
      */
     public bind (): void
     {
-        this.m_gl.bindTexture(this.m_gl.TEXTURE_2D, this.m_glTexture);
+        this.m_gl.bindTexture(this.m_gl.TEXTURE_2D, this._glTexture);
     }
 
     /**
@@ -138,7 +142,7 @@ export class GLTexture2D extends Texture2D
     {
         if (this.m_state != LifecycleState.Destroyed)
         {
-            this.m_gl.deleteTexture(this.m_glTexture);
+            this.m_gl.deleteTexture(this._glTexture);
         }
         this.m_state = LifecycleState.Destroyed;
     }
@@ -151,8 +155,6 @@ export class GLTexture2D extends Texture2D
      */
     public static createEmpty (gl: WebGL2RenderingContext, size: Vec2, options?: TextureOptions): Texture2D 
     {
-        const channel = options?.channel ?? TextureChannel.RGBA;
-
         if (!options)
         {
             options = {};
@@ -160,7 +162,7 @@ export class GLTexture2D extends Texture2D
         options.textureSize = size;
 
 
-        return new GLTexture2D(gl, null, channel, options);
+        return new GLTexture2D(gl, null, options);
     }
 }
 
@@ -237,7 +239,7 @@ class GLTextureManager implements TextureManager
     {
         const data = await this.m_imageLoader.loadImage(path);
 
-        const texture = new GLTexture2D(this.m_gl, data, TextureChannel.RGBA, options);
+        const texture = new GLTexture2D(this.m_gl, data, options);
         if (key)
         {
             // if there is already same texture in cache, destroy it before creating a new one.
@@ -271,7 +273,7 @@ class GLTextureManager implements TextureManager
             options.textureSize = new Vec2(width, height);
         }
 
-        const tex = new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA, options);
+        const tex = new GLTexture2D(this.m_gl, data, options);
         await tex.initialize();
         return tex;
     }
@@ -291,7 +293,7 @@ class GLTextureManager implements TextureManager
         {
             this.m_textureCache[key].destroy();
         }
-        const texture = new GLTexture2D(this.m_gl, data, options?.channel ?? TextureChannel.RGBA, options);
+        const texture = new GLTexture2D(this.m_gl, data, options);
         this.m_textureCache[key] = texture;
         return texture;
 

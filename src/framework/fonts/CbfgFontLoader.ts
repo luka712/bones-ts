@@ -60,12 +60,13 @@ export class CbfgFontLoader
             if(red == 0 && green == 0 && blue == 0)
             {
                 // set alpha to 0 if black
-                data[i+3] = 128;
+                data[i+3] = 0;
             }
 
         }
         ctx.putImageData(imageData, 0, 0);
 
+        debugger;
         font.texture = await this.m_textureManager.createTexture(canvas, bitmap.width, bitmap.height, {
             textureFormat: TextureChannel.RGBA
         });

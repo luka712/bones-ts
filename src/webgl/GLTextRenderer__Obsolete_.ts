@@ -14,8 +14,9 @@ import { QuadGeometry } from "../framework/bones_geometry";
 
 /**
  * The GL text render manager.
+ * NOTE: Obsolete in favor of sprite renderer.
  */
-export class GLTextRenderer extends TextRenderManager
+export class GLTextRenderer_Obsolete_2023_02_15 extends TextRenderManager
 {
    
     private o_transform: Mat4x4;

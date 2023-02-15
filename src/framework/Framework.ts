@@ -1,7 +1,7 @@
 import { GLEffectFactory } from "../webgl/GLPostProcessManager";
-import { WebGL2Renderer } from "../webgl/WebGL2Renderer";
+import { GL2Renderer } from "../webgl/GL2Renderer";
 import { GLTextureManager } from "../webgl/GLTexture";
-import { GLTextRenderer } from "../webgl/GLTextRenderer__Obsolete_";
+import { GLTextRenderer_Obsolete_2023_02_15 } from "../webgl/GLTextRenderer__Obsolete_";
 import { Config } from "./bones_config";
 import { InputManager } from "./input/InputManager";
 import { FileLoader, ImageLoader } from "./bones_loaders";
@@ -21,7 +21,6 @@ import { ParticlesFactory } from "./particles/ParticlesFactory";
 import { GLParticlesFactory } from "../webgl/particles/GLParticlesFactory";
 import { FrameworkPlugin } from "./plugin/FrameworkPlugin";
 import { WebGPUTextureManager } from "../webgpu/textures/WebGPUTextureManager";
-import { WebGPUTextRenderer } from "../webgpu/WebGPUTextRenderer";
 import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
 import { GLPipelineFactory } from "../webgl/post_process/pipelines/GLPipelineFactory";
 import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager";
@@ -217,7 +216,6 @@ abstract class Framework
             this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
              this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context, this.window, this.renderer as WebGPURenderer);
-            this.textRenderManager = new WebGPUTextRenderer(this.renderer as WebGPURenderer, this.window, this.fileLoader);
 
             // TODO: temp
             this.renderer.spriteRenderer = this.spriteRenderer;
@@ -228,8 +226,8 @@ abstract class Framework
         // by default WebGL2
         else
         {
-            this.renderer = new WebGL2Renderer(canvas, this.window);
-            const gl = (this.renderer as WebGL2Renderer).gl;
+            this.renderer = new GL2Renderer(canvas, this.window);
+            const gl = (this.renderer as GL2Renderer).gl;
             Framework.gl = gl;
             this.textureManager = new GLTextureManager(gl, this.imageLoader);
             this.spriteRenderer = new GLSpriteRenderer(gl, this.window, this.renderer, this.fileLoader);

@@ -2,12 +2,13 @@ import { LifecycleState } from "../../../framework/bones_common";
 import { Color, Rect } from "../../../framework/bones_math";
 import { IRenderer } from "../../../framework/bones_renderer";
 import { Texture2D } from "../../../framework/bones_texture";
+import { SpriteFont } from "../../../framework/fonts/SpriteFont";
 import { Vec2 } from "../../../framework/math/vec/Vec2";
 import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
 import { WindowManager } from "../../../framework/Window";
 import { WebGPUTexture2D } from "../../textures/WebGPUTexture";
 import { WebGPURendererContext } from "../../WebGPURenderer";
-import { ATTRIBUTES_STRIDE, WebGPUSpriteRendererPart, WebGPUSpriteUtil } from "./WebGPUSpriteUtil";
+import { GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE, WebGPUSpriteRendererPart, WebGPUSpriteUtil } from "./WebGPUSpriteUtil";
 
 // in order to optimize, sprite renderer will render with really large buffer that needs to be setup properly
 // buffer will support configurable number of instances. If one needs to render, larger number of instance, either configure 
@@ -41,7 +42,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     /**
      * Keep track of last part, to be able to see if new parts needs to be added.
      */
-    private m_lastPart?: WebGPUSpriteRendererPart;
+    private _lastPart?: WebGPUSpriteRendererPart;
 
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
@@ -100,7 +101,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         // 4. encode a command
         const command_encoder = this.m_ctx.device.createCommandEncoder();
         // 5 for number of vertexes
-        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (instanceIndex + 1) * ATTRIBUTES_STRIDE * 4);
+        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, (instanceIndex + 1) * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE * 4);
         this.m_ctx.device.queue.submit([command_encoder.finish()]);
 
         writeBuffer.mapAsync(GPUMapMode.WRITE).then(() => this.m_stagingBuffers.push(writeBuffer));
@@ -191,17 +192,17 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     private handleTexture (texture: WebGPUTexture2D): void 
     {
-        if (texture != this.m_lastPart?.texture)
+        if (texture != this._lastPart?.texture)
         {
             // custom defined pipeline part
-            this.m_lastPart = this.m_partsCache[texture.id];
+            this._lastPart = this.m_partsCache[texture.id];
 
             // if there is no part for this texture, create one
-            if (!this.m_lastPart)
+            if (!this._lastPart)
             {
                 // create part, assign texture to it and store it by texture id.
-                this.m_lastPart = WebGPUSpriteUtil.createSpriteRenderPart(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
-                this.m_partsCache[texture.id] = this.m_lastPart;
+                this._lastPart = WebGPUSpriteUtil.createSpriteRenderPart(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
+                this.m_partsCache[texture.id] = this._lastPart;
             }
 
             // Store if for drawing, if not already stored.
@@ -217,7 +218,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      */
     public begin (mode?: Blend): void
     {
-        this.m_lastPart = null;
+        this._lastPart = null;
     }
 
     /**
@@ -234,7 +235,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     private drawInner (i: number, x: number, y: number, w: number, h: number,
         rotation_in_radians: number, rotation_anchor?: Vec2, tintColor?: Color): void
     {
-        const d = this.m_lastPart.attributesData;
+        const d = this._lastPart.attributesData;
 
         x += w * .5;
         y += h * .5;
@@ -334,7 +335,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 34] = tintColor.b;
         d[i + 35] = tintColor.a;
 
-        this.m_lastPart.instanceIndex++;
+        this._lastPart.instanceIndex++;
     }
 
     /**
@@ -354,8 +355,8 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         sourceRect: Rect,
         rotation_in_radians: number, rotation_anchor?: Vec2, tintColor?: Color): void
     {
-        const d = this.m_lastPart.attributesData;
-        const texture = this.m_lastPart.texture;
+        const d = this._lastPart.attributesData;
+        const texture = this._lastPart.texture;
 
         // bottom left corner
         this.o_v0[0] = x;
@@ -458,7 +459,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         d[i + 34] = tintColor.b;
         d[i + 35] = tintColor.a;
 
-        this.m_lastPart.instanceIndex++;
+        this._lastPart.instanceIndex++;
     }
 
 
@@ -470,7 +471,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     {
         this.handleTexture(texture as WebGPUTexture2D);
 
-        const i = this.m_lastPart.instanceIndex * ATTRIBUTES_STRIDE;
+        const i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -498,7 +499,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         this.handleTexture(texture as WebGPUTexture2D);
 
         // find current index, but take into account stride.
-        const i = this.m_lastPart.instanceIndex * ATTRIBUTES_STRIDE;
+        const i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
 
         // move to top left by default
         const x = drawRect.x - drawRect.w * .5;
@@ -523,7 +524,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     {
         this.handleTexture(texture as WebGPUTexture2D);
 
-        let i = this.m_lastPart.instanceIndex * ATTRIBUTES_STRIDE;
+        let i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
 
         // /******************* SETUP OPTIMIZATION VECTORS ******************/
         // it's easier to reason with vector.
@@ -547,6 +548,99 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tintColor);
     }
+
+     /**
+     * @inheritdoc
+     */
+     public drawString (font: SpriteFont, text: string, position: Vec2, tintColor?: Color, scale: number = 1): void
+     {
+        this.handleTexture(font.texture as WebGPUTexture2D);
+
+        let i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
+ 
+         const d = this._lastPart.attributesData;
+ 
+         let x = Math.floor(position[0]);
+         let y = Math.floor(position[1]);
+ 
+         // iterate through all characters
+         const l = text.length;
+         for (let j = 0; j < l; j++)
+         {
+             i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
+ 
+             const c = text[j];
+             const ch = font.getFontCharacterInfo(c);
+ 
+             let _x = x;
+             let _y = y;
+ 
+             const w = Math.floor(ch.size[0] * scale);
+             const h = Math.floor(ch.size[1] * scale);
+ 
+             const texelsQuad = ch.textureCoords;
+ 
+             // -0.5, -0.5, 0, 0, 0,			// bottom left corner
+             // v0
+             d[i] = _x;
+             d[i + 1] = _y;
+             d[i + 2] = 0;
+             // tc0
+             d[i + 3] = texelsQuad.a[0];
+             d[i + 4] = texelsQuad.a[1];
+             // color0
+             d[i + 5] = tintColor.r;
+             d[i + 6] = tintColor.g;
+             d[i + 7] = tintColor.b;
+             d[i + 8] = tintColor.a;
+ 
+             // -0.5, 0.5, 0, 0, 1,			// top left corner
+             // v1
+             d[i + 9] = _x;
+             d[i + 10] = _y + h;
+             d[i + 11] = 0;
+             // tc1
+             d[i + 12] = texelsQuad.b[0];
+             d[i + 13] = texelsQuad.b[1];
+             // color1
+             d[i + 14] = tintColor.r;
+             d[i + 15] = tintColor.g;
+             d[i + 16] = tintColor.b;
+             d[i + 17] = tintColor.a;
+ 
+             // 0.5, 0.5, 0, 1, 1,			// top right corner
+             // v2
+             d[i + 18] = _x + w;
+             d[i + 19] = _y + h;
+             d[i + 20] = 0;
+             // tc2
+             d[i + 21] = texelsQuad.c[0];
+             d[i + 22] = texelsQuad.c[1];
+             // color2
+             d[i + 23] = tintColor.r;
+             d[i + 24] = tintColor.g;
+             d[i + 25] = tintColor.b;
+             d[i + 26] = tintColor.a;
+ 
+             // 0.5, -0.5, 0, 1, 0			// bottom right corner
+             // v3
+             d[i + 27] = _x + w;
+             d[i + 28] = _y;
+             d[i + 29] = 0;
+             // tc3
+             d[i + 30] = texelsQuad.d[0];
+             d[i + 31] = texelsQuad.d[1];
+             // color3
+             d[i + 32] = tintColor.r;
+             d[i + 33] = tintColor.g;
+             d[i + 34] = tintColor.b;
+             d[i + 35] = tintColor.a;
+ 
+             this._lastPart.instanceIndex++;
+             x += Math.floor(ch.advance[0] * scale);
+         }
+     }
+ 
 
     /**
      * @brief End the sprite rendering.

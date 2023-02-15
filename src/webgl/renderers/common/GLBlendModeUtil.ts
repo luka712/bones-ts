@@ -47,9 +47,8 @@ export class GLBlendModeUtil
 
         }
 
-
-        gl.blendFunc(source, dest);
         gl.enable(gl.BLEND);
+        gl.blendFunc(source, dest);
     }
 
 }

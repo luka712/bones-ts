@@ -3,7 +3,7 @@ import shaderSource from './spriteshader.wgsl?raw';
 
 
 // pos3, tc2, col4
-export const ATTRIBUTES_STRIDE = 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT + 4 * Float32Array.BYTES_PER_ELEMENT;
+export const GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE = 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT + 4 * Float32Array.BYTES_PER_ELEMENT;
 
 export interface WebGPUSpriteRendererPart 
 {
@@ -48,7 +48,7 @@ export class WebGPUSpriteUtil
     {
         const indices = new Uint32Array(maxInstances * 6); // 6 for quad indices
         const instanceData = new Float32Array(maxInstances * 4); // for now holds only vec4 for tint color
-        const data = new Float32Array(maxInstances * ATTRIBUTES_STRIDE);
+        const data = new Float32Array(maxInstances * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE);
 
         // index of indice
         let index = 0;
@@ -124,7 +124,7 @@ export class WebGPUSpriteUtil
             entryPoint: 'vs_main',
             buffers: [
                 {
-                    arrayStride: ATTRIBUTES_STRIDE,
+                    arrayStride: GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE,
                     attributes: [
                         // POSITION
                         {

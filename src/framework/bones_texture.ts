@@ -46,9 +46,8 @@ enum TextureWrap
 
 /**
  * @brief Which channels to use.
- * TODO: rename to texture format.
  */
-enum TextureChannel
+enum TextureFormat
 {
     INVALID = 0,
     RED = 1,
@@ -62,9 +61,7 @@ enum TextureChannel
  */
 class TextureOptions
 {
-    // DEPRECATED
-    public channel?: TextureChannel;
-    public textureFormat? :TextureChannel;
+    public textureFormat? :TextureFormat;
     public textureFiltering?: TextureFiltering;
     public textureWrap?: TextureWrap;
 
@@ -209,7 +206,7 @@ abstract class Texture2D
 export
 {
     Texture2D,
-    TextureChannel,
+    TextureFormat as TextureChannel,
     TextureOptions,
     TextureFiltering,
     TextureWrap

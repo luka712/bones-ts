@@ -7,7 +7,7 @@ import { WindowManager } from "../framework/Window";
 /**
  * The WebGL 2 renderer.
  */
-export class WebGL2Renderer implements IRenderer
+export class GL2Renderer implements IRenderer
 {
 
     public clearColor: Color;
