@@ -1,9 +1,14 @@
 import { Color, Vec2 } from "../framework/bones_math";
 import { IRenderer } from "../framework/bones_renderer";
 import { TextureManager } from "../framework/bones_texture";
+import { FreeCamera } from "../framework/camera/FreeCamera";
+import { Framework } from "../framework/Framework";
+import { FrameworkContext } from "../framework/FrameworkContext";
+import { Camera2D } from "../framework/renderers/common/Camera2D";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
-import { TextRenderManager } from "../framework/TextRenderer";
-import { WindowManager } from "../framework/Window";
+import { WebGPUBasicMaterialRenderPipelineWrapper } from "./material/basic/WebGPUBasicMaterialRenderPipelineWrapper";
+import { WebGPUMesh } from "../framework/mesh/WebGPUMesh";
+import { WebGPUModel } from "./model/WebGPUModel";
 
 // TODO: see https://austin-eng.com/webgpu-samples/samples/helloTriangle#main.ts
 
@@ -37,7 +42,7 @@ export class WebGPURendererContext
  */
 export class WebGPURenderer implements IRenderer
 {
-    public readonly context : WebGPURendererContext = new WebGPURendererContext();
+    public readonly context: WebGPURendererContext = new WebGPURendererContext();
 
     public clearColor: Color;
     private m_bufferSize: Vec2;
@@ -62,13 +67,13 @@ export class WebGPURenderer implements IRenderer
      * The command encoder for update read/write buffers related operations.
      * {@link GPUCommandBuffer}
      */
-    public updateCommandEncoder:GPUCommandEncoder;
+    public updateCommandEncoder: GPUCommandEncoder;
 
     /**
      * The current pass encode.
      * {@link GPURenderPassEncoder}
      */
-    private o_currentPassEncoder: GPURenderPassEncoder;
+    public currentRenderPassEncoder: GPURenderPassEncoder;
 
     /**
      * The view of a color texture.
@@ -82,7 +87,6 @@ export class WebGPURenderer implements IRenderer
 
     // TODO: temp.
     public spriteRenderer: SpriteRenderer;
-    public textRenderer: TextRenderManager;
     public textureManager: TextureManager;
 
     /**
@@ -113,7 +117,7 @@ export class WebGPURenderer implements IRenderer
      * Construct new WebGL2 renderer.
      * @param canvas - an html canvas elemen to create WebGL context for.
      */
-    constructor(private readonly m_canvas: HTMLCanvasElement, private readonly m_window: WindowManager)
+    constructor(private readonly m_canvas: HTMLCanvasElement, private readonly framework: Framework)
     {
         // @see https://medium.com/@carmencincotti/drawing-a-triangle-with-webgpu-53d48fb1ba8
 
@@ -126,7 +130,7 @@ export class WebGPURenderer implements IRenderer
         this.m_bufferSize = new Vec2(m_canvas.width, m_canvas.height);
         this.clearColor = Color.lightPink();
 
-        this.m_window.subscribeToWindowResized((event) => 
+        this.framework.window.subscribeToWindowResized((event) => 
         {
             this.m_bufferSize[0] = event.width;
             this.m_bufferSize[1] = event.height;
@@ -145,6 +149,8 @@ export class WebGPURenderer implements IRenderer
     {
         this.m_bufferSize[0] = this.m_canvas.width;
         this.m_bufferSize[1] = this.m_canvas.height;
+
+        Camera2D.resize(this.m_canvas.width, this.m_canvas.height);
 
         // CANVAS CONTEXT
         if (!this.m_gpuContext)
@@ -165,12 +171,12 @@ export class WebGPURenderer implements IRenderer
         const depth_texture = this.device.createTexture({
             size: [this.m_bufferSize.x, this.m_bufferSize.y, 1],
             format: 'depth24plus-stencil8',
-            usage: GPUTextureUsage.RENDER_ATTACHMENT 
+            usage: GPUTextureUsage.RENDER_ATTACHMENT
         });
         this.m_depthTextureView = depth_texture.createView();
     }
 
-   
+
     /**
      * Initialize the WebGPU renderer.
      */
@@ -187,6 +193,7 @@ export class WebGPURenderer implements IRenderer
 
         this.context.device = await adapter.requestDevice();
         this.device = this.context.device;
+        FrameworkContext.device = this.device;
 
 
         this.device.lost.then(() => 
@@ -245,17 +252,12 @@ export class WebGPURenderer implements IRenderer
         render_pass_encoder.setViewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1], 0, 1);
         render_pass_encoder.setScissorRect(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
         this.context.currentRenderPassEncoder = render_pass_encoder;
-        this.o_currentPassEncoder = render_pass_encoder;
-        
-        // called beginFrame
-        this.spriteRenderer.beginRenderPass(this.o_currentPassEncoder);
-        this.textRenderer.beginRenderPass(this.o_currentPassEncoder);
-
-
+        this.currentRenderPassEncoder = render_pass_encoder;
     }
+
     public endDraw (): void
     {
-        this.o_currentPassEncoder.end();
+        this.currentRenderPassEncoder.end();
 
         this.device.queue.submit([
             this.updateCommandEncoder.finish(),

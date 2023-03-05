@@ -49,6 +49,8 @@
             createFolder (gui, text, index) {
                 const lf = gui.addFolder(`Text ${index}`);
 
+                lf.add(text, "text");
+
                 // POSITION
                 const pos_obj = {
                     x: text.position.x,
@@ -79,7 +81,7 @@
             async initialize () {
                 const gui = new dat.GUI();
 
-                this.font  = await this.fontManager.loadBitmapFont("TheleahFat.bmp", "TheleahFat.csv");
+                this.font  = await this.fontManager.loadBitmapFont("memory_font_bitmap.bmp", "memory_font_csv.csv");
 
                 this.createFolder(gui, this.text1, 1);
                 this.createFolder(gui, this.text2, 2);

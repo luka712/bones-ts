@@ -6,7 +6,7 @@ import { ShaderUniformType } from "../../../framework/shaders/Shader";
 import { WindowManager } from "../../../framework/Window";
 import { GLExtractBrightColorFramebuffer } from "../../framebuffer/GLExtractBrightColorFramebuffer";
 import { GLRenderFrameBuffer } from "../../framebuffer/GLRenderFrameBuffer";
-import { GLScreenQuadGeometry } from "../../geometry/GLScreenQuadGeometry";
+import { GLScreenQuadGeometry } from "../../mesh/GLScreenQuadGeometry";
 
 // Described here
 // https://learnopengl.com/Advanced-Lighting/Bloom

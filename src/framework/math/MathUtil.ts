@@ -80,4 +80,14 @@ export class MathUtil
         value = Math.max(value, min);
         return Math.min(value, max);
     }
+
+    /**
+     * Convert angle in degrees to radians.
+     * @param angle angle in degrees.
+     * @returns angle in radians.
+     */
+    public static radians(angle: number) : number 
+    {
+        return angle * Math.PI / 180;
+    }
 }

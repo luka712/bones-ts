@@ -2,22 +2,18 @@ import { Mat4x4, Vec3 } from "../../bones_math";
 
 /**
  * Helper class for working with camera. 
- * Used by 2d renderers which need to fit the screen.
+ * Used by 2d renderers which need to fit the screen such as sprite renderer, 2d line renderer etc...
  */
 export class Camera2D 
 {
     /**
-       * @brief The projection matrix.
+       * @brief The projection view matrix.
        */
-    public static projectionMatrix: Mat4x4;
+    public static projectionViewMatrix: Mat4x4 = Mat4x4.identity()
+
 
     /**
-     * @brief The view matrix.
-     */
-    public static viewMatrix: Mat4x4;
-
-    /**
-     * @brief Resize the line renderer.
+     * @brief Resize the camera matrices.
      * CAUTION: Ideally this should be set to renderer width and height, but can be done otherwise.
      * Not setting it to renderer width and height might lead to some undesired behaviour.
      *
@@ -26,7 +22,9 @@ export class Camera2D
      */
     public static resize (width: number, height: number): void 
     {
-        Camera2D.projectionMatrix = Mat4x4.orthographic(0, width, height, 0, -1, 1) as Mat4x4;
-        Camera2D.viewMatrix = Mat4x4.lookAt(Vec3.zero(), Vec3.negativeUnitZ(), Vec3.unitY()) as Mat4x4;
+        const projectionMatrix = Mat4x4.orthographic(0, width, height, 0, -1, 1) as Mat4x4;
+        const viewMatrix = Mat4x4.lookAt(Vec3.zero(), Vec3.negativeUnitZ(), Vec3.unitY()) as Mat4x4;
+
+        this.projectionViewMatrix = projectionMatrix.multiply(viewMatrix);
     }
 }

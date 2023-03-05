@@ -10,7 +10,7 @@ import { FontType, SpriteFont } from "../framework/fonts/SpriteFont";
 import { Texture2D } from "../framework/bones_texture";
 import { SharedVertexBufferDescription, DrawType, SharedVertexBufferItemDescription, ComponentType, BufferUsage, IndicesBufferDescription, GeometryBuffer } from "../framework/GeometryBuffer";
 import { GLTextShader } from "./shaders/GLTextShader";
-import { QuadGeometry } from "../framework/bones_geometry";
+import { QuadGeometry } from "../framework/geometry/bones_geometry";
 
 /**
  * The GL text render manager.

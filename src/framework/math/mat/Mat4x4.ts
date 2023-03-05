@@ -142,6 +142,32 @@ export class Mat4x4 extends Float32Array
     }
 
     /**
+     * Set self to identity matrix.
+     */
+    public setToIdentity (): void 
+    {
+        this[0] = 1;
+        this[1] = 0;
+        this[2] = 0;
+        this[3] = 0;
+
+        this[4] = 0;
+        this[5] = 1;
+        this[6] = 0;
+        this[7] = 0;
+
+        this[8] = 0;
+        this[9] = 0;
+        this[10] = 1;
+        this[11] = 0;
+
+        this[12] = 0;
+        this[13] = 0;
+        this[14] = 0;
+        this[15] = 1;
+    }
+
+    /**
      * Get the cofactor of matrix.
      */
     public cofactor (row: number, col: number): number
@@ -385,7 +411,7 @@ export class Mat4x4 extends Float32Array
      * @param { Mat4x4  undefined } out 
      * @returns { Vec3 }
      */
-    public static translationMatrixFromVector (v: Vec3 , out?: Mat4x4): Mat4x4 
+    public static translationMatrixFromVector (v: Vec3, out?: Mat4x4): Mat4x4 
     {
         return Mat4x4.translationMatrix(v[0], v[1], v[2], out);
     }
@@ -396,7 +422,7 @@ export class Mat4x4 extends Float32Array
       * @param { number } y
       * @param { number } z
       */
-    public static scaleMatrix (x: number, y: number, z: number, out?: Mat4x4 | Float32Array): Mat4x4 | Float32Array
+    public static scaleMatrix (x: number, y: number, z: number, out?: Mat4x4): Mat4x4
     {
         if (!out)
         {
@@ -437,7 +463,7 @@ export class Mat4x4 extends Float32Array
     * @param { Mat4x4 | Float32Array | undefined } out 
     * @returns { Vec3 | Float32Array}
     */
-    public static scaleMatrixFromVector (v: Vec3 | Float32Array, out?: Mat4x4 | Float32Array): Mat4x4 | Float32Array
+    public static scaleMatrixFromVector (v: Vec3 | Float32Array, out?: Mat4x4 ): Mat4x4 
     {
         return Mat4x4.scaleMatrix(v[0], v[1], v[2], out);
     }
@@ -1050,7 +1076,7 @@ export class Mat4x4 extends Float32Array
         out[1] = v[0];
         out[5] = v[1];
         out[9] = v[2];
-        out[13] = -Vec3.dot(eye, w);
+        out[13] = -Vec3.dot(eye, v);
 
         out[2] = w[0];
         out[6] = w[1];

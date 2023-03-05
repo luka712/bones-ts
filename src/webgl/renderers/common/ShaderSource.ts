@@ -15,7 +15,7 @@ export class ShaderSource
     void main() 
     {
         outColor = u_color;
-        float amount = dot(vec3(0.2126, 0.7152, 0.0722), outColor.rgb);
+        float amount = (outColor.r + outColor.g + outColor.b) / 3.0;
         if(amount > 0.7)
         {
             outBrightColor = outColor;

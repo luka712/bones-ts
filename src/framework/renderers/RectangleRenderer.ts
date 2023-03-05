@@ -2,10 +2,8 @@ import { Color, Mat4x4, Vec3 } from "../bones_math";
 
 export abstract class RectangleRenderer 
 {
-
-
      /**
-      * @brief Initialize the sprite batch manager. Initialize must be called in order to properly initialize all the variables.
+      * @brief Initialize the renderer. Initialize must be called in order to properly initialize all the variables.
       */
      public abstract initialize (): void;
 

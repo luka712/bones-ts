@@ -4,16 +4,13 @@ import { IRenderer } from "../../../framework/bones_renderer";
 import { Texture2D } from "../../../framework/bones_texture";
 import { SpriteFont } from "../../../framework/fonts/SpriteFont";
 import { Vec2 } from "../../../framework/math/vec/Vec2";
+import { Camera2D } from "../../../framework/renderers/common/Camera2D";
 import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
 import { WindowManager } from "../../../framework/Window";
 import { WebGPUTexture2D } from "../../textures/WebGPUTexture";
 import { WebGPURendererContext } from "../../WebGPURenderer";
 import { GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE, WebGPUSpriteRendererPart, WebGPUSpriteUtil } from "./WebGPUSpriteUtil";
 
-// in order to optimize, sprite renderer will render with really large buffer that needs to be setup properly
-// buffer will support configurable number of instances. If one needs to render, larger number of instance, either configure 
-// sprite renderer, or create new instance of it.
-const NUM_MAX_INSTANCES = 1000;
 
 //************* WORKS AS FOLLOWS ***********************/
 // create staging buffers 
@@ -43,6 +40,11 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
      * Keep track of last part, to be able to see if new parts needs to be added.
      */
     private _lastPart?: WebGPUSpriteRendererPart;
+    
+    /** 
+     * The max number of instances to be drawn per material/texture unit.
+     */
+    private _maxInstances: number;
 
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
@@ -56,16 +58,9 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     private o_v3: Vec2 = Vec2.zero();
     private o_rotOrigin: Vec2 = Vec2.zero();
 
-    constructor(private m_ctx: WebGPURendererContext, public readonly window: WindowManager, public readonly renderer: IRenderer)
+    constructor(private m_ctx: WebGPURendererContext)
     {
         super();
-
-        this.window.subscribeToWindowResized((e) => 
-        {
-            this.resize(e.width, e.height);
-        });
-
-        this.resize(window.width, window.height);
     }
 
 
@@ -124,15 +119,6 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     }
 
     /**
-     * Called when render pass has begun. For WebGL2 it's not relevant yet. So do nothing.
-     * @param { T } data 
-     */
-    public beginRenderPass<T> (data: T): void
-    {
-        // do nothing.
-    }
-
-    /**
      * Call to gpu draw.
      * Here setup use pipeline, which was created when texture was changed,
      * write into buffers and bind everything.
@@ -157,7 +143,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         const instanceIndex = part.instanceIndex;
 
         // camera matrices need only to change when texture is changed, since new pipeline is used.
-        const projectionViewMat = this.m_projectionViewMatrix;
+        const projectionViewMat = Camera2D.projectionViewMatrix;
 
         // use this pipeline
         renderPass.setPipeline(pipeline);
@@ -201,7 +187,7 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
             if (!this._lastPart)
             {
                 // create part, assign texture to it and store it by texture id.
-                this._lastPart = WebGPUSpriteUtil.createSpriteRenderPart(this.m_ctx.device, texture, NUM_MAX_INSTANCES);
+                this._lastPart = WebGPUSpriteUtil.createSpriteRenderPart(this.m_ctx.device, texture, this._maxInstances);
                 this.m_partsCache[texture.id] = this._lastPart;
             }
 
@@ -216,9 +202,14 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
     /**
      * {@inheritDoc SpriteRenderer}
      */
-    public begin (mode?: Blend): void
+    public begin (mode?: Blend, maxInstances: number = 1000): void
     {
         this._lastPart = null;
+
+        // important, webgpu allocates buffer per each texture, which is size of stride * maxInstances
+        // if you expect large number of entities, increase max instances to allocate in single buffer.
+        // for small number of entities, smaller buffer can be used, to optimize size of buffer.
+        this._maxInstances = maxInstances; 
     }
 
     /**
@@ -236,9 +227,6 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         rotation_in_radians: number, rotation_anchor?: Vec2, tintColor?: Color): void
     {
         const d = this._lastPart.attributesData;
-
-        x += w * .5;
-        y += h * .5;
 
         // bottom left corner
         this.o_v0[0] = x;

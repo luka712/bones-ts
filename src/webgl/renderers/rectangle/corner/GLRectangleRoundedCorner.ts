@@ -21,9 +21,11 @@ layout (location = 1) in vec2 a_centerPoint;
 layout (location = 2) in float a_radius;
 layout (location = 3) in float a_angleOffset;
 
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_viewMatrix;
-
+struct GlobalUBO 
+{
+    mat4 projectionViewMatrix;
+};
+uniform GlobalUBO u_global;
 
 void main()
 {
@@ -44,7 +46,7 @@ void main()
     // offset for center point.
     position += a_centerPoint;
 
-    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(position, 0.0, 1.0);
+    gl_Position = u_global.projectionViewMatrix * vec4(position, 0.0, 1.0);
 }
 `;
 
@@ -71,8 +73,7 @@ export class GLRectangleRoundedCorner
 
     // shader stuff
     private m_shader: GLShaderImplementation;
-    private m_viewMatrixLocation: WebGLUniformLocation;
-    private m_projectionMatrixLocation: WebGLUniformLocation;
+    private _projectionViewMatrixLocation: WebGLUniformLocation;
     private m_colorLocation: WebGLUniformLocation;
 
     // default
@@ -108,8 +109,9 @@ export class GLRectangleRoundedCorner
 
 
         // Position buffer
-        const rects_buffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, rects_buffer);
+        // TODO: keep it to clear it.
+        const attribPositionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, attribPositionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(d), gl.STATIC_DRAW);
         gl.enableVertexAttribArray(0);
         gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -153,8 +155,7 @@ export class GLRectangleRoundedCorner
 
         await shader.initialize();
 
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
+        this._projectionViewMatrixLocation = shader.getUniformLocation("u_global.projectionViewMatrix", true);
         this.m_colorLocation = shader.getUniformLocation("u_color", true);
 
         this.m_shader = shader;
@@ -205,8 +206,7 @@ export class GLRectangleRoundedCorner
 
         // use and set shader vars
         this.m_shader.use();
-        gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, Camera2D.projectionMatrix);
-        gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, Camera2D.viewMatrix);
+        gl.uniformMatrix4fv(this._projectionViewMatrixLocation, false, Camera2D.projectionViewMatrix);
         gl.uniform4fv(this.m_colorLocation, color );
 
 

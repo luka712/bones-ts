@@ -4,7 +4,7 @@ import { Color, Vec2 } from "../../framework/bones_math";
 import { IRenderer } from "../../framework/bones_renderer";
 import { Texture2D } from "../../framework/bones_texture";
 import { WindowManager, WindowResizeEvent } from "../../framework/Window";
-import { GLScreenQuadGeometry } from "../geometry/GLScreenQuadGeometry";
+import { GLScreenQuadGeometry } from "../mesh/GLScreenQuadGeometry";
 import { GLTexture2D } from "../GLTexture";
 
 

@@ -123,37 +123,33 @@ export class Color extends BaseMatrix<Color>
     }
 
     /**
-     * The gray color instance.
-     * @returns { Color | Float32Array} - new instance.
+     * The gray color.    
      */
-    public static gray (): Color | Float32Array
+    public static gray (): Color 
     {
         return new Color(0.5, 0.5, 0.5, 1.0);
     }
 
     /**
      * Create the dark slate gray color instance.
-     * @returns { Color | Float32Array } - new instance
      */
-    public static darkSlateGray (): Color | Float32Array
+    public static darkSlateGray (): Color
     {
         return new Color(0.1843, 0.3098, 0.3098, 1.0);
     }
 
     /**
      * Returns the Celeste color 
-     * @returns { Color | Float32Array}
      */
-    public static celeste (): Color | Float32Array
+    public static celeste (): Color 
     {
         return new Color(0.698, 1, 1, 1);
     }
 
     /**
      * The color instance with alpha being set to 1.
-     * @returns { Color | Float32Array } - new instance
      */
-    public static alpha (): Color | Float32Array
+    public static alpha (): Color 
     {
         return new Color(0, 0, 0, 1);
     }
@@ -218,10 +214,10 @@ export class Color extends BaseMatrix<Color>
 
     /**
      * Subtract.
-     * @param { Color | Float32Array } a 
-     * @param { Color | Float32Array } b 
-     * @param { Color | Float32Array | undefined } out 
-     * @returns { Color | Float32Array }
+     * @param { Color } a 
+     * @param { Color } b 
+     * @param { Color | undefined } out 
+     * @returns { Color }
      */
     public static subtract (a: Color | Float32Array, b: Color | Float32Array, out?: Color | Float32Array): Color | Float32Array
     {
@@ -257,10 +253,10 @@ export class Color extends BaseMatrix<Color>
 
     /**
      * Multiple color with a scalar 
-     * @param { Color | Float32Array } color 
+     * @param { Color } color 
      * @param { number } scalar 
-     * @param { Color | Float32Array |undefined } - if passed in, result is saved to last parameter and returned 
-     * @param { Color | Float32Array }
+     * @param { Color |undefined } - if passed in, result is saved to last parameter and returned 
+     * @param { Color }
      */
     public static multiplyWithScalar (color: Color | Float32Array, scalar: number, out?: Color | Float32Array): Color | Float32Array
     {
@@ -293,7 +289,7 @@ export class Color extends BaseMatrix<Color>
 
     /**
      * Returns color as common JavaScript array in range 0 - 255.
-     * @param { Color | Float32Array } color 
+     * @param { Color } color 
      * @param { Array<number> | undefined} out - if passed in this instance is filled out, otherwise new instance is created and returned.
      * @returns { Array<number> }
      */
@@ -315,8 +311,8 @@ export class Color extends BaseMatrix<Color>
     /**
      * From color in range 0 - 255 create a new color or passes result to passed in 'out' instance.
      * @param { Array<number> } array 
-     * @param { Color | Float32Array | undefined } out 
-     * @returns { Color | Float32Array }
+     * @param { Color | undefined } out 
+     * @returns { Color }
      */
     public static fromRGBA255Array (array: Array<number>, out?: Color | Float32Array): Color | Float32Array
     {

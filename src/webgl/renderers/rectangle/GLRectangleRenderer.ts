@@ -18,12 +18,15 @@ precision highp float;
 
 layout (location = 0) in vec2 a_position;
 
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_viewMatrix;
+struct GlobalUBO 
+{
+    mat4 projectionViewMatrix;
+};
+uniform GlobalUBO u_global;
 
 void main()
 {
-    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(a_position, 0.0, 1.0);
+    gl_Position = u_global.projectionViewMatrix * vec4(a_position, 0.0, 1.0);
 }
 `;
 
@@ -54,8 +57,7 @@ export class GLRectangleRenderer extends RectangleRenderer
 
     // shader stuff
     private m_shader: GLShaderImplementation;
-    private m_viewMatrixLocation: WebGLUniformLocation;
-    private m_projectionMatrixLocation: WebGLUniformLocation;
+    private _projectionViewMatrixLocation: WebGLUniformLocation;
     private m_colorLocation: WebGLUniformLocation;
 
     // default
@@ -107,7 +109,7 @@ export class GLRectangleRenderer extends RectangleRenderer
         gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indices), gl.STATIC_DRAW);
 
         // Position buffer.
-        // 4 for each corner, 2 for position 2
+        // 4 for each corner, 2 for position 2, 5 number of instances
         this.m_rectsData = new Float32Array(4 * 2 * 5);
 
         // RECTANGLES
@@ -133,8 +135,7 @@ export class GLRectangleRenderer extends RectangleRenderer
 
         await shader.initialize();
 
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
+        this._projectionViewMatrixLocation = shader.getUniformLocation("u_global.projectionViewMatrix", true);
         this.m_colorLocation = shader.getUniformLocation("u_color", true);
 
         this.m_shader = shader;
@@ -156,8 +157,7 @@ export class GLRectangleRenderer extends RectangleRenderer
 
         // use and set shader vars
         this.m_shader.use();
-        gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, Camera2D.projectionMatrix);
-        gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, Camera2D.viewMatrix);
+        gl.uniformMatrix4fv(this._projectionViewMatrixLocation, false, Camera2D.projectionViewMatrix);
         gl.uniform4fv(this.m_colorLocation, color);
 
 

@@ -74,12 +74,12 @@ class MouseStateImplementation implements MouseState
      * The mouse position.
      */
     position: Vec2 = Vec2.zero();
-    leftButtonDown: boolean;
-    leftButtonUp: boolean;
-    rightButtonDown: boolean;
-    rightButtonUp: boolean;
-    deltaX: number;
-    deltaY: number;
+    leftButtonDown: boolean = false;
+    leftButtonUp: boolean = true;
+    rightButtonDown: boolean = false;
+    rightButtonUp: boolean = true;
+    deltaX: number = 0
+    deltaY: number = 0;
 
 
     /**
@@ -362,25 +362,48 @@ export class InputManager
     }
 
     /**
-     * @brief Checks if key is down. Returns true if pressed.
-     *
-     * @param { Keys } key
-     * @return { boolean }  - true if pressed, false otherwise.
+     * Checks if key or any key in array is down. Returns true if pressed.
+     * @param key - array of keys, strings or single key.
+     * @param caseSensitive - should it be case sensitive check, by default true.
+     * @returns true if pressed.
      */
-    public isKeyDown (key: Keys): boolean
+    public isKeyDown (key: Array<string | Keys> | string | Keys, caseSensitive = true): boolean
     {
-        return this.m_isKeyDown[key] === true;
+        if (Array.isArray(key))
+        {
+            for (let k of key)
+            {
+                if (!caseSensitive)
+                {
+                    return this.m_isKeyDown[k.toLowerCase()] || this.m_isKeyDown[k.toUpperCase()];
+                }
+                else
+                {
+                    return this.m_isKeyDown[k];
+                }
+            }
+        }
+
+
+        if (!caseSensitive)
+        {
+            return this.m_isKeyDown[(key as string).toLowerCase()] || this.m_isKeyDown[(key as string).toUpperCase()];
+        }
+        else
+        {
+            return this.m_isKeyDown[key as string];
+        }
     }
 
     /**
-     * @brief Checks if key is up. Returns true if not pressed.
-     *
-     * @param { Keys } key
-    * @return { boolean }  - true if not pressed, false otherwise.
-     */
-    public isKeyUp (key: Keys): boolean
+    * Checks if key or all keys in array are up. Returns true if not pressed.
+    * @param key - array of keys, strings or single key.
+    * @param caseSensitive - should it be case sensitive check, by default true.
+    * @returns true if key/s are not pressed.
+    */
+    public isKeyUp (key: Array<string | Keys> | string | Keys, caseSensitive = true): boolean
     {
-        return this.isKeyDown(key) === false;
+        return this.isKeyDown(key, caseSensitive) === false;
     }
 
     /**

@@ -6,7 +6,7 @@ import { WindowManager } from "../framework/Window";
 import { FontType, SpriteFont } from "../framework/fonts/SpriteFont";
 import { Texture2D } from "../framework/bones_texture";
 import { SharedVertexBufferDescription, DrawType, SharedVertexBufferItemDescription, ComponentType, BufferUsage, IndicesBufferDescription } from "../framework/GeometryBuffer";
-import { QuadGeometry } from "../framework/bones_geometry";
+import { QuadGeometry } from "../framework/geometry/bones_geometry";
 import { WebGPUGeometryBuffer } from "./WebGPUGeometryBuffer";
 import { GPUTextShader } from "./gpu_shader/GPUTextShader";
 import { WebGPURenderer } from "./WebGPURenderer";

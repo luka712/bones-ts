@@ -65,33 +65,9 @@ class QuadGeometry
     readonly sharedVerticesTextureCoordsCount: number;
 };
 
-interface IGeometry
-{
-    /**
-     * The vertices of geometry.
-     */
-    vertices: Float32Array;
-
-    /**
-     * The lenght of vertices.
-     */
-    verticesLength: number;
-
-    /**
-     * Indices are always kept as unsigned buffer until requested.
-     */
-    indicesBuffer: Uint8Array;
-
-    /**
-     * Length of indices buffer.
-     */
-    indicesLength: number;
-};
-
 
 export 
 {
     IndicesType,
-    IGeometry,
     QuadGeometry
 }

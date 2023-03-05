@@ -1,17 +1,12 @@
 import { LifecycleState } from './bones_common'
-import { GeometryBuffer } from './GeometryBuffer';
 import { Color, Vec2 } from './bones_math';
 import { Texture2D } from './bones_texture';
 import { Mat4x4 } from './math/mat/Mat4x4';
 import { Rect } from './math/Rect';
-import { Vec3 } from './math/vec/Vec3';
-import { SpriteShader } from './shaders/SpriteShader';
 import { SpriteFont } from './fonts/SpriteFont';
 
 // RENDERING
 // SHOULD BE DONE LIKE 
-// spriteRenderer.beginRenderPass() --- should be only called by 'renderer' itself. Main renderer
-// .... whetever
 // spriteRenderer.begin()
 // spriteRenderer.draw()
 // spriteRenderer.draw()
@@ -139,15 +134,13 @@ export abstract class SpriteRenderer
     public abstract destroy (): void;
 
     /**
-     * Pass arbitrary data to sprite renderer if needed.
-     * @param { T | unknown } data - any data required. This is called once per frame, right at the beginning of frame.
-     */
-    public abstract beginRenderPass<T> (data?: T): void;
-
-    /**
      * @brief Begins the sprite batch.
+     * @param mode - the blending mode.
+     * @param maxInstances - the max instances to draw. This affects buffer size for each sprite per texture.
+     * Use large size if you expect large number of instances per texture. For example is long streams of texts are to be used.
+     * If you do not expect large number of instances, such as when rendering small number of sprites or if you do not use sprite sheet, use small numbers.
      */
-    public abstract begin (mode?: Blend): void;
+    public abstract begin (mode?: Blend, maxInstances?: number): void;
 
     /**
      * @brief Draws the texture at position.
@@ -195,22 +188,6 @@ export abstract class SpriteRenderer
      * @brief End the sprite rendering.
      */
     public abstract end (): void
-
-    /**
-     * @brief Resize the sprite renderer.
-     * CAUTION: Ideally this should be set to renderer width and height, but can be done otherwise.
-     * Not setting it to renderer width and height might lead to some undesired behaviour.
-     *
-     * @param { number } width - new width.
-     * @param { number } height - new height.
-     */
-    public resize (width: number, height: number): void 
-    {
-        const projection = Mat4x4.orthographic(0, width, height, 0, -1, 1);
-        const view = Mat4x4.lookAt(Vec3.zero(), Vec3.negativeUnitZ(), Vec3.unitY());
-
-        this.m_projectionViewMatrix =   projection.multiply(view);
-    }
 
     /**
      * Sets {@link SpriteRenderer.origin} to (0.5, 0.5) and {@link SpriteRenderer.rotationAnchor} to (0,0) 

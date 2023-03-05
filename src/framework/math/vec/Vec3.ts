@@ -358,26 +358,20 @@ export class Vec3 extends BaseMatrix<Vec3>
 
     /**
      * The cross product of two vectors.
-     * @param { Vec3 | Float32Array } a 
-     * @param { Vec3 | Float32Array } b
-     * @param { Vec3 | Float32Array | undefined } out 
-     * @returns { Vec3 | Float32Array }
+     * @param a 
+     * @param b 
+     * @param out optional, if passed in, writes result to out.
      */
-    public static cross (a: Vec3 | Float32Array, b: Vec3 | Float32Array, out?: Vec3 | Float32Array): Vec3 | Float32Array
+    public static cross (a: Vec3 | Float32Array, b: Vec3 | Float32Array, out?: Vec3): Vec3 
     {
         if (!out)
         {
-            return new Vec3
-                (
-                    a[1] * b[2] - b[1] * a[2],
-                    a[2] * b[0] - b[2] * a[0],
-                    a[0] * b[1] - b[0] * a[1]
-                );
+            out = Vec3.zero();
         }
 
-        out[0] = a[1] * b[2] - b[1] * a[2];
-        out[1] = a[2] * b[0] - b[2] * a[0];
-        out[2] = a[0] * b[1] - b[0] * a[1];
+        out[0] = a[1] * b[2] - a[2] * b[1];
+        out[1] = a[2] * b[0] - a[0] * b[2];
+        out[2] = a[0] * b[1] - a[1] * b[0];
 
         return out;
     }

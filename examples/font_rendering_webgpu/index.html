@@ -49,6 +49,8 @@
             createFolder (gui, text, index) {
                 const lf = gui.addFolder(`Text ${index}`);
 
+                lf.add(text, "text");
+
                 // POSITION
                 const pos_obj = {
                     x: text.position.x,
@@ -99,7 +101,7 @@
 
             draw () {
 
-                this.spriteRenderer.begin();
+                this.spriteRenderer.begin(null, 100000);
 
                 this.renderText(this.text1);
                 this.renderText(this.text2);

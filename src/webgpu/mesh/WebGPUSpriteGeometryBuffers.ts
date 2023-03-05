@@ -1,7 +1,7 @@
 
 // to read https://github.com/toji/webgpu-best-practices/blob/main/buffer-uploads.md
 
-import { QuadGeometry } from "../../framework/bones_geometry";
+import { QuadGeometry } from "../../framework/geometry/bones_geometry";
 import { WebGPURendererContext } from "../WebGPURenderer";
 
 // OBSOLETE
@@ -64,7 +64,7 @@ export class WebGPUSpriteGeometryBuffer
 
         // INDICES
         const indices_buffer = device.createBuffer({
-            size: (indices.byteLength + 3) & ~3,
+            size: indices.length,
             usage: GPUBufferUsage.INDEX,
             mappedAtCreation: true
         });

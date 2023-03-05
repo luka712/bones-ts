@@ -12,6 +12,7 @@ import vertexSource from "./shaders/vspriteshader.glsl?raw"
 import fragmentSource from "./shaders/fspriteshader.glsl?raw"
 import { GLTexture2D } from "../../GLTexture";
 import { SpriteFont } from "../../../framework/fonts/SpriteFont";
+import { Camera2D } from "../../../framework/renderers/common/Camera2D";
 
 
 
@@ -30,6 +31,8 @@ const STRIDE = 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_E
 // otherwise write into giant buffer until max count 
 // if max count is hit, restart instnace count and draw
 
+const GLOBAL_UBO_BINDING_POINT = 0;
+
 
 export class GLSpriteRenderer extends SpriteRenderer
 {
@@ -38,10 +41,10 @@ export class GLSpriteRenderer extends SpriteRenderer
     private m_vao: WebGLVertexArrayObject; // actually used.
     private m_buffer: WebGLBuffer; // keep only to clean it up
     private m_iBuffer: WebGLBuffer // keep only to clean it up
+    private _globalUniformBuffer: WebGLBuffer; // for uniforms
 
     // Shader stuff
     private m_shader: GLShaderImplementation;
-    private m_projectionViewMatrixLocation: WebGLUniformLocation;
 
     // The big buffer that holds all the data.
     private m_data: Float32Array;
@@ -62,16 +65,9 @@ export class GLSpriteRenderer extends SpriteRenderer
     private o_v3: Vec2 = Vec2.zero();
     private o_rotOrigin: Vec2 = Vec2.zero();
 
-    constructor(private m_gl: WebGL2RenderingContext, public readonly window: WindowManager, public readonly renderer: IRenderer, private m_fileLoader: FileLoader)
+    constructor(private m_gl: WebGL2RenderingContext)
     {
         super();
-
-        this.window.subscribeToWindowResized((e) => 
-        {
-            this.resize(e.width, e.height);
-        });
-
-        this.resize(window.width, window.height);
     }
 
 
@@ -153,12 +149,25 @@ export class GLSpriteRenderer extends SpriteRenderer
 
     private async initializeShaders (): Promise<void>
     {
+        const gl = this.m_gl;
+
         const shader = new GLShaderImplementation(this.m_gl, vertexSource, fragmentSource);
 
         await shader.initialize();
         // await shader.initialize(vertex_source, fragment_source);
 
-        this.m_projectionViewMatrixLocation = shader.getUniformLocation("u_global.projectionViewMatrix", true);
+        // find and define binding block
+        const uniformBlockIndex = gl.getUniformBlockIndex(shader.program, "GlobalUBO");
+        gl.uniformBlockBinding(shader.program, uniformBlockIndex, GLOBAL_UBO_BINDING_POINT)
+
+        // create ubo global buffer
+        this._globalUniformBuffer = gl.createBuffer();
+
+        // bind buffer to binding point and populate buffer
+        gl.bindBufferBase(gl.UNIFORM_BUFFER, GLOBAL_UBO_BINDING_POINT, this._globalUniformBuffer);
+        gl.bufferData(gl.UNIFORM_BUFFER, Camera2D.projectionViewMatrix, gl.DYNAMIC_DRAW);
+
+
 
         this.m_shader = shader;
     }
@@ -239,8 +248,10 @@ export class GLSpriteRenderer extends SpriteRenderer
     /**
      * {@inheritDoc SpriteRenderer}
      */
-    public begin (mode?: Blend): void
+    public begin (mode?: Blend, maxInstances = 1000): void
     {
+        // TODO: use max instances.
+
         const gl = this.m_gl;
 
         // reset stuff.
@@ -253,7 +264,9 @@ export class GLSpriteRenderer extends SpriteRenderer
         gl.bindVertexArray(this.m_vao);
 
         this.m_shader.use();
-        gl.uniformMatrix4fv(this.m_projectionViewMatrixLocation, false, this.m_projectionViewMatrix);
+
+        gl.bindBuffer(gl.UNIFORM_BUFFER, this._globalUniformBuffer);
+        gl.bufferSubData(gl.UNIFORM_BUFFER, 0, Camera2D.projectionViewMatrix);
     }
 
     /**
@@ -508,9 +521,6 @@ export class GLSpriteRenderer extends SpriteRenderer
             this.glDraw();
         }
 
-        // /******************* SETUP OPTIMIZATION VECTORS ******************/
-        // it's easier to reason with vector.
-
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInner(i, draw_rect.x, draw_rect.y, draw_rect.w, draw_rect.h, rotation_in_radians, rotation_anchor, tint_color);
 
@@ -530,9 +540,6 @@ export class GLSpriteRenderer extends SpriteRenderer
         {
             this.glDraw();
         }
-
-        // /******************* SETUP OPTIMIZATION VECTORS ******************/
-        // it's easier to reason with vector.
 
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInnerSource(
@@ -558,15 +565,9 @@ export class GLSpriteRenderer extends SpriteRenderer
             this.glDraw();
         }
 
-        // /******************* SETUP OPTIMIZATION VECTORS ******************/
-        // it's easier to reason with vector.
-        // TODO: use first with passed
-        // const origin = origin ?? this.origin;
-        const origin = this.origin;
-
         // move to top left by default
-        const x = position[0] - origin.x * texture.width;
-        const y = position[1] - origin.y * texture.height;
+        const x = position[0] - this.origin.x * texture.width;
+        const y = position[1] - this.origin.y * texture.height;
 
         let w = texture.width;
         let h = texture.height;
@@ -594,10 +595,11 @@ export class GLSpriteRenderer extends SpriteRenderer
         if (i > NUM_MAX_INSTANCES) 
         {
             this.glDraw();
-            i = 0;
         }
 
         const d = this.m_data;
+
+        tintColor = tintColor ?? this.o_defaultTintColor
 
         let x = Math.floor(position[0]);
         let y = Math.floor(position[1]);
@@ -618,8 +620,6 @@ export class GLSpriteRenderer extends SpriteRenderer
             const c = text[j];
             const ch = font.getFontCharacterInfo(c);
 
-            let _x = x;
-            let _y = y;
 
             const w = Math.floor(ch.size[0] * scale);
             const h = Math.floor(ch.size[1] * scale);
@@ -628,8 +628,8 @@ export class GLSpriteRenderer extends SpriteRenderer
 
             // -0.5, -0.5, 0, 0, 0,			// bottom left corner
             // v0
-            d[i] = _x;
-            d[i + 1] = _y;
+            d[i] = x;
+            d[i + 1] = y;
             d[i + 2] = 0;
             // tc0
             d[i + 3] = texelsQuad.a[0];
@@ -642,8 +642,8 @@ export class GLSpriteRenderer extends SpriteRenderer
 
             // -0.5, 0.5, 0, 0, 1,			// top left corner
             // v1
-            d[i + 9] = _x;
-            d[i + 10] = _y + h;
+            d[i + 9] = x;
+            d[i + 10] = y + h;
             d[i + 11] = 0;
             // tc1
             d[i + 12] = texelsQuad.b[0];
@@ -656,8 +656,8 @@ export class GLSpriteRenderer extends SpriteRenderer
 
             // 0.5, 0.5, 0, 1, 1,			// top right corner
             // v2
-            d[i + 18] = _x + w;
-            d[i + 19] = _y + h;
+            d[i + 18] = x + w;
+            d[i + 19] = y + h;
             d[i + 20] = 0;
             // tc2
             d[i + 21] = texelsQuad.c[0];
@@ -670,8 +670,8 @@ export class GLSpriteRenderer extends SpriteRenderer
 
             // 0.5, -0.5, 0, 1, 0			// bottom right corner
             // v3
-            d[i + 27] = _x + w;
-            d[i + 28] = _y;
+            d[i + 27] = x + w;
+            d[i + 28] = y;
             d[i + 29] = 0;
             // tc3
             d[i + 30] = texelsQuad.d[0];

@@ -66,7 +66,6 @@ export class CbfgFontLoader
         }
         ctx.putImageData(imageData, 0, 0);
 
-        debugger;
         font.texture = await this.m_textureManager.createTexture(canvas, bitmap.width, bitmap.height, {
             textureFormat: TextureChannel.RGBA
         });
@@ -90,14 +89,14 @@ export class CbfgFontLoader
                 const char = String.fromCharCode(char_n);
 
                 const char_info = font.createOrGetFontCharacterInfo(char);
-                char_info.size = new Vec2(font.fontSize, font.fontSize);
+                char_info.size = new Vec2(cell_size_x, cell_size_y);
 
                 // if --- Base Width
                 const comma_split = split_line[3].split(",");
                 if (split_line[2] == "Base" && comma_split[0] == "Width")
                 {
                     const width = Number(comma_split[1]);
-                    char_info.size = new Vec2(font.fontSize, font.fontSize);
+                    char_info.size = new Vec2(cell_size_x, cell_size_y);
                     char_info.advance = new Vec2(width, 0);
                 }
 
@@ -122,8 +121,12 @@ export class CbfgFontLoader
         let x = 0;
         let y = 0;
 
-        const cell_size_x_norm = cell_size_x / bitmap.width;
-        const cell_size_y_norm = cell_size_y / bitmap.height;
+        // number of cells doesn't have to match with width, account for that when looking for new row
+        const xRemainder = bitmap.width % cell_size_x;
+        const correctedBitmapWidth = bitmap.width - xRemainder;
+
+        const cell_size_x_norm = cell_size_x / canvas.width;
+        const cell_size_y_norm = cell_size_y / canvas.height;
 
         // for each ASCII char
         for (let i = 0; i < 128; i++)
@@ -133,8 +136,8 @@ export class CbfgFontLoader
             const ch = font.createOrGetFontCharacterInfo(ascii);
 
             // find texture coordinates.
-            const tx = x / bitmap.width;
-            const ty = y / bitmap.height;
+            const tx = x / canvas.width;
+            const ty = y / canvas.height;
 
             ch.textureCoords = new Quad2D(
                 new Vec2(tx, ty), // tl
@@ -145,7 +148,7 @@ export class CbfgFontLoader
 
             // advance x and y
             x += cell_size_x;
-            if (x >= bitmap.width)
+            if (x >= correctedBitmapWidth)
             {
                 x = 0;
                 y += cell_size_y;

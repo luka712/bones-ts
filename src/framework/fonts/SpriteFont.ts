@@ -114,7 +114,7 @@ export class SpriteFont
         for(let i = 0; i < text.length; i++)
         {
             const c = this.getFontCharacterInfo(text[i]);
-            len += c.advance.x;
+            len += c.size.x;
         }
 
         return len;

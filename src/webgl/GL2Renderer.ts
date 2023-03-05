@@ -77,8 +77,6 @@ export class GL2Renderer implements IRenderer
 
         // clear color buffer and depth buffer.
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-
-        this.spriteRenderer.beginRenderPass();
     }
 
     public endDraw(): void
