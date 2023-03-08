@@ -6,6 +6,7 @@
 
 import { Color, Vec2 } from "../../../framework/bones_math";
 import { Framework } from "../../../framework/Framework";
+import { FrameworkContext } from "../../../framework/FrameworkContext";
 import { Camera2D } from "../../../framework/renderers/common/Camera2D";
 import { Blend } from "../../../framework/SpriteRenderer";
 import { WindowManager } from "../../../framework/Window";
@@ -24,8 +25,7 @@ layout (location = 1) in vec2 a_point; // point is position on screen
 layout (location = 2) in vec2 a_size; // width and height.
 layout (location = 3) in vec4 a_color; // the color.
 
-uniform mat4 u_projectionMatrix;
-uniform mat4 u_viewMatrix;
+uniform mat4 u_projectionViewMatrix;
 
 out vec2 v_position;
 out vec2 v_size;
@@ -37,7 +37,7 @@ void main()
     v_color = a_color;
 
     vec2 pos = a_position * a_size;
-    gl_Position = u_projectionMatrix * u_viewMatrix * vec4(pos + a_point, 0.0, 1.0);
+    gl_Position = u_projectionViewMatrix * vec4(pos + a_point, 0.0, 1.0);
     
     //  vec2 ndc_pos = gl_Position.xy / gl_Position.w;
     // v_position = u_resolution * (ndc_pos * 0.5 + 0.5);
@@ -88,8 +88,7 @@ export class GLEllipseRenderer
 
     // shader stuff
     private m_shader: GLShaderImplementation;
-    private m_viewMatrixLocation: WebGLUniformLocation;
-    private m_projectionMatrixLocation: WebGLUniformLocation;
+    private m_projectionViewMatrixLocation: WebGLUniformLocation;
 
     // default
     private o_color = Color.white();
@@ -103,7 +102,7 @@ export class GLEllipseRenderer
     {
         //super();
 
-        this.m_gl = Framework.gl;
+        this.m_gl = FrameworkContext.gl;
         this.m_window = framework.window;
     }
 
@@ -182,8 +181,7 @@ export class GLEllipseRenderer
 
         await shader.initialize();
 
-        this.m_viewMatrixLocation = shader.getUniformLocation("u_viewMatrix", true);
-        this.m_projectionMatrixLocation = shader.getUniformLocation("u_projectionMatrix", true);
+        this.m_projectionViewMatrixLocation = shader.getUniformLocation("u_projectionViewMatrix", true);
 
         this.m_shader = shader;
     }
@@ -224,8 +222,7 @@ export class GLEllipseRenderer
 
         // use and set shader vars
         this.m_shader.use();
-        gl.uniformMatrix4fv(this.m_projectionMatrixLocation, false, Camera2D.projectionMatrix);
-        gl.uniformMatrix4fv(this.m_viewMatrixLocation, false, Camera2D.viewMatrix);
+        gl.uniformMatrix4fv(this.m_projectionViewMatrixLocation, false, Camera2D.projectionViewMatrix);
     }
 
     /**

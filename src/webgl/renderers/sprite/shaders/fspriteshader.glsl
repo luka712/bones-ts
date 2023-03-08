@@ -6,8 +6,8 @@ in vec4 v_tintColor;
 
 uniform sampler2D u_texture;
      
-layout(location = 0)out vec4 outColor;
-layout(location = 1)out vec4 outBrightColor;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 outBrightColor;
      
 void main() 
 {

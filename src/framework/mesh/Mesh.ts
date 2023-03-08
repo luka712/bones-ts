@@ -1,37 +1,33 @@
 import { Mat4x4 } from "../bones_math";
-import { Framework } from "../Framework";
-import { Geometry } from "../geometry/Geometry";
-import { WebGPUMesh } from "./WebGPUMesh";
+import { Camera } from "../camera/Camera";
+import { Material } from "../material/Material";
 
 export enum PrimitiveMode
 {
     Triangles = 4
 }
 
-export class Mesh 
+export abstract class Mesh 
 {
-    /**
-     * The actual mesh implementation, which is either {@link WebGPUMesh} or {@link todo}
-     */
-    public internalMesh: WebGPUMesh;
 
-    constructor(framework: Framework, geometry: Geometry)
+    /**
+     * 
+     * @param maxInstances the max instances to draw. Only has effect for WebGLRenderer, no effect on WebGPU renderer.
+     */
+    constructor(public readonly maxInstances = 1)
     {
-        this.internalMesh = new WebGPUMesh(this, framework, geometry);
+
     }
 
     /**
      * Initialize the mesh.
      */
-    public initialize (): void 
-    {
-        this.internalMesh.initialize();
-    }
+    public abstract initialize (): void;
 
     /**
      * The index of material in scene.
      */
-    public material: number = 0;
+    public materials: Array<Material> = [];
 
     /**
      * Should it draw points, lines, triangles and in which mode.
@@ -39,9 +35,22 @@ export class Mesh
     public primitiveMode: PrimitiveMode = PrimitiveMode.Triangles;
 
     /**
-     * Number of indices to draw.
+     * The transform matrix of a mesh.
      */
-    public indicesCount: number = 36; // just test
-
     public transform: Mat4x4 = Mat4x4.identity();
+
+    /**
+     * The number of indices to draw.
+     */
+    public indicesCount: number;
+
+    public draw (camera: Camera)
+    {
+        for (let material of this.materials)
+        {
+            material.draw(camera, this);
+        }
+    }
+
+    public abstract destroy (): void;
 }

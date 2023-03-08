@@ -1,14 +1,16 @@
-import { WebGPURenderer } from "../../webgpu/WebGPURenderer";
-import { Framework } from "../Framework";
-import { FrameworkContext } from "../FrameworkContext";
-import { Geometry } from "../geometry/Geometry";
-import { Mesh } from "./Mesh";
+import { WebGPURenderer } from "../../../webgpu/WebGPURenderer";
+import { Framework } from "../../Framework";
+import { FrameworkContext } from "../../FrameworkContext";
+import { Geometry } from "../../geometry/Geometry";
+import { Mesh } from "../Mesh";
 
 
-export class WebGPUMesh
+export class WebGPUMesh extends Mesh
 {
+  
     public indicesBuffer: GPUBuffer;
     public indexFormat: GPUIndexFormat;
+    
 
     public vertexPositionsBuffer: GPUBuffer;
     public vertexColorsBuffer: GPUBuffer;
@@ -17,9 +19,11 @@ export class WebGPUMesh
     private m_numOfVertices = 0;
     
 
-    constructor(private mesh: Mesh, private m_framework: Framework, private m_geometry: Geometry) 
+    constructor(private m_framework: Framework, private m_geometry: Geometry) 
     {
+        super();
         this.m_numOfVertices = m_geometry.vertexPositions.length / 3;
+        this.indicesCount = m_geometry.indices.length;
     }
 
     /**
@@ -104,5 +108,10 @@ export class WebGPUMesh
         this.indicesBuffer = this.initializeIndicesBuffer();
         this.vertexPositionsBuffer = this.intitializePositionsBuffer();
         this.vertexColorsBuffer = this.intitializeColorsBuffer();
+    }
+
+    public destroy () : void 
+    {
+        throw new Error("Method not implemented.");
     }
 }

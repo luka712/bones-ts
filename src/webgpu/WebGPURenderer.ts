@@ -7,7 +7,7 @@ import { FrameworkContext } from "../framework/FrameworkContext";
 import { Camera2D } from "../framework/renderers/common/Camera2D";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
 import { WebGPUBasicMaterialRenderPipelineWrapper } from "./material/basic/WebGPUBasicMaterialRenderPipelineWrapper";
-import { WebGPUMesh } from "../framework/mesh/WebGPUMesh";
+import { WebGPUMesh } from "../framework/mesh/gpu/WebGPUMesh";
 import { WebGPUModel } from "./model/WebGPUModel";
 
 // TODO: see https://austin-eng.com/webgpu-samples/samples/helloTriangle#main.ts

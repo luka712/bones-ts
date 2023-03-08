@@ -1,16 +1,21 @@
 
 
 // for global stuff ( 1 per frame )
-struct UBO 
+struct UBOGlobal
 {
     projectionViewMatrix: mat4x4<f32>,
-    transformMatrix: mat4x4<f32>,
     diffuseColor: vec4<f32>
+};
+
+struct UBOInstance
+{
+    transformMatrix: array<mat4x4<f32>>,
 };
 
 
  // group 0, update once per pass 
- @group(0) @binding(0) var<uniform> u_ubo: UBO;
+ @group(0) @binding(0) var<uniform> u_global: UBOGlobal;
+ @group(0) @binding(1) var<storage, read> u_instance: UBOInstance;
 
 struct VSOutputFSInput
 {
@@ -22,13 +27,14 @@ struct VSOutputFSInput
 
 @vertex
 fn vs_main(
+    @builtin(instance_index) ID: u32,
     @location(0) a_vertex: vec3<f32>,
     @location(1) a_vertexColor: vec4<f32>) -> VSOutputFSInput 
 {
     var out: VSOutputFSInput;
-    out.Position = u_ubo.projectionViewMatrix * u_ubo.transformMatrix * vec4<f32>(a_vertex, 1.0);
+    out.Position = u_global.projectionViewMatrix * u_instance.transformMatrix[ID] * vec4<f32>(a_vertex, 1.0);
     out.v_vertexColor = a_vertexColor;
-    out.v_diffuseColor = u_ubo.diffuseColor;
+    out.v_diffuseColor = u_global.diffuseColor;
     return out;
 }
 

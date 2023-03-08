@@ -1,6 +1,7 @@
 import { strict } from "assert";
 import { Color, Vec2 } from "../../../framework/bones_math";
 import { Framework } from "../../../framework/Framework";
+import { FrameworkContext } from "../../../framework/FrameworkContext";
 import { GLLineJoin, LineDrawAdditionalContext, LineCapsType, LineJoinType, LineRenderer2D, GLLineCaps } from "../../../framework/renderers/LineRenderer2D";
 import { Blend } from "../../../framework/SpriteRenderer";
 import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
@@ -50,8 +51,6 @@ export const GL_LINE_RENDERER_STRIDE = 4 * Float32Array.BYTES_PER_ELEMENT;
 
 export class GLLineRenderer2D extends LineRenderer2D
 {
-  
-
     // private 
     private m_gl: WebGL2RenderingContext;
 
@@ -103,7 +102,7 @@ export class GLLineRenderer2D extends LineRenderer2D
     {
         super();
 
-        this.m_gl = Framework.gl;
+        this.m_gl = FrameworkContext.gl;
 
         framework.window.subscribeToWindowResized((e) => 
         {

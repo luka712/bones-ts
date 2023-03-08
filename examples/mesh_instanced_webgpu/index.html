@@ -1,0 +1,90 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.umd.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            camera = null;
+
+            material = null;
+
+            mesh = null;
+
+            transforms = [];
+           
+            createMaterialFolder (gui) {
+
+                const mf = gui.addFolder(`Material`);
+
+
+                // COLOR 
+                const material = this.material;
+                const temp = {
+                    diffuseColor: [material.diffuseColor.r * 255, material.diffuseColor.g * 255, material.diffuseColor.b * 255],
+                }
+                mf.addColor(temp, "diffuseColor").onChange(v => {
+                    material.diffuseColor[0] = v[0] / 255;
+                    material.diffuseColor[1] = v[1] / 255;
+                    material.diffuseColor[2] = v[2] / 255;
+                });
+            }
+
+            async initialize () {
+                const gui = new dat.GUI();
+
+                this.camera = new BonesFramework.FreeCamera(this);
+
+                const maxInstances = 25000;
+                this.material = this.materialFactory.createBasicMaterial({ maxInstances: maxInstances});
+
+                for(let i = 0; i < maxInstances; i++)
+                {
+                    this.transforms.push(BonesFramework.Mat4x4.translationMatrix(
+                        Math.random() * 100 - 50,
+                        Math.random() * 100 - 50,
+                        Math.random() * 100 - 50
+                        ));
+                }
+
+                this.mesh = this.meshFactory.createCubeMesh();
+        
+                this.createMaterialFolder(gui);
+
+            }
+
+            update (delta_time) {
+                this.camera.update(delta_time);
+            }
+
+            draw () {
+
+                this.material.drawInstanced(this.camera, this.mesh, this.transforms);
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"), {
+            renderer: "webgpu"
+        });
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

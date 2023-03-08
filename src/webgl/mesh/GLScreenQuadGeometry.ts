@@ -1,5 +1,6 @@
 import { LifecycleState } from "../../framework/bones_common";
 import { Framework } from "../../framework/Framework";
+import { FrameworkContext } from "../../framework/FrameworkContext";
 
 /**
  * The special geometry class, which contains a quad that covers whole screen if used without matrices.
@@ -111,7 +112,7 @@ export class GLScreenQuadGeometry
     {
         if(!this.m_instance)
         {
-            this.m_instance = new GLScreenQuadGeometry(Framework.gl);
+            this.m_instance = new GLScreenQuadGeometry(FrameworkContext.gl);
         }
         return this.m_instance;
     }

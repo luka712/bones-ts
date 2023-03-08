@@ -20,6 +20,7 @@ import { Physics2D } from "./framework/physics/euler/Physics2D";
 import { CircleCollider2D } from "./framework/collision/CircleCollider2D";
 import { Physics2DVerlet } from './framework/physics/verlet/Physics2DVerlet';
 import { PhysicsBoundsBehavior } from "./framework/physics/common/PhysicsBoundsBehavior";
+import { FreeCamera } from "./framework/camera/FreeCamera";
 
 export
 {
@@ -70,6 +71,8 @@ export
     // Colliders
     CircleCollider2D,
 
+    // Camera
+    FreeCamera,
 
     // test scene/games.
     // TestGame, 

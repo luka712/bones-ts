@@ -17,8 +17,13 @@ export class Vec3 extends BaseMatrix<Vec3>
     }
 
     public get x (): number { return this[0]; }
+    public set x (v: number) { this[0] = v; }
+
     public get y (): number { return this[1]; }
+    public set y (v: number) { this[1] = v; }
+
     public get z (): number { return this[2]; }
+    public set z (v: number) { this[2] = v; }
 
     /*
      * Get the magnitude (length) of a vector.

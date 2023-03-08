@@ -3,7 +3,7 @@ import { Geometry } from "./Geometry";
 
 export class GeometryBuilder 
 {
-    public buildCubeGeometry () 
+    public buildCubeGeometry () : Geometry
     {
         const vertices = new Float32Array(
             [

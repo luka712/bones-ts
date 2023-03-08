@@ -1,28 +1,40 @@
-import { WebGPUModel } from "../../../../webgpu/model/WebGPUModel";
+
+
+import shaderSource from "./basic_material_shader.wgsl?raw"
+import { BasicMaterial } from "../BasicMaterial";
 import { WebGPURenderer } from "../../../../webgpu/WebGPURenderer";
-import { Mat4x4 } from "../../../bones_math";
 import { Camera } from "../../../camera/Camera";
 import { Framework } from "../../../Framework";
 import { FrameworkContext } from "../../../FrameworkContext";
+import { WebGPUMesh } from "../../../mesh/gpu/WebGPUMesh";
+import { Mat4x4 } from "../../../bones_math";
 import { Mesh } from "../../../mesh/Mesh";
-import { WebGPUMesh } from "../../../mesh/WebGPUMesh";
 import { Material } from "../../Material";
-import { RenderBackendWrapper } from "../../RenderBackendWrapper";
-import shaderSource from "./basic_material_shader.wgsl?raw"
+
 
 /**
  * Holds the GPURenderPipeline and informatio about uniforms buffer and bind groups necessary for drawing the BasicMaterial.
  */
-export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWrapper 
+export class WebGPUBasicMaterial extends BasicMaterial 
 {
-    private m_pipeline: GPURenderPipeline;
 
-    // global uniform 
-    private m_uniformsBuffer: GPUBuffer;
+
+    private m_pipeline: GPURenderPipeline;
     private m_uniformsBindGroup: GPUBindGroup;
 
-    constructor(private m_framework: Framework)
+    /**
+     * For global (projectionViewMatrix)
+     */
+    private m_uniformGlobalBuffer: GPUBuffer;
+    /**
+     * For drawing instance(transformMatrix, diffuseColor)
+     */
+    private m_uniformInstancesBuffer: GPUBuffer;
+
+
+    constructor(private m_framework: Framework, maxInstances = 1)
     {
+        super(maxInstances);
     }
 
     private intializeStates (): { vertexState: GPUVertexState, fragmentState: GPUFragmentState }
@@ -97,7 +109,7 @@ export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWra
         }
     }
 
-    private initializeBuffers () : { uniformsBindGroupLayout: GPUBindGroupLayout }
+    private initializeBuffers (): { uniformsBindGroupLayout: GPUBindGroupLayout }
     {
         const device = FrameworkContext.device;
 
@@ -105,7 +117,7 @@ export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWra
 
         // GLOBAL UNIFORM BIND GROUP LAYOUT group(0)
         const uniformsBindGroupLayout = device.createBindGroupLayout({
-            label: "ubo",
+            label: "basic_material_layout",
             entries: [
                 {
                     // global uniform group(0) binding(0)
@@ -113,18 +125,32 @@ export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWra
                     visibility: GPUShaderStage.VERTEX,
                     buffer: {}
                 },
+                {
+                    // instance uniform group(0) binding(1)
+                    binding: 1,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: {
+                        type: "read-only-storage",
+                        hasDynamicOffset: false
+                    }
+                }
 
             ],
         });
 
 
         // ONCE PER FRAME 
-        this.m_uniformsBuffer = device.createBuffer({
-            // projectionView, transform, diffuseColor
-            size: Float32Array.BYTES_PER_ELEMENT * (16 + 16 + 4),
+        this.m_uniformGlobalBuffer = device.createBuffer({
+            // projectionView, diffuseColor
+            size: Float32Array.BYTES_PER_ELEMENT * (16 + 4),
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
+        this.m_uniformInstancesBuffer = device.createBuffer({
+            // transform
+            size: Float32Array.BYTES_PER_ELEMENT * 16 * this.maxInstances,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
 
         // uniform layout. Done only once per frame, not for instance.
         this.m_uniformsBindGroup = device.createBindGroup({
@@ -133,8 +159,14 @@ export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWra
                 {
                     binding: 0,
                     resource: {
-                        buffer: this.m_uniformsBuffer
+                        buffer: this.m_uniformGlobalBuffer
                     },
+                },
+                {
+                    binding: 1,
+                    resource: {
+                        buffer: this.m_uniformInstancesBuffer
+                    }
                 },]
         });
 
@@ -145,7 +177,7 @@ export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWra
      * Initialize the backend wrapper.
      * Creates the render pipeline and all the uniform buffers.
      */
-    public initialize () : void 
+    public initialize (): void 
     {
         const { vertexState, fragmentState } = this.intializeStates();
         const { uniformsBindGroupLayout } = this.initializeBuffers();
@@ -178,72 +210,77 @@ export class WebGPUBasicMaterialRenderBackendWrapper implements RenderBackendWra
         this.m_pipeline = device.createRenderPipeline(pipelineDesc);
     }
 
-    public render(camera: Camera, mesh: Mesh, material: Material) : void 
+    /**
+     * @inheritdoc
+     */
+    public draw (camera: Camera, mesh: WebGPUMesh): void 
     {
         // get necessary information.
         const device = (this.m_framework.renderer as WebGPURenderer).device;
         const renderPassEncoder = (this.m_framework.renderer as WebGPURenderer).currentRenderPassEncoder;
-        const webgpuMesh = mesh.internalMesh;
 
         // write into small buffer, which is just camera.
-        device.queue.writeBuffer(this.m_uniformsBuffer, 0, camera.projectionViewMatrix, 0, 16);
-        device.queue.writeBuffer(this.m_uniformsBuffer, 64, mesh.transform, 0, 16);
-        device.queue.writeBuffer(this.m_uniformsBuffer, 128, material.diffuseColor, 0, 4);
+        device.queue.writeBuffer(this.m_uniformGlobalBuffer, 0, camera.projectionViewMatrix, 0, 16);
+        device.queue.writeBuffer(this.m_uniformGlobalBuffer, 64, this.diffuseColor, 0, 4);
+
+        // instance data
+        device.queue.writeBuffer(this.m_uniformInstancesBuffer, 0, mesh.transform, 0, 16);
 
         renderPassEncoder.setPipeline(this.m_pipeline);
         renderPassEncoder.setBindGroup(0, this.m_uniformsBindGroup);
 
         //Triangles
-        renderPassEncoder.setVertexBuffer(0, webgpuMesh.vertexPositionsBuffer, 0, webgpuMesh.vertexPositionsBuffer.size);
-        renderPassEncoder.setVertexBuffer(1, webgpuMesh.vertexColorsBuffer, 0, webgpuMesh.vertexColorsBuffer.size);
-        // renderPass.setVertexBuffer(1, instances[0].mesh.vertexColorsBuffer);
-        renderPassEncoder.setIndexBuffer(webgpuMesh.indicesBuffer, webgpuMesh.indexFormat);
-        // renderPass.setBindGroup(1, this.triangleMaterial.bindGroup); // texture
-        // draw 1 item. 
+        renderPassEncoder.setVertexBuffer(0, mesh.vertexPositionsBuffer, 0, mesh.vertexPositionsBuffer.size);
+        renderPassEncoder.setVertexBuffer(1, mesh.vertexColorsBuffer, 0, mesh.vertexColorsBuffer.size);
+        renderPassEncoder.setIndexBuffer(mesh.indicesBuffer, mesh.indexFormat);
         renderPassEncoder.drawIndexed(mesh.indicesCount, 1, 0, 0);
     }
 
-    public renderInner (renderPass: GPURenderPassEncoder, camera: Camera, instances: WebGPUModel[], projectionMatrix: Mat4x4, viewMatrix: Mat4x4)
+    /**
+     * @inheritdoc
+     */
+    public drawInstanced (camera: Camera, mesh: WebGPUMesh, transforms: Mat4x4[]): void 
     {
-        // if (instances.length == 0) return;
+        if (transforms.length == 0) return;
 
-        // const device = FrameworkContext.device;
+        const array = Mat4x4.matricesArrayToSignedArray(transforms);
+        this.drawInstancedPrefilled(camera, mesh, array, transforms.length);
+    }
 
-        // // write into small buffer, which is just camera.
-        // device.queue.writeBuffer(this.uniformsBuffer, 0, camera.projectionViewMatrix);
-        // device.queue.writeBuffer(this.uniformsBuffer, 64, instances[0].transform, instances[0].transform.byteOffset, instances[0].transform.length);
-        // device.queue.writeBuffer(this.uniformsBuffer, 128, instances[0].material.color, 0, 4);
+    /**
+     * @inheritdoc
+     */
+    public drawInstancedPrefilled (camera: Camera, mesh: WebGPUMesh, flatTransformsArray: Float32Array, nOfInstances: number): void
+    {
+        // get necessary information.
+        const device = (this.m_framework.renderer as WebGPURenderer).device;
+        const renderPassEncoder = (this.m_framework.renderer as WebGPURenderer).currentRenderPassEncoder;
 
-        // renderPass.setPipeline(this.pipeline);
-        // renderPass.setBindGroup(0, this.uniformsBindGroup);
+        // write into small buffer, which is just camera.
+        device.queue.writeBuffer(this.m_uniformGlobalBuffer, 0, camera.projectionViewMatrix, 0, 16);
+        device.queue.writeBuffer(this.m_uniformGlobalBuffer, 64, this.diffuseColor, 0, 4);
+        device.queue.writeBuffer(this.m_uniformInstancesBuffer, 0, flatTransformsArray, 0, 16 * nOfInstances);
 
-        // //Triangles
-        // renderPass.setVertexBuffer(0, instances[0].mesh.vertexPositionsBuffer, 0, instances[0].mesh.vertexPositionsBuffer.size);
-        // renderPass.setVertexBuffer(1, instances[0].mesh.vertexColorsBuffer, 0, instances[0].mesh.vertexColorsBuffer.size);
-        // // renderPass.setVertexBuffer(1, instances[0].mesh.vertexColorsBuffer);
-        // renderPass.setIndexBuffer(instances[0].mesh.indicesBuffer, instances[0].mesh.indexFormat);
-        // // renderPass.setBindGroup(1, this.triangleMaterial.bindGroup); // texture
-        // renderPass.drawIndexed(mesh.indicesCount, instances.length, 0, 0);
-        // objects_drawn += renderables.object_counts[object_types.TRIANGLE];
+        renderPassEncoder.setPipeline(this.m_pipeline);
+        renderPassEncoder.setBindGroup(0, this.m_uniformsBindGroup);
 
-        // quads
-        // renderpass.setVertexBuffer(0, this.quadMesh.buffer);
-        // renderpass.setBindGroup(1, this.quadMaterial.bindGroup);
-        // renderpass.draw(
-        //     6, renderables.object_counts[object_types.QUAD],
-        //     0, objects_drawn
-        // );
-        // objects_drawn += renderables.object_counts[object_types.QUAD];
+        //Triangles
+        renderPassEncoder.setVertexBuffer(0, mesh.vertexPositionsBuffer, 0, mesh.vertexPositionsBuffer.size);
+        renderPassEncoder.setVertexBuffer(1, mesh.vertexColorsBuffer, 0, mesh.vertexColorsBuffer.size);
+        renderPassEncoder.setIndexBuffer(mesh.indicesBuffer, mesh.indexFormat);
 
-        //Statue
-        // renderpass.setVertexBuffer(0, this.statueMesh.buffer);
-        // renderpass.setBindGroup(1, this.triangleMaterial.bindGroup);
-        // renderpass.draw(
-        //     this.statueMesh.vertexCount, 1,
-        //     0, objects_drawn
-        // );
-        // objects_drawn += 1;
+        renderPassEncoder.drawIndexed(mesh.indicesCount, nOfInstances , 0, 0);
+    }
 
+    /**
+     * @inheritdoc
+     */
+    public copy (): Material
+    {
+        const material = new WebGPUBasicMaterial(this.m_framework, this.maxInstances);
+        material.diffuseColor = this.diffuseColor;
+        material.initialize();
+        return material;
     }
 
 }

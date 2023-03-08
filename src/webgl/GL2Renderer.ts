@@ -1,5 +1,7 @@
 import { Color, Vec2 } from "../framework/bones_math";
 import { IRenderer } from "../framework/bones_renderer";
+import { Framework } from "../framework/Framework";
+import { FrameworkContext } from "../framework/FrameworkContext";
 import { Camera2D } from "../framework/renderers/common/Camera2D";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
 import { WindowManager } from "../framework/Window";
@@ -51,6 +53,7 @@ export class GL2Renderer implements IRenderer
     constructor(canvas: HTMLCanvasElement, private readonly m_window: WindowManager)
     {
         this.gl = canvas.getContext("webgl2");
+        FrameworkContext.gl = this.gl;
         this.m_bufferSize = new Vec2(canvas.width, canvas.height);
         this.clearColor = Color.lightPink();
 
@@ -70,12 +73,14 @@ export class GL2Renderer implements IRenderer
     
     public beginDraw(): void
     {
+        const gl = this.gl;
+
         // set up rendering viewport resolution
         this.gl.viewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
         this.gl.clearColor(this.clearColor.r, this.clearColor.g, this.clearColor.b, this.clearColor.a);
 
-
         // clear color buffer and depth buffer.
+        gl.enable(gl.DEPTH_TEST);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }
 

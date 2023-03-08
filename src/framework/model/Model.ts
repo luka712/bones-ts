@@ -1,8 +1,9 @@
+import { Mesh } from "../mesh/Mesh";
+
 export class Model 
 {
     /**
-     * The indexex of meshes that model references.
-     * Looks into a scene.
+     * The meshes of a model.
      */
-    public meshes: Array<number> = [];
+    public meshes: Array<Mesh> = [];
 }

@@ -463,7 +463,7 @@ export class Mat4x4 extends Float32Array
     * @param { Mat4x4 | Float32Array | undefined } out 
     * @returns { Vec3 | Float32Array}
     */
-    public static scaleMatrixFromVector (v: Vec3 | Float32Array, out?: Mat4x4 ): Mat4x4 
+    public static scaleMatrixFromVector (v: Vec3 | Float32Array, out?: Mat4x4): Mat4x4 
     {
         return Mat4x4.scaleMatrix(v[0], v[1], v[2], out);
     }
@@ -1084,6 +1084,25 @@ export class Mat4x4 extends Float32Array
         out[14] = -Vec3.dot(eye, w);
 
         return out;
+    }
+
+    /**
+     * Move all the matrices to an signed array.
+     * @param matrices 
+     * @returns 
+     */
+    public static matricesArrayToSignedArray (matrices: Array<Mat4x4>): Float32Array 
+    {
+        const signedArray = new Float32Array(matrices.length * 16);
+
+        let offset  = 0;
+        for (let i = 0; i < matrices.length; i++)
+        {
+            signedArray.set(matrices[i], offset);
+            offset += 16;
+        }
+
+        return signedArray;
     }
 
     /**

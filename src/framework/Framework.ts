@@ -34,9 +34,13 @@ import { WebGPUSpriteRenderer } from "../webgpu/renderers/sprite/WebGPUSpriteRen
 import { GeometryBuffer } from "./GeometryBuffer";
 import { GeometryBuilder } from "./geometry/GeometryBuilder";
 import { Scene } from "./scene/Scene";
-import { SceneManager } from "./scene/SceneManager";
-import { MaterialManager } from "./material/manager/MaterialManager";
-import { WebGPUMaterialManager } from "./material/manager/WebGPUMaterialManager";
+import { MaterialFactory } from "./material/MaterialFactory";
+import { WebGPUMaterialFactory } from "./material/WebGPUMaterialFactory";
+import { MeshFactory } from "./mesh/MeshFactory";
+import { GLMaterialFactory } from "./material/GLMaterialFactory";
+import { GLMeshFactory } from "./mesh/gl/GLMeshFactory";
+import { WebGPUMeshFactory } from "./mesh/gpu/WebGPUMeshFactory";
+import { FrameworkContext } from "./FrameworkContext";
 
 
 export interface GameJoltCredentials 
@@ -78,12 +82,6 @@ export interface FrameworkOptions
  */
 abstract class Framework
 {
-    /**
-     * The {@link WebGL2RenderingContext} initialize by framework.
-     * Only valid if WebGL2 rendering is used.
-     */
-    public static gl: WebGL2RenderingContext;
-
     private m_runFramework: boolean;
 
     /**
@@ -207,19 +205,19 @@ abstract class Framework
     public readonly plugins: { [id: string]: FrameworkPlugin } = {};
 
     /**
-     * The scene manager.
-     */
-    public readonly sceneManager: SceneManager;
-
-    /**
      * All scenes added to framework.
      */
     public readonly scenes: Array<Scene> = [];
 
     /**
+     * The mesh factory.
+     */
+    public readonly meshFactory: MeshFactory;
+
+    /**
      * The material manager.
      */
-    public readonly materialManager: MaterialManager;
+    public readonly materialFactory: MaterialFactory;
 
     /**
      * The active scene, if greater or equal 0, tries to get scene from scenes.
@@ -241,12 +239,12 @@ abstract class Framework
         this.config = new Config(this.fileLoader);
         this.timeManager = new TimeManager();
         this.geometryBuilder = new GeometryBuilder();
-        this.sceneManager = new SceneManager(this);
 
         if (options?.renderer == UseRendererOption.WebGPU)
         {
             this.renderer = new WebGPURenderer(canvas, this);
-            this.materialManager = new WebGPUMaterialManager(this);
+            this.materialFactory = new WebGPUMaterialFactory(this);
+            this.meshFactory = new WebGPUMeshFactory(this);
             this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
             this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context);
@@ -259,8 +257,9 @@ abstract class Framework
         else
         {
             this.renderer = new GL2Renderer(canvas, this.window);
-            const gl = (this.renderer as GL2Renderer).gl;
-            Framework.gl = gl;
+            const gl = FrameworkContext.gl;
+            this.materialFactory = new GLMaterialFactory(this);
+            this.meshFactory = new GLMeshFactory(this);
             this.textureManager = new GLTextureManager(gl, this.imageLoader);
             this.spriteRenderer = new GLSpriteRenderer(gl);
             this.renderer.spriteRenderer = this.spriteRenderer;
@@ -289,7 +288,7 @@ abstract class Framework
 
             if (this.activeScene >= 0)
             {
-                this.sceneManager.activeScene = this.scenes[this.activeScene];
+               //   this.sceneManager.activeScene = this.scenes[this.activeScene];
             }
 
             this.input.update();
@@ -304,7 +303,6 @@ abstract class Framework
             {
                 this.plugins[key].update(delta_time_ms);
             }
-            this.sceneManager.update(delta_time_ms);
 
             // afterUpdate is always after all update loops.
             this.input.afterUpdate();
@@ -321,7 +319,6 @@ abstract class Framework
             {
                 this.plugins[key].draw();
             }
-            this.sceneManager.draw();
             this.renderer.endDraw();
             // END DRAW CODE
 
@@ -404,7 +401,6 @@ abstract class Framework
         this.m_runFramework = true;
 
         await this.renderer.initialize();
-        this.materialManager?.initialize();
         this.textureManager?.initialize();
         await this.spriteRenderer?.initialize();
         // await this.textRenderManager?.initialize();
@@ -414,7 +410,6 @@ abstract class Framework
         await this.lineRenderer2D?.initialize();
         await this.rectangleRenderer?.initialize();
         await this.ellipseRenderer?.initialize();
-        await this.sceneManager.initialize();
 
         // this.inputManager.initialize();
 

@@ -1,0 +1,117 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.umd.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            camera = null;
+
+            mesh1 = {
+                position: new BonesFramework.Vec3(-2,0,0),
+                mesh: null 
+            };
+            mesh2 = {
+                position: new BonesFramework.Vec3(0,0,0),
+                mesh: null 
+            }
+            mesh3 = {
+                position: new BonesFramework.Vec3(2,0,0),
+                mesh: null 
+            }
+
+            createFolder (gui, mesh, index) {
+                const lf = gui.addFolder(`Mesh ${index}`);
+
+                // POSITION
+                const pos_obj = {
+                    x: mesh.position.x,
+                    y: mesh.position.y,
+                    z: mesh.position.z
+                };
+                const pf = lf.addFolder("position");
+                pf.add(pos_obj, "x").onChange(v => {
+                    mesh.position.x = v;
+                });
+                pf.add(pos_obj, "y").onChange(v => {
+                    mesh.position.y = v;
+                });
+                pf.add(pos_obj, "z").onChange(v => {
+                    mesh.position.z = v;
+                });
+
+            
+                // COLOR 
+                const material = mesh.mesh.materials[0];
+                const temp = {
+                    tintColor: [material.diffuseColor.r * 255, material.diffuseColor.g * 255, material.diffuseColor.b * 255],
+                }
+                lf.addColor(temp, "tintColor").onChange(v => {
+                    material.diffuseColor[0] = v[0] / 255;
+                    material.diffuseColor[1] = v[1] / 255;
+                    material.diffuseColor[2] = v[2] / 255;
+                });
+
+            }
+
+            async initialize () {
+                const gui = new dat.GUI();
+
+                this.camera = new BonesFramework.FreeCamera(this);
+
+                this.mesh1.mesh = this.meshFactory.createCubeMesh();
+                this.mesh1.mesh.materials = [this.materialFactory.createBasicMaterial()];
+                this.mesh2.mesh = this.meshFactory.createCubeMesh();
+                this.mesh2.mesh.materials = [this.materialFactory.createBasicMaterial()];
+                this.mesh3.mesh = this.meshFactory.createCubeMesh();
+                this.mesh3.mesh.materials = [this.materialFactory.createBasicMaterial()];
+
+              
+
+                this.createFolder(gui, this.mesh1, 1);
+                this.createFolder(gui, this.mesh2, 2);
+                this.createFolder(gui, this.mesh3, 3);
+     
+
+            }
+
+            update (delta_time) { 
+                this.camera.update(delta_time);
+
+                this.mesh1.mesh.transform = BonesFramework.Mat4x4.translationMatrixFromVector(this.mesh1.position);
+                this.mesh2.mesh.transform = BonesFramework.Mat4x4.translationMatrixFromVector(this.mesh2.position);
+                this.mesh3.mesh.transform = BonesFramework.Mat4x4.translationMatrixFromVector(this.mesh3.position);
+            }
+
+            draw () {
+                this.mesh1.mesh.draw(this.camera);
+                this.mesh2.mesh.draw(this.camera);
+                this.mesh3.mesh.draw(this.camera);
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"), {
+            renderer: "webgl2"
+        });
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

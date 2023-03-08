@@ -16,7 +16,7 @@ export class FreeCamera extends Camera
     /**
      * The turning speed.
      */
-    public turnSpeed: number = 0.05;
+    public turnSpeed: number = 0.03;
 
     /**
      * The speed of movement.

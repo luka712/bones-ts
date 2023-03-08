@@ -1,5 +1,6 @@
 import { Color, Vec2 } from "../../../framework/bones_math";
 import { Framework } from "../../../framework/Framework";
+import { FrameworkContext } from "../../../framework/FrameworkContext";
 import { Camera2D } from "../../../framework/renderers/common/Camera2D";
 import { RectangleRenderer } from "../../../framework/renderers/RectangleRenderer";
 import { Blend } from "../../../framework/SpriteRenderer";
@@ -70,7 +71,7 @@ export class GLRectangleRenderer extends RectangleRenderer
     {
         super();
 
-        this.m_gl = Framework.gl;
+        this.m_gl = FrameworkContext.gl;
         this.m_corners = new GLRectangleRoundedCorner();
     }
 
