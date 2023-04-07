@@ -76,12 +76,13 @@ export class GL2Renderer implements IRenderer
         const gl = this.gl;
 
         // set up rendering viewport resolution
-        this.gl.viewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
-        this.gl.clearColor(this.clearColor.r, this.clearColor.g, this.clearColor.b, this.clearColor.a);
+        gl.viewport(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
+        gl.clearColor(this.clearColor.r, this.clearColor.g, this.clearColor.b, this.clearColor.a);
 
         // clear color buffer and depth buffer.
         gl.enable(gl.DEPTH_TEST);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+        gl.depthFunc(gl.LEQUAL);
+        gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }
 
     public endDraw(): void

@@ -1,7 +1,7 @@
 import { Color, Vec2 } from "./bones_math";
 import { SpriteRenderer } from "./SpriteRenderer";
 
-interface IRenderer
+interface Renderer
 {
     /**
     * Gets the renderer buffer width.
@@ -52,7 +52,7 @@ interface IRenderer
 }
 
 
-export 
+export type
 {
-    IRenderer
+    Renderer as IRenderer
 }

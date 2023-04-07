@@ -46,6 +46,8 @@ export class WebGPUSpriteUtil
      */
     private static createBuffers (device: GPUDevice, maxInstances: number)
     {
+        // TODO: indices buffer can be same instance.
+
         const indices = new Uint32Array(maxInstances * 6); // 6 for quad indices
         const instanceData = new Float32Array(maxInstances * 4); // for now holds only vec4 for tint color
         const data = new Float32Array(maxInstances * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE);
@@ -74,7 +76,7 @@ export class WebGPUSpriteUtil
         // INDICES
         const indicesBuffer = device.createBuffer({
             label: "indexBuffer",
-            size: (indices.byteLength + 3) & ~3,
+            size: (indices.byteLength + 63) & ~63,
             usage: GPUBufferUsage.INDEX,
             mappedAtCreation: true
         });
@@ -85,7 +87,7 @@ export class WebGPUSpriteUtil
         // POSITIONS, TEX COORDS, TINT COLORS
         const dataBuffer = device.createBuffer({
             label: "vertexBuffer",
-            size: (data.byteLength + 3) & ~3,
+            size: (data.byteLength + 63) & ~63,
             usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, // COPY_DST as it is written to frequently
             mappedAtCreation: true,
         });

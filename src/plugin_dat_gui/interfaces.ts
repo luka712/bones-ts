@@ -1,4 +1,5 @@
 import * as dat from 'dat.gui';
+import { type } from 'os';
 
 /**
  * Extended GUI controller.
@@ -18,7 +19,7 @@ interface GUI extends dat.GUI
 }
 
 
-export 
+export type
 {
     GUI,
     dat,

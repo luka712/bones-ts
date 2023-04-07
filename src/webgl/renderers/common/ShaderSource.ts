@@ -3,6 +3,7 @@ export class ShaderSource
     /**
      * Used for shaders which need to get color from single uniform.
      * For example, lines rendering, lines joints, lines caps.
+     * REMARK: Obsolete in favor of shader_source/gl/basic_color_f.glsl
      */
     public static readonly COMMON_COLOR_FRAGMENT_SHADER = `#version 300 es        
     precision highp float;

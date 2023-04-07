@@ -86,7 +86,7 @@ export class WebGPUTexture2D extends Texture2D
         if (this.m_texture_options)
         {
             // if channel exists.
-            const channel = this.m_texture_options.channel ?? TextureChannel.RGBA;
+            const channel = this.m_texture_options.textureFormat ?? TextureChannel.RGBA;
             if (channel)
             {
                 if (channel == TextureChannel.RED)

@@ -46,7 +46,6 @@ interface IRenderFramebuffer
     delete(): void;
 };
 
-export 
-{
+export type {
     IRenderFramebuffer
 }

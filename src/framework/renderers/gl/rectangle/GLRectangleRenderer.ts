@@ -1,35 +1,20 @@
-import { Color, Vec2 } from "../../../framework/bones_math";
-import { Framework } from "../../../framework/Framework";
-import { FrameworkContext } from "../../../framework/FrameworkContext";
-import { Camera2D } from "../../../framework/renderers/common/Camera2D";
-import { RectangleRenderer } from "../../../framework/renderers/RectangleRenderer";
-import { Blend } from "../../../framework/SpriteRenderer";
-import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
-import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
-import { ShaderSource } from "../common/ShaderSource";
+
+import { GLShaderImplementation } from "../../../../webgl/shaders/GLShaderImplementation";
+import { Framework } from "../../../Framework";
+import { FrameworkContext } from "../../../FrameworkContext";
+import { Color } from "../../../bones_math";
+import { RectangleRenderer } from "../../RectangleRenderer";
+import { Camera2D } from "../../common/Camera2D";
 import { GLRectangleRoundedCorner } from "./corner/GLRectangleRoundedCorner";
+import vertexShaderSource from "../../../shader_source/gl/basic_projection_view_v.glsl?raw"
+import fragmentShaderSource from "../../../shader_source/gl/basic_color_f.glsl?raw"
 
 // HOW IT WORKS
 // it renders a quad
 // quad triangles are renderer same for each instance
 // the rest of data, such as point a positon, point b position, weight and color is set per instance
 
-const VERTEX_SHADER_SOURCE = `#version 300 es
-precision highp float;
 
-layout (location = 0) in vec2 a_position;
-
-struct GlobalUBO 
-{
-    mat4 projectionViewMatrix;
-};
-uniform GlobalUBO u_global;
-
-void main()
-{
-    gl_Position = u_global.projectionViewMatrix * vec4(a_position, 0.0, 1.0);
-}
-`;
 
 // Rect will be created from 5 rectangles + 4 triangle fans for radius of each corner.
 // Smaller rectangles are boundaries made from rounded edges + inner rect
@@ -132,11 +117,11 @@ export class GLRectangleRenderer extends RectangleRenderer
      */
     private async initializeShaders (): Promise<void>
     {
-        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SHADER_SOURCE, ShaderSource.COMMON_COLOR_FRAGMENT_SHADER);
+        const shader = new GLShaderImplementation(this.m_gl, vertexShaderSource, fragmentShaderSource);
 
         await shader.initialize();
 
-        this._projectionViewMatrixLocation = shader.getUniformLocation("u_global.projectionViewMatrix", true);
+        this._projectionViewMatrixLocation = shader.getUniformLocation("u_projectionView", true);
         this.m_colorLocation = shader.getUniformLocation("u_color", true);
 
         this.m_shader = shader;
@@ -170,21 +155,7 @@ export class GLRectangleRenderer extends RectangleRenderer
 
         // draw. 5 * 6 ( 5 rects, 6 vertices)
         gl.drawElements(gl.TRIANGLES, 30, gl.UNSIGNED_BYTE, 0);
-
-
     }
-
-    /**
-     * {@inheritDoc SpriteRenderer}
-     */
-    public begin (mode?: Blend): void
-    {
-        if (mode)
-        {
-            GLBlendModeUtil.setBlendMode(this.m_gl, mode);
-        }
-    }
-
 
     /**
      * Draws the left sub-rect of a rectangle
@@ -368,12 +339,5 @@ export class GLRectangleRenderer extends RectangleRenderer
             color ?? this.o_color,
             tl, tr, br, bl);
 
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public end (): void
-    {
     }
 } 

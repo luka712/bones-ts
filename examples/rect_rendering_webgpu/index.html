@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
-    <script src="../../dist/index.js"></script>
+    <script src="../../dist/index.umd.js"></script>
 </head>
 
 <body>
@@ -110,8 +110,6 @@
             update (delta_time) { }
 
             draw () {
-                this.rectangleRenderer.begin();
-
                 // simple rect, no border radius.
                 this.rectangleRenderer.drawWithStroke(this.rect1.x,
                     this.rect1.y,
@@ -148,12 +146,12 @@
                     this.rect3.top_right,
                     this.rect3.bottom_right,
                     this.rect3.bottom_left);
-
-                this.rectangleRenderer.end();
             }
         }
 
-        const framework = new Game(document.getElementById("canvas"));
+        const framework = new Game(document.getElementById("canvas"), {
+            renderer: "webgpu"
+        });
         framework.initializeFramework().then(x => {
             framework.runFrameworkLoops();
         });

@@ -27,7 +27,6 @@ import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager
 import { GLSpriteRenderer } from "../webgl/renderers/sprite/GLSpriteRenderer";
 import { GLLineRenderer2D } from "../webgl/renderers/lines/GLLineRenderer2D";
 import { LineRenderer2D } from "./renderers/LineRenderer2D";
-import { GLRectangleRenderer } from "../webgl/renderers/rectangle/GLRectangleRenderer";
 import { RectangleRenderer } from "./renderers/RectangleRenderer";
 import { GLEllipseRenderer } from "../webgl/renderers/ellipse/GLEllipseRenderer";
 import { WebGPUSpriteRenderer } from "../webgpu/renderers/sprite/WebGPUSpriteRenderer";
@@ -41,6 +40,8 @@ import { GLMaterialFactory } from "./material/GLMaterialFactory";
 import { GLMeshFactory } from "./mesh/gl/GLMeshFactory";
 import { WebGPUMeshFactory } from "./mesh/gpu/WebGPUMeshFactory";
 import { FrameworkContext } from "./FrameworkContext";
+import { GLRectangleRenderer } from "./renderers/gl/rectangle/GLRectangleRenderer";
+import { WebGPURectangleRenderer } from "./renderers/gpu/rectangle/WebGPURectangleRenderer";
 
 
 export interface GameJoltCredentials 
@@ -248,6 +249,7 @@ abstract class Framework
             this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
             this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context);
+            this.rectangleRenderer = new WebGPURectangleRenderer(this, (this.renderer as WebGPURenderer).context);
 
             // TODO: temp
             this.renderer.spriteRenderer = this.spriteRenderer;

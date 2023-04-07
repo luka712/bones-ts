@@ -5,51 +5,13 @@
 // quad triangles are renderer same for each instance
 // the rest of data, such as point a positon, point b position, weight and color is set per instance
 
-import { Vec2, Color } from "../../../../framework/bones_math";
-import { Framework } from "../../../../framework/Framework";
-import { FrameworkContext } from "../../../../framework/FrameworkContext";
-import { Camera2D } from "../../../../framework/renderers/common/Camera2D";
-import { Blend } from "../../../../framework/SpriteRenderer";
-import { GLShaderImplementation } from "../../../shaders/GLShaderImplementation";
-import { GLBlendModeUtil } from "../../common/GLBlendModeUtil";
-import { ShaderSource } from "../../common/ShaderSource";
+import { Vec2, Color } from "../../../../bones_math";
+import { FrameworkContext } from "../../../../FrameworkContext";
+import { Camera2D } from "../../../common/Camera2D";
+import { GLShaderImplementation } from "../../../../../webgl/shaders/GLShaderImplementation";
+import verexShaderSource from "./rectangle_renderer_v.glsl?raw"
+import fragmentShaderSource from "../../../../shader_source/gl/basic_color_f.glsl?raw"
 
-const VERTEX_SHADER_SOURCE = `#version 300 es
-precision highp float;
-
-layout (location = 0) in vec2 a_position;
-layout (location = 1) in vec2 a_centerPoint;
-layout (location = 2) in float a_radius;
-layout (location = 3) in float a_angleOffset;
-
-struct GlobalUBO 
-{
-    mat4 projectionViewMatrix;
-};
-uniform GlobalUBO u_global;
-
-void main()
-{
-    vec2 position = a_position;
-
-    gl_PointSize = 3.0;
-
-    // now rotate it
-    float s = sin(a_angleOffset);
-    float c = cos(a_angleOffset);
-    float x = position.x;
-    float y = position.y;
-    position.x = x * c - y * s;
-    position.y = x * s + y * c;
-    
-    position *= a_radius;
-
-    // offset for center point.
-    position += a_centerPoint;
-
-    gl_Position = u_global.projectionViewMatrix * vec4(position, 0.0, 1.0);
-}
-`;
 
 
 // Rect will be created from 5 rectangles + 4 triangle fans for radius of each corner.
@@ -152,11 +114,11 @@ export class GLRectangleRoundedCorner
      */
     private async initializeShaders (): Promise<void>
     {
-        const shader = new GLShaderImplementation(this.m_gl, VERTEX_SHADER_SOURCE, ShaderSource.COMMON_COLOR_FRAGMENT_SHADER);
+        const shader = new GLShaderImplementation(this.m_gl, verexShaderSource, fragmentShaderSource);
 
         await shader.initialize();
 
-        this._projectionViewMatrixLocation = shader.getUniformLocation("u_global.projectionViewMatrix", true);
+        this._projectionViewMatrixLocation = shader.getUniformLocation("u_projectionView", true);
         this.m_colorLocation = shader.getUniformLocation("u_color", true);
 
         this.m_shader = shader;

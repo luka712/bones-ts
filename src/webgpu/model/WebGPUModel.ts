@@ -1,5 +1,5 @@
 import { Mat4x4 } from "../../framework/bones_math";
-import { WebGPUBasicMaterial } from "../material/basic/WebGPUBasicMaterial";
+import { WebGPUBasicMaterial } from "../../framework/material/basic/gpu/WebGPUBasicMaterial";
 import { WebGPUMesh } from "../../framework/mesh/gpu/WebGPUMesh";
 
 export class WebGPUModel 

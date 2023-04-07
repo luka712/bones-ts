@@ -2,13 +2,11 @@ import vertexShaderSource from "./basic_material_vertex_shader.glsl?raw"
 import fragmentShaderSource from "./basic_material_fragment_shader.glsl?raw"
 import { BasicMaterial } from "../BasicMaterial";
 import { GLShaderHandler } from "../../../../webgl/shaders/GLShaderHandler";
-import { WebGPUModel } from "../../../../webgpu/model/WebGPUModel";
 import { Mat4x4 } from "../../../bones_math";
 import { Camera } from "../../../camera/Camera";
 import { Framework } from "../../../Framework";
 import { FrameworkContext } from "../../../FrameworkContext";
 import { GLMesh } from "../../../mesh/gl/GLMesh";
-import { Mesh } from "../../../mesh/Mesh";
 import { Material } from "../../Material";
 import { GLProgramUtil } from "../../../../webgl/GLProgramUtil";
 

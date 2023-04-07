@@ -176,6 +176,9 @@ class Effect
 export 
 {
     PostProcessManager,
-    IEffectFactory,
     Effect
+}
+
+export type {
+    IEffectFactory
 }

@@ -1,0 +1,160 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.umd.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            rect1 = {
+                x: 100,
+                y: 100,
+                width: 100,
+                height: 100,
+                color: BonesFramework.Color.green(),
+                stroke_width: 2,
+                stroke_color: BonesFramework.Color.black(),
+                top_left: 0,
+                top_right: 0,
+                bottom_right: 0,
+                bottom_left: 0,
+            }
+
+            rect2 = {
+                x: 250,
+                y: 100,
+                width: 100,
+                height: 100,
+                color: BonesFramework.Color.blue(),
+                stroke_width: 2,
+                stroke_color: BonesFramework.Color.black(),
+                top_left: 20,
+                top_right: 20,
+                bottom_right: 20,
+                bottom_left: 20,
+            }
+
+            rect3 = {
+                x: 400,
+                y: 100,
+                width: 100,
+                height: 100,
+                color: BonesFramework.Color.red(),
+                stroke_width: 2,
+                stroke_color: BonesFramework.Color.black(),
+                top_left: 20,
+                top_right: 15,
+                bottom_right: 10,
+                bottom_left: 5,
+            }
+
+
+
+            createFolder (gui, rect, index) {
+                const lf = gui.addFolder(`Rect ${index}`);
+
+                lf.add(rect, "x");
+                lf.add(rect, "y");
+                lf.add(rect, "width");
+                lf.add(rect, "height");
+
+
+                // Color
+                const temp = {
+                    color: [rect.color.r * 255, rect.color.g * 255, rect.color.b * 255],
+                    stroke_color: [rect.stroke_color.r * 255, rect.stroke_color.g * 255, rect.stroke_color.b * 255],
+                }
+                lf.addColor(temp, "color").onChange(v => {
+                    rect.color[0] = v[0] / 255;
+                    rect.color[1] = v[1] / 255;
+                    rect.color[2] = v[2] / 255;
+                });
+
+                const rf = lf.addFolder("radius");
+                rf.add(rect, "top_left");
+                rf.add(rect, "top_right");
+                rf.add(rect, "bottom_right");
+                rf.add(rect, "bottom_left");
+
+                const sf = lf.addFolder("stroke");
+                sf.add(rect, "stroke_width");
+                sf.addColor(temp, "stroke_color").onChange(v => {
+                    rect.stroke_color[0] = v[0] / 255;
+                    rect.stroke_color[1] = v[1] / 255;
+                    rect.stroke_color[2] = v[2] / 255;
+                });
+
+
+            }
+
+            initialize () {
+                const gui = new dat.GUI();
+                this.createFolder(gui, this.rect1, 1);
+                this.createFolder(gui, this.rect2, 2);
+                this.createFolder(gui, this.rect3, 3);
+            }
+
+            update (delta_time) { }
+
+            draw () {
+                // simple rect, no border radius.
+                this.rectangleRenderer.drawWithStroke(this.rect1.x,
+                    this.rect1.y,
+                    this.rect1.width,
+                    this.rect1.height,
+                    this.rect1.color,
+                    this.rect1.stroke_width,
+                    this.rect1.stroke_color,
+                    this.rect1.top_left,
+                    this.rect1.top_right,
+                    this.rect1.bottom_right,
+                    this.rect1.bottom_left);
+
+                this.rectangleRenderer.drawWithStroke(this.rect2.x,
+                    this.rect2.y,
+                    this.rect2.width,
+                    this.rect2.height,
+                    this.rect2.color,
+                    this.rect2.stroke_width,
+                    this.rect2.stroke_color,
+                    this.rect2.top_left,
+                    this.rect2.top_right,
+                    this.rect2.bottom_right,
+                    this.rect2.bottom_left);
+
+                    this.rectangleRenderer.drawWithStroke(this.rect3.x,
+                    this.rect3.y,
+                    this.rect3.width,
+                    this.rect3.height,
+                    this.rect3.color,
+                    this.rect3.stroke_width,
+                    this.rect3.stroke_color,
+                    this.rect3.top_left,
+                    this.rect3.top_right,
+                    this.rect3.bottom_right,
+                    this.rect3.bottom_left);
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

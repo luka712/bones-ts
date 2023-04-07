@@ -21,6 +21,7 @@ import { CircleCollider2D } from "./framework/collision/CircleCollider2D";
 import { Physics2DVerlet } from './framework/physics/verlet/Physics2DVerlet';
 import { PhysicsBoundsBehavior } from "./framework/physics/common/PhysicsBoundsBehavior";
 import { FreeCamera } from "./framework/camera/FreeCamera";
+import { RectangleRenderer } from "./framework/renderers/RectangleRenderer";
 
 export
 {
@@ -61,8 +62,12 @@ export
 
     // line rendering
     LineRenderer2D,
-    LineJoinType as LineJoin,
-    LineCapsType as LineCaps,
+    LineJoinType ,
+    LineCapsType ,
+
+    // rectangle rendering
+    RectangleRenderer,
+
     // Physics
     Physics2D,
     Physics2DVerlet,

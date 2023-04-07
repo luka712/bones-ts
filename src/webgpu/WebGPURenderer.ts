@@ -1,14 +1,10 @@
 import { Color, Vec2 } from "../framework/bones_math";
 import { IRenderer } from "../framework/bones_renderer";
 import { TextureManager } from "../framework/bones_texture";
-import { FreeCamera } from "../framework/camera/FreeCamera";
 import { Framework } from "../framework/Framework";
 import { FrameworkContext } from "../framework/FrameworkContext";
 import { Camera2D } from "../framework/renderers/common/Camera2D";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
-import { WebGPUBasicMaterialRenderPipelineWrapper } from "./material/basic/WebGPUBasicMaterialRenderPipelineWrapper";
-import { WebGPUMesh } from "../framework/mesh/gpu/WebGPUMesh";
-import { WebGPUModel } from "./model/WebGPUModel";
 
 // TODO: see https://austin-eng.com/webgpu-samples/samples/helloTriangle#main.ts
 
@@ -30,11 +26,30 @@ import { WebGPUModel } from "./model/WebGPUModel";
  */
 export class WebGPURendererContext 
 {
-    device: GPUDevice;
+   public  device: GPUDevice;
     /**
      * The render pass encoder in current frame.
      */
-    currentRenderPassEncoder: GPURenderPassEncoder
+    public currentRenderPassEncoder: GPURenderPassEncoder;
+
+    private m_onRenderEndEvents : Array<(() => void)> = [];
+
+    /**
+     * Subscribe to renderer draw end.
+     * @param cb 
+     */
+    public onDrawEnd(cb: () => void){
+        this.m_onRenderEndEvents.push(cb);
+    }
+
+    /**
+     * Invoked when renderer ends.
+     */
+    public invokeDrawEnd()  {
+        for(let cb of this.m_onRenderEndEvents) {
+            cb();
+        }
+    }
 }
 
 /**
@@ -263,6 +278,8 @@ export class WebGPURenderer implements IRenderer
             this.updateCommandEncoder.finish(),
             this.drawCommandEncoder.finish()
         ]);
+
+        this.context.invokeDrawEnd();
     }
     public destroy (): void
     {
