@@ -1,21 +1,11 @@
-import { Vec2 } from "../../../../bones_math";
 import { WebGPUCameraBuffer } from "../../../common/WebGPUCameraBuffer";
 import shaderSource from "./rectangle_renderer.wgsl?raw"
 
-
-
-// Rect will be created from 5 rectangles + 4 triangle fans for radius of each corner.
-// Smaller rectangles are boundaries made from rounded edges + inner rect
-
-const RESOLUTION = 10;
-// step for each triangle.
-const STEP = (Math.PI * .5) / (RESOLUTION - 2);
 
 export interface WebGPURectangleRoundedCornerRendererPart 
 {
     readonly pipeline: GPURenderPipeline;
 
-    readonly resolution: number;
 
     // global
     readonly projectionViewBindGroup: GPUBindGroup;
@@ -27,65 +17,10 @@ export interface WebGPURectangleRoundedCornerRendererPart
     // color
     readonly colorUniformBuffer: GPUBuffer;
     readonly colorBindGroup: GPUBindGroup;
-
-    /**
-     * Positions buffer.
-     */
-    readonly vertexBuffer: GPUBuffer;
 }
 
 export class WebGPURectangleRoundedCornerUtil 
 {
-    private static m_globalBuffer?: GPUBuffer;
-
-    private static o_vec2: Vec2 = Vec2.zero();
-
-    /**
-     * Global vertex buffer is same for each instance
-     * @param device - the gpu device
-     * @returns - gpu buffer
-     */
-    private static getOrCreateGlobalVertexBuffer (device: GPUDevice): GPUBuffer
-    {
-        if (!this.m_globalBuffer)
-        {
-            const d = [];
-
-            // must be counter clockwise 
-            let a = 0;
-            for (let i = 0; i < RESOLUTION - 1; i++)
-            {
-                // always to 0
-                d.push(0);
-                d.push(0);
-
-                Vec2.fromPolar(a, 1, this.o_vec2);
-                d.push(this.o_vec2[0]);
-                d.push(this.o_vec2[1]);
-
-                // must be counter clockwise 
-                a += STEP;
-
-                Vec2.fromPolar(a, 1, this.o_vec2);
-                d.push(this.o_vec2[0]);
-                d.push(this.o_vec2[1]);
-
-
-            }
-
-            this.m_globalBuffer = device.createBuffer({
-                label: "rectangle corner position buffer",
-                size: (d.length * Float32Array.BYTES_PER_ELEMENT + 3) & ~3,
-                usage: GPUBufferUsage.VERTEX,
-                mappedAtCreation: true
-            });
-            const writeIndicesArray = new Float32Array(this.m_globalBuffer.getMappedRange());
-            writeIndicesArray.set(d);
-            this.m_globalBuffer.unmap();
-        }
-
-        return this.m_globalBuffer;
-    }
 
     /**
      * Craates the part 
@@ -266,15 +201,8 @@ export class WebGPURectangleRoundedCornerUtil
 
         const pipeline = device.createRenderPipeline(pipelineDesc);
 
-        // create attribute buffers.
-        const vertexBuffer = this.getOrCreateGlobalVertexBuffer(device);
-
         return {
             pipeline,
-
-            resolution: RESOLUTION,
-
-            vertexBuffer,
 
             projectionViewBindGroup,
 
