@@ -132,7 +132,6 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         const pipeline = part.pipeline;
 
         // cameras 
-        const globalBuffer = part.globalUniformBuffer;
         const globalBindGroup = part.globalBindGroup;
 
 
@@ -142,17 +141,8 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
 
         const instanceIndex = part.instanceIndex;
 
-        // camera matrices need only to change when texture is changed, since new pipeline is used.
-        const projectionViewMat = Camera2D.projectionViewMatrix;
-
         // use this pipeline
         renderPass.setPipeline(pipeline);
-
-        // write global
-        // buffer is of size 64 for 1 projection/View matrix of 64 (mat4x4)
-        device.queue.writeBuffer(globalBuffer, 0, projectionViewMat.buffer, projectionViewMat.byteOffset, projectionViewMat.byteLength);
-
-        // write instance
 
         // buffer subdata attributes
         this.writeDataIntoBuffer(part);

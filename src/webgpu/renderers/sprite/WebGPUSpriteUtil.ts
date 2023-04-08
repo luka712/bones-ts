@@ -1,3 +1,4 @@
+import { WebGPUCameraBuffer } from '../../../framework/renderers/common/WebGPUCameraBuffer';
 import { WebGPUTexture2D } from '../../textures/WebGPUTexture';
 import shaderSource from './spriteshader.wgsl?raw';
 
@@ -10,7 +11,6 @@ export interface WebGPUSpriteRendererPart
     readonly pipeline: GPURenderPipeline;
 
     // global
-    readonly globalUniformBuffer: GPUBuffer,
     readonly globalBindGroup: GPUBindGroup;
 
     // texture
@@ -218,13 +218,6 @@ export class WebGPUSpriteUtil
             ]
         });
 
-        // ONCE PER FRAME 
-        const globalUniformBuffer = device.createBuffer({
-            // projectionView matrix
-            size: Float32Array.BYTES_PER_ELEMENT * 16,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-
         // uniform layout. Done only once per frame, not for instance.
         const globalBindGroup = device.createBindGroup({
             layout: globalUniformsBindGroupLayout,
@@ -232,7 +225,7 @@ export class WebGPUSpriteUtil
                 {
                     binding: 0,
                     resource: {
-                        buffer: globalUniformBuffer
+                        buffer: WebGPUCameraBuffer.projectionViewUniformBuffer
                     },
                 },]
         });
@@ -280,7 +273,6 @@ export class WebGPUSpriteUtil
             attributesBuffer: buffers.dataBuffer,
             attributesData: buffers.attributesData,
 
-            globalUniformBuffer,
             globalBindGroup,
 
             texture,

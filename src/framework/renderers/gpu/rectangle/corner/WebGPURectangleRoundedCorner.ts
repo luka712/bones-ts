@@ -83,20 +83,12 @@ export class WebGPURectangleRoundedCorner
         const part = this.m_drawParts[this.m_drawIndex];
         const renderPass = this.m_ctx.currentRenderPassEncoder;
         const device = this.m_ctx.device;
-
-        // camera matrices need only to change when texture is changed, since new pipeline is used.
-        const projectionViewMat = Camera2D.projectionViewMatrix;
-
+        
         // use this pipeline
         renderPass.setPipeline(part.pipeline);
 
-        // write global
-        // buffer is of size 64 for 1 projection/View matrix of 64 (mat4x4)
-        device.queue.writeBuffer(part.projectionViewUniformBuffer, 0, projectionViewMat.buffer, projectionViewMat.byteOffset, projectionViewMat.byteLength);
-
+        // camera buffer is already written in main renderer.
         device.queue.writeBuffer(part.instanceStorageBuffer, 0, this.m_instanceData, 0, this.m_instanceData.length);
-
-        // write instance
         device.queue.writeBuffer(part.colorUniformBuffer, 0, color.buffer, color.byteOffset, color.byteLength);
 
         // set bind groups

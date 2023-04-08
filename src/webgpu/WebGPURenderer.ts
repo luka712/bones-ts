@@ -4,6 +4,7 @@ import { TextureManager } from "../framework/bones_texture";
 import { Framework } from "../framework/Framework";
 import { FrameworkContext } from "../framework/FrameworkContext";
 import { Camera2D } from "../framework/renderers/common/Camera2D";
+import { WebGPUCameraBuffer } from "../framework/renderers/common/WebGPUCameraBuffer";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
 
 // TODO: see https://austin-eng.com/webgpu-samples/samples/helloTriangle#main.ts
@@ -268,6 +269,9 @@ export class WebGPURenderer implements IRenderer
         render_pass_encoder.setScissorRect(0, 0, this.m_bufferSize[0], this.m_bufferSize[1]);
         this.context.currentRenderPassEncoder = render_pass_encoder;
         this.currentRenderPassEncoder = render_pass_encoder;
+
+        // write to camera buffer
+        WebGPUCameraBuffer.writeTo2DCameraBuffer(this.device, Camera2D.projectionViewMatrix);
     }
 
     public endDraw (): void

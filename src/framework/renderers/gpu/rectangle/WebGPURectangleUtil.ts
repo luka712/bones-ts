@@ -1,4 +1,5 @@
 import shaderSource from "../../../shader_source/gpu/basic_color.wgsl?raw"
+import { WebGPUCameraBuffer } from "../../common/WebGPUCameraBuffer";
 
 
 // pos3, tc2, col4
@@ -9,7 +10,6 @@ export interface WebGPURectangleRendererPart
     readonly pipeline: GPURenderPipeline;
 
     // global
-    readonly projectionViewUniformBuffer: GPUBuffer,
     readonly projectionViewBindGroup: GPUBindGroup;
 
     // color
@@ -213,13 +213,6 @@ export class WebGPURectangleUtil
             ]
         });
 
-        // ONCE PER FRAME 
-        const projectionViewUniformBuffer = device.createBuffer({
-            // projectionView matrix
-            size: Float32Array.BYTES_PER_ELEMENT * 16,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-
         // uniform layout. Done only once per frame, not for instance.
         const projectionViewBindGroup = device.createBindGroup({
             layout: projectionViewUniformsBindGroupLayout,
@@ -227,7 +220,7 @@ export class WebGPURectangleUtil
                 {
                     binding: 0,
                     resource: {
-                        buffer: projectionViewUniformBuffer
+                        buffer: WebGPUCameraBuffer.projectionViewUniformBuffer // set like this, camera buffer is set in WebGPURenderer ,
                     },
                 },]
         });
@@ -278,7 +271,6 @@ export class WebGPURectangleUtil
             attributesData: buffers.attributesData,
 
             projectionViewBindGroup,
-            projectionViewUniformBuffer,
 
             colorBindGroup,
             colorUniformBuffer,

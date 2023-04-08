@@ -1,4 +1,5 @@
 import { Vec2 } from "../../../../bones_math";
+import { WebGPUCameraBuffer } from "../../../common/WebGPUCameraBuffer";
 import shaderSource from "./rectangle_renderer.wgsl?raw"
 
 
@@ -17,7 +18,6 @@ export interface WebGPURectangleRoundedCornerRendererPart
     readonly resolution: number;
 
     // global
-    readonly projectionViewUniformBuffer: GPUBuffer,
     readonly projectionViewBindGroup: GPUBindGroup;
 
     // per instance, 4 instances per draw total
@@ -199,12 +199,6 @@ export class WebGPURectangleRoundedCornerUtil
             ]
         });
 
-        // ONCE PER FRAME 
-        const projectionViewUniformBuffer = device.createBuffer({
-            // projectionView matrix
-            size: Float32Array.BYTES_PER_ELEMENT * 16,
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
 
         // uniform layout. Done only once per frame, not for instance.
         const projectionViewBindGroup = device.createBindGroup({
@@ -213,7 +207,7 @@ export class WebGPURectangleRoundedCornerUtil
                 {
                     binding: 0,
                     resource: {
-                        buffer: projectionViewUniformBuffer
+                        buffer: WebGPUCameraBuffer.projectionViewUniformBuffer
                     },
                 },]
         });
@@ -283,7 +277,6 @@ export class WebGPURectangleRoundedCornerUtil
             vertexBuffer,
 
             projectionViewBindGroup,
-            projectionViewUniformBuffer,
 
             instanceViewBindGroup,
             instanceStorageBuffer,

@@ -105,6 +105,7 @@ export class WebGPURectangleRenderer extends RectangleRenderer
 
     public async initialize (): Promise<void> 
     {
+        await this.m_corners.initialize();
     }
 
     /**
@@ -133,7 +134,8 @@ export class WebGPURectangleRenderer extends RectangleRenderer
 
         // write global
         // buffer is of size 64 for 1 projection/View matrix of 64 (mat4x4)
-        device.queue.writeBuffer(part.projectionViewUniformBuffer, 0, projectionViewMat.buffer, projectionViewMat.byteOffset, projectionViewMat.byteLength);
+
+        // device.queue.writeBuffer(part.projectionViewUniformBuffer, 0, projectionViewMat.buffer, projectionViewMat.byteOffset, projectionViewMat.byteLength);
 
         // write instance
         device.queue.writeBuffer(part.colorUniformBuffer, 0, color.buffer, color.byteOffset, color.byteLength);
