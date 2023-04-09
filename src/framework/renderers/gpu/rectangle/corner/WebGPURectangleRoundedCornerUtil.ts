@@ -1,5 +1,5 @@
 import { WebGPUCameraBuffer } from "../../../common/WebGPUCameraBuffer";
-import shaderSource from "./rectangle_renderer.wgsl?raw"
+import shaderSource from "./rectangle_corner.wgsl?raw"
 
 
 export interface WebGPURectangleRoundedCornerRendererPart 

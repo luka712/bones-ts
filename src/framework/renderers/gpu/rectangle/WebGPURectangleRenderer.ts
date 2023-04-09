@@ -3,16 +3,8 @@ import { WebGPURendererContext } from "../../../../webgpu/WebGPURenderer";
 import { Framework } from "../../../Framework";
 import { Color } from "../../../math/Color";
 import { RectangleRenderer } from "../../RectangleRenderer";
-import { Camera2D } from "../../common/Camera2D";
-import { GLRectangleRoundedCorner } from "../../gl/rectangle/corner/GLRectangleRoundedCorner";
-import { WebGPURectangleRendererPart, WebGPURectangleUtil } from "./WebGPURectangleUtil";
+import { WebGPURectangleRendererPart, WebGPURectangleRendererUtil } from "./WebGPURectangleRendererUtil";
 import { WebGPURectangleRoundedCorner } from "./corner/WebGPURectangleRoundedCorner";
-
-// HOW IT WORKS
-// it renders a quad
-// quad triangles are renderer same for each instance
-// the rest of data, such as point a positon, point b position, weight and color is set per instance
-
 
 
 // Rect will be created from 5 rectangles + 4 triangle fans for radius of each corner.
@@ -21,11 +13,12 @@ import { WebGPURectangleRoundedCorner } from "./corner/WebGPURectangleRoundedCor
 
 export class WebGPURectangleRenderer extends RectangleRenderer
 {
+    private m_insanceData = new Float32Array(20);
 
-    // WebGPU allocated data.
-    // we keep multiple buffers, in order to reuse buffers, otherwise new buffer would have to be created each frame.
-    private m_stagingBuffers: Array<GPUBuffer> = []; // the staging data buffers, use them to write data into them, and to copy from staging buffer to main buffer.
-
+    /**
+     * The indices buffer.
+     */
+    private m_vertexBuffer: GPUBuffer;
 
     /**
      * The corners.
@@ -64,47 +57,28 @@ export class WebGPURectangleRenderer extends RectangleRenderer
         this.m_corners = new WebGPURectangleRoundedCorner(framework, m_ctx);
     }
 
-
-    /**
-    * Set the texture coords data.
-    * @param data 
-    */
-    public writeDataIntoBuffer (part: WebGPURectangleRendererPart): void 
-    {
-        // Get necessary data.
-        const attributeBuffer = part.attributesBuffer;
-        const attributeData = part.attributesData;
-
-        // 1.try find one write buffer
-        let writeBuffer = this.m_stagingBuffers.pop();
-
-        // 2. if it does not exist, create one
-        if (!writeBuffer)
-        {
-            writeBuffer = this.m_ctx.device.createBuffer({
-                size: attributeBuffer.size,
-                usage: GPUBufferUsage.MAP_WRITE | GPUBufferUsage.COPY_SRC,
-                mappedAtCreation: true,
-            });
-        }
-
-        // 3. write data into staging buffer.
-        const array = new Float32Array(writeBuffer.getMappedRange());
-        array.set(attributeData);
-        writeBuffer.unmap();
-
-        // 4. encode a command
-        const command_encoder = this.m_ctx.device.createCommandEncoder();
-        // 4 vertices per rect + 2 for positions * 5 for 5
-        command_encoder.copyBufferToBuffer(writeBuffer, 0, attributeBuffer, 0, attributeBuffer.size);
-        this.m_ctx.device.queue.submit([command_encoder.finish()]);
-
-        writeBuffer.mapAsync(GPUMapMode.WRITE).then(() => this.m_stagingBuffers.push(writeBuffer));
-    }
-
-
     public async initialize (): Promise<void> 
     {
+        const vertices = [
+            0,1, // v1
+            1,1, // v2
+            1,0, // v3
+            0,1, // v1
+            1,0, // v3
+            0,0  // v4
+        ];
+      
+
+        this.m_vertexBuffer = this.m_ctx.device.createBuffer({
+            label: "rectangle vertex buffer",
+            size: (Float32Array.BYTES_PER_ELEMENT * vertices.length + 3) & ~3,
+            usage: GPUBufferUsage.VERTEX,
+            mappedAtCreation: true
+        });
+        const writeIndicesArray = new Float32Array(this.m_vertexBuffer.getMappedRange());
+        writeIndicesArray.set(vertices);
+        this.m_vertexBuffer.unmap();
+
         await this.m_corners.initialize();
     }
 
@@ -121,37 +95,22 @@ export class WebGPURectangleRenderer extends RectangleRenderer
         // extrude parts for simplicity, use raw gpu call
         const pipeline = part.pipeline;
 
-        // cameras 
-        const attributeBuffer = part.attributesBuffer;
-        const indicesBuffer = part.indicesBuffer;
-
-
-        // camera matrices need only to change when texture is changed, since new pipeline is used.
-        const projectionViewMat = Camera2D.projectionViewMatrix;
-
         // use this pipeline
         renderPass.setPipeline(pipeline);
 
-        // write global
-        // buffer is of size 64 for 1 projection/View matrix of 64 (mat4x4)
-
-        // device.queue.writeBuffer(part.projectionViewUniformBuffer, 0, projectionViewMat.buffer, projectionViewMat.byteOffset, projectionViewMat.byteLength);
-
         // write instance
         device.queue.writeBuffer(part.colorUniformBuffer, 0, color.buffer, color.byteOffset, color.byteLength);
-
-        // buffer subdata attributes
-        this.writeDataIntoBuffer(part);
+        device.queue.writeBuffer(part.instanceStorageBuffer, 0, this.m_insanceData.buffer, 0, this.m_insanceData.byteLength);
 
         // set bind groups
         renderPass.setBindGroup(0, part.projectionViewBindGroup);
-        renderPass.setBindGroup(1, part.colorBindGroup);
+        renderPass.setBindGroup(1, part.instanceViewBindGroup);
+        renderPass.setBindGroup(2, part.colorBindGroup);
 
         // set vertex bind group
-        renderPass.setIndexBuffer(indicesBuffer, "uint16");
-        renderPass.setVertexBuffer(0, attributeBuffer);
+        renderPass.setVertexBuffer(0, this.m_vertexBuffer);
 
-        renderPass.drawIndexed(30, 1, 0,0);
+        renderPass.draw(6, 5, 0,0);
     }
 
 
@@ -162,26 +121,18 @@ export class WebGPURectangleRenderer extends RectangleRenderer
      */
     private drawLeftRect (x: number, y: number, h: number, tlr: number, blr: number)
     {
-        const d = this.m_drawParts[this.m_drawIndex].attributesData;
+        const d = this.m_insanceData;
 
         // must draw a longer radius for x positions. since rect is drawn from top left clock wise
-        const x_rad = Math.max(tlr, blr);
+        const rw = Math.max(tlr, blr);
 
-        // a top left
+        // pos
         d[0] = x;       // x
         d[1] = y + tlr; // y + r
 
-        // b top right
-        d[2] = x + x_rad; // x + r
-        d[3] = d[1];    // y + r
-
-        // c bottom right
-        d[4] = d[2];       // x
-        d[5] = y + h - blr; // y + h - r
-
-        // d bottom left
-        d[6] = x;     // x
-        d[7] = d[5];  // y + h - r
+        // size
+        d[2] = rw;
+        d[3] = h - tlr - blr // h - r - r;
     }
 
     /**
@@ -189,26 +140,18 @@ export class WebGPURectangleRenderer extends RectangleRenderer
      */
     private drawTopRect (x: number, y: number, w: number, tlr: number, trr: number)
     {
-        const d = this.m_drawParts[this.m_drawIndex].attributesData;
+        const d = this.m_insanceData;
 
         // must draw a longer radius for x positions. since rect is drawn from top left clock wise
-        const y_rad = Math.max(tlr, trr);
+        const rh = Math.max(tlr, trr);
 
-        // a top left
-        d[8] = x + tlr; // x + r
-        d[9] = y; // y
+        // pos 
+        d[4] = x + tlr; // x + r
+        d[5] = y; // y
 
-        // b top right
-        d[10] = x + w - trr; // x + w - r
-        d[11] = y;           // y 
-
-        // c bottom right
-        d[12] = d[10];     // x + w - r 
-        d[13] = y + y_rad; // y + r
-
-        // d bottom left
-        d[14] = d[8];     // x + r
-        d[15] = d[13];  // y + r
+        // size 
+        d[6] = w - tlr - trr;     // w - r - r
+        d[7] = rh;           // h
     }
 
     /**
@@ -216,26 +159,18 @@ export class WebGPURectangleRenderer extends RectangleRenderer
      */
     private drawRightRect (x: number, y: number, w: number, h: number, trr: number, brr: number)
     {
-        const d = this.m_drawParts[this.m_drawIndex].attributesData;
+        const d = this.m_insanceData;
 
         // must draw a longer radius for x positions. since rect is drawn from top left clock wise
-        const x_rad = Math.max(brr, trr);
+        const rw = Math.max(brr, trr);
 
-        // a top left
-        d[16] = x + w - x_rad; // x + w - r
-        d[17] = y + trr; // y + r
+        // pos
+        d[8] = x + w - rw; // x + w - r
+        d[9] = y + trr; // y + r
 
-        // b top right
-        d[18] = x + w; // x + w 
-        d[19] = d[17];    // y + r
-
-        // c bottom right
-        d[20] = d[18];     // x + w  
-        d[21] = y + h - brr; // y + h - r
-
-        // d bottom left
-        d[22] = d[16];     // x + w - r
-        d[23] = d[21];  // y + h - r
+        // size
+        d[10] = rw;     // w 
+        d[11] = h - trr - brr;  // h - r - r
     }
 
     /**
@@ -243,26 +178,18 @@ export class WebGPURectangleRenderer extends RectangleRenderer
      */
     private drawBottomRect (x: number, y: number, w: number, h: number, brr: number, blr: number)
     {
-        const d = this.m_drawParts[this.m_drawIndex].attributesData;
+        const d = this.m_insanceData;
 
         // must draw a longer radius for x positions. since rect is drawn from top left clock wise
-        const y_rad = Math.max(brr, blr);
+        const rh = Math.max(brr, blr);
 
-        // a top left
-        d[24] = x + blr; // x + r
-        d[25] = y + h - y_rad; // y + h - r
+        // pos
+        d[12] = x + blr; // x + r
+        d[13] = y + h - rh; // y + h - r
 
-        // b top right
-        d[26] = x + w - brr;    // x + w - r 
-        d[27] = d[25];    // y + h - r
-
-        // c bottom right
-        d[28] = d[26];     // x + w - r  
-        d[29] = y + h; // y + h
-
-        // d bottom left
-        d[30] = d[24];     // x + r
-        d[31] = d[29];  // y + h
+        // size
+        d[14] = w - blr - brr; // w - r - r
+        d[15] = rh;
     }
 
     /**
@@ -270,23 +197,18 @@ export class WebGPURectangleRenderer extends RectangleRenderer
      */
     private drawInnerRect (x: number, y: number, w: number, h: number, tl: number, tr: number, br: number, bl: number)
     {
-        const d = this.m_drawParts[this.m_drawIndex].attributesData;
+        const d = this.m_insanceData;
 
-        // top left 
-        d[32] = x + tl;
-        d[33] = y + tl;
+        const mt = Math.min(tl, tr); // min top
+        const ml = Math.min(tl, bl); // min left
 
-        // top right
-        d[34] = x + w - tr;
-        d[35] = y + tr;
+        // pos 
+        d[16] = x + ml
+        d[17] = y + mt;
 
-        // bottom right
-        d[36] = x + w - br;
-        d[37] = y + h - br;
-
-        // already defined by c point of left rect
-        d[38] = x + bl;
-        d[39] = y + h - bl;
+        // size
+        d[18] = w - ml - Math.min(br, tr); 
+        d[19] = h - mt - Math.min(bl, br);
     }
 
     private drawInner (
@@ -296,7 +218,7 @@ export class WebGPURectangleRenderer extends RectangleRenderer
     {
         if (this.m_drawIndex >= this.m_drawParts.length)
         {
-            this.m_drawParts.push(WebGPURectangleUtil.createRectangleRenderPart(this.m_ctx.device));
+            this.m_drawParts.push(WebGPURectangleRendererUtil.createRectangleRenderPart(this.m_ctx.device));
         }
 
         // rects

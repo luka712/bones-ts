@@ -4,9 +4,8 @@ struct VSOutputFSInput
 };
 
 struct PerInstanceData {
-    centerPoint: vec2<f32>,
-    radius: f32,
-    angleOffset: f32
+    position: vec2<f32>,
+    size: vec2<f32>
 }
 
 // group 0, update once per pass 
@@ -22,23 +21,9 @@ fn vs_main(
     @builtin(instance_index) instanceIdx : u32,
     @location(0) a_position: vec2<f32>) -> VSOutputFSInput 
 {
-    var  position: vec2<f32> = a_position;
-
-    // now rotate it
-    var s:  f32 = sin(u_instanceData[instanceIdx].angleOffset);
-    var c : f32 = cos(u_instanceData[instanceIdx].angleOffset);
-    var x : f32 = position.x;
-    var y : f32 = position.y;
-    position.x = x * c - y * s;
-    position.y = x * s + y * c;
-    
-    position *= u_instanceData[instanceIdx].radius;
-
-    // offset for center point.
-    position += u_instanceData[instanceIdx].centerPoint;
-
-    // position.x = a_position.x;
-    // position.y = a_position.y;
+    var  position: vec2<f32> = a_position;    
+    position *= u_instanceData[instanceIdx].size;
+    position += u_instanceData[instanceIdx].position;
 
     var out: VSOutputFSInput;
     out.Position = u_projectionView * vec4<f32>(position, 0.0, 1.0);

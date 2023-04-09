@@ -1,4 +1,4 @@
-import shaderSource from "../../../shader_source/gpu/basic_color.wgsl?raw"
+import shaderSource from "./rectangle.wgsl?raw"
 import { WebGPUCameraBuffer } from "../../common/WebGPUCameraBuffer";
 
 
@@ -12,109 +12,20 @@ export interface WebGPURectangleRendererPart
     // global
     readonly projectionViewBindGroup: GPUBindGroup;
 
+    // per instance layout
+    readonly instanceViewBindGroup: GPUBindGroup;
+    readonly instanceStorageBuffer: GPUBuffer;
+
     // color
     readonly colorUniformBuffer: GPUBuffer;
     readonly colorBindGroup: GPUBindGroup;
-
-    readonly indicesBuffer: GPUBuffer;
-
-    /**
-     * Positions buffer.
-     */
-    readonly attributesBuffer: GPUBuffer;
-    readonly attributesData: Float32Array;
 }
 
-export class WebGPURectangleUtil 
+export class WebGPURectangleRendererUtil 
 {
-    private static m_indicesBuffer?: GPUBuffer;
-
-    /**
-     * Gets indicies buffer or creates a new one.
-     * @param device - the gpu device
-     * @returns - gpu buffer
-     */
-    private static getOrCreateIndicesBuffer (device: GPUDevice): GPUBuffer
-    {
-        if (!this.m_indicesBuffer)
-        {
-            const indices = new Uint16Array(30);
-            // for 5 rects.
-            // index
-            let i_index = 0;
-            for (let i = 0; i < 30; i += 6)
-            {
-                indices[i] = i_index;
-                indices[i + 1] = i_index + 1;
-                indices[i + 2] = i_index + 2;
-
-                // second triangle
-                indices[i + 3] = i_index;
-                indices[i + 4] = i_index + 2;
-                indices[i + 5] = i_index + 3;
-
-                i_index += 4;
-            }
-
-            this.m_indicesBuffer = device.createBuffer({
-                label: "rectangle index buffer",
-                size: (indices.byteLength + 3) & ~3,
-                usage: GPUBufferUsage.INDEX,
-                mappedAtCreation: true
-            });
-            const writeIndicesArray = new Uint16Array(this.m_indicesBuffer.getMappedRange());
-            writeIndicesArray.set(indices);
-            this.m_indicesBuffer.unmap();
-        }
-
-        return this.m_indicesBuffer;
-    }
-
-    /**
-     * Creates the buffer for attributes. In this case only position. Also creates data array for it.
-     * @param device 
-     * @returns
-     */
-    private static createAttributesBuffer (device: GPUDevice): { attributesBuffer: GPUBuffer, attributesData: Float32Array }
-    {
-        // Position buffer.
-        // 4 for each corner, 2 for position 2, 5 number of instances
-        const attributesData = new Float32Array(4 * 2 * 5);
-
-        // POSITIONS, TEX COORDS, TINT COLORS
-        const attributesBuffer = device.createBuffer({
-            label: "vertexBuffer",
-            size: (attributesData.byteLength + 3) & ~3,
-            usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST, // COPY_DST as it is written to frequently
-            mappedAtCreation: true,
-        });
-
-        // write data to buffer.
-        const writeDatArray = new Float32Array(attributesBuffer.getMappedRange());
-        writeDatArray.set(attributesData);
-        attributesBuffer.unmap();
-
-        return {
-            attributesBuffer,
-            attributesData
-        }
-    }
-
-    /**
-     * Creates the vertex buffer and index buffer.
-     * Data per vertex!!!
-     */
-    private static createBuffers (device: GPUDevice)
-    {
-        const attrBuffer = this.createAttributesBuffer(device);
-        const indicesBuffer = this.getOrCreateIndicesBuffer(device);
-
-        return {
-            indicesBuffer,
-            attributesBuffer: attrBuffer.attributesBuffer,
-            attributesData: attrBuffer.attributesData
-        }
-    }
+   
+  
+  
 
     /**
      * Craates the part 
@@ -190,13 +101,28 @@ export class WebGPURectangleUtil
             ],
         });
 
+        const perInstanceGroupLayout = device.createBindGroupLayout({
+            label: "perInstanceLayout",
+            entries: [
+                {
+                    // per instance uniform group(1) binding(0)
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: {
+                        type: "read-only-storage",
+                        hasDynamicOffset: false
+                    }
+                }
+            ]
+        })
+
 
         // COLOR BING GROUP LAYOUT group(1)
         const colorBindGroupLayout = device.createBindGroupLayout({
             label: "colorLayout",
             entries: [
                 {
-                    // global uniform group(1) binding(0)
+                    // global uniform group(2) binding(0)
                     binding: 0,
                     visibility: GPUShaderStage.FRAGMENT,
                     buffer: {
@@ -209,6 +135,7 @@ export class WebGPURectangleUtil
         const pipelineLayout = device.createPipelineLayout({
             bindGroupLayouts: [
                 projectionViewUniformsBindGroupLayout,
+                perInstanceGroupLayout,
                 colorBindGroupLayout
             ]
         });
@@ -224,6 +151,23 @@ export class WebGPURectangleUtil
                     },
                 },]
         });
+
+        const instanceStorageBuffer = device.createBuffer({
+            size: Float32Array.BYTES_PER_ELEMENT * 4 * 5, // pos(vec2) + size(vec2) * 5 rects ( corners and middle)
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        })
+
+        const instanceViewBindGroup = device.createBindGroup({
+            layout: perInstanceGroupLayout,
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: instanceStorageBuffer
+                    }
+                }
+            ]
+        })
 
         const colorUniformBuffer = device.createBuffer({
             size: Float32Array.BYTES_PER_ELEMENT * 4,
@@ -250,7 +194,7 @@ export class WebGPURectangleUtil
             fragment: fragmentState,
             primitive: {
                 topology: "triangle-list",
-                cullMode: "front",
+                cullMode: "none",
             },
             depthStencil: {
                 format: "depth24plus-stencil8",
@@ -261,20 +205,16 @@ export class WebGPURectangleUtil
 
         const pipeline = device.createRenderPipeline(pipelineDesc);
 
-        // create attribute buffers.
-        const buffers = this.createBuffers(device);
-
         return {
             pipeline,
 
-            attributesBuffer: buffers.attributesBuffer,
-            attributesData: buffers.attributesData,
-
             projectionViewBindGroup,
+
+            instanceViewBindGroup,
+            instanceStorageBuffer,
 
             colorBindGroup,
             colorUniformBuffer,
-            indicesBuffer: buffers.indicesBuffer,
         }
     }
 }

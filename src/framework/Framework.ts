@@ -41,6 +41,7 @@ import { GLMeshFactory } from "./mesh/gl/GLMeshFactory";
 import { WebGPUMeshFactory } from "./mesh/gpu/WebGPUMeshFactory";
 import { FrameworkContext } from "./FrameworkContext";
 import { GLRectangleRenderer } from "./renderers/gl/rectangle/GLRectangleRenderer";
+import { WebGPURectangleRenderer_Obsolete } from "./renderers/gpu/rectangle/WebGPURectangleRendererObsolete";
 import { WebGPURectangleRenderer } from "./renderers/gpu/rectangle/WebGPURectangleRenderer";
 
 
