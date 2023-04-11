@@ -40,9 +40,9 @@ import { GLMaterialFactory } from "./material/GLMaterialFactory";
 import { GLMeshFactory } from "./mesh/gl/GLMeshFactory";
 import { WebGPUMeshFactory } from "./mesh/gpu/WebGPUMeshFactory";
 import { FrameworkContext } from "./FrameworkContext";
-import { GLRectangleRenderer } from "./renderers/gl/rectangle/GLRectangleRenderer";
-import { WebGPURectangleRenderer_Obsolete } from "./renderers/gpu/rectangle/WebGPURectangleRendererObsolete";
-import { WebGPURectangleRenderer } from "./renderers/gpu/rectangle/WebGPURectangleRenderer";
+import { WebGPURectangleRenderer } from "./renderers/rectangle/gpu/WebGPURectangleRenderer";
+import { GLRectangleRenderer } from "./renderers/rectangle/gl/GLRectangleRenderer";
+
 
 
 export interface GameJoltCredentials 

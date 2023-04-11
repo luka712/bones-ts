@@ -1,26 +1,26 @@
 import { WebGPUCameraBuffer } from "../../../common/WebGPUCameraBuffer";
 import shaderSource from "./rectangle_corner.wgsl?raw"
 
-
 export interface WebGPURectangleRoundedCornerRendererPart 
 {
-    readonly pipeline: GPURenderPipeline;
+    // #region Properties (6)
 
-
-    // global
-    readonly projectionViewBindGroup: GPUBindGroup;
-
+    readonly colorBindGroup: GPUBindGroup;
+    // color
+    readonly colorUniformBuffer: GPUBuffer;
     // per instance, 4 instances per draw total
     readonly instanceStorageBuffer: GPUBuffer;
     readonly instanceViewBindGroup: GPUBindGroup;
+    readonly pipeline: GPURenderPipeline;
+    // global
+    readonly projectionViewBindGroup: GPUBindGroup;
 
-    // color
-    readonly colorUniformBuffer: GPUBuffer;
-    readonly colorBindGroup: GPUBindGroup;
+    // #endregion Properties (6)
 }
 
 export class WebGPURectangleRoundedCornerUtil 
 {
+    // #region Public Static Methods (1)
 
     /**
      * Craates the part 
@@ -29,7 +29,6 @@ export class WebGPURectangleRoundedCornerUtil
      */
     public static createRectangleRoundedCornerRenderPart (device: GPUDevice): WebGPURectangleRoundedCornerRendererPart
     {
-
         // Shaders first 
         const shaderModule = device.createShaderModule({
             code: shaderSource
@@ -134,7 +133,6 @@ export class WebGPURectangleRoundedCornerUtil
             ]
         });
 
-
         // uniform layout. Done only once per frame, not for instance.
         const projectionViewBindGroup = device.createBindGroup({
             layout: projectionViewUniformsBindGroupLayout,
@@ -184,7 +182,6 @@ export class WebGPURectangleRoundedCornerUtil
         });
 
         const pipelineDesc: GPURenderPipelineDescriptor = {
-
             layout: pipelineLayout,
             vertex: vertexState,
             fragment: fragmentState,
@@ -213,4 +210,6 @@ export class WebGPURectangleRoundedCornerUtil
             colorUniformBuffer,
         }
     }
+
+    // #endregion Public Static Methods (1)
 }

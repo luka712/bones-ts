@@ -1,31 +1,29 @@
 import shaderSource from "./rectangle.wgsl?raw"
 import { WebGPUCameraBuffer } from "../../common/WebGPUCameraBuffer";
 
-
 // pos3, tc2, col4
 export const GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE = 3 * Float32Array.BYTES_PER_ELEMENT + 2 * Float32Array.BYTES_PER_ELEMENT + 4 * Float32Array.BYTES_PER_ELEMENT;
 
 export interface WebGPURectangleRendererPart 
 {
-    readonly pipeline: GPURenderPipeline;
+    // #region Properties (6)
 
+    readonly colorBindGroup: GPUBindGroup;
+    // color
+    readonly colorUniformBuffer: GPUBuffer;
+    readonly instanceStorageBuffer: GPUBuffer;
+    // per instance layout
+    readonly instanceViewBindGroup: GPUBindGroup;
+    readonly pipeline: GPURenderPipeline;
     // global
     readonly projectionViewBindGroup: GPUBindGroup;
 
-    // per instance layout
-    readonly instanceViewBindGroup: GPUBindGroup;
-    readonly instanceStorageBuffer: GPUBuffer;
-
-    // color
-    readonly colorUniformBuffer: GPUBuffer;
-    readonly colorBindGroup: GPUBindGroup;
+    // #endregion Properties (6)
 }
 
 export class WebGPURectangleRendererUtil 
 {
-   
-  
-  
+    // #region Public Static Methods (1)
 
     /**
      * Craates the part 
@@ -34,7 +32,6 @@ export class WebGPURectangleRendererUtil
      */
     public static createRectangleRenderPart (device: GPUDevice): WebGPURectangleRendererPart
     {
-
         // Shaders first 
         const shaderModule = device.createShaderModule({
             code: shaderSource
@@ -116,7 +113,6 @@ export class WebGPURectangleRendererUtil
             ]
         })
 
-
         // COLOR BING GROUP LAYOUT group(1)
         const colorBindGroupLayout = device.createBindGroupLayout({
             label: "colorLayout",
@@ -188,7 +184,6 @@ export class WebGPURectangleRendererUtil
         });
 
         const pipelineDesc: GPURenderPipelineDescriptor = {
-
             layout: pipelineLayout,
             vertex: vertexState,
             fragment: fragmentState,
@@ -217,4 +212,6 @@ export class WebGPURectangleRendererUtil
             colorUniformBuffer,
         }
     }
+
+    // #endregion Public Static Methods (1)
 }

@@ -1,5 +1,3 @@
-
-
 // HOW IT WORKS
 // it renders a quad
 // quad triangles are renderer same for each instance
@@ -9,10 +7,8 @@ import { Vec2, Color } from "../../../../bones_math";
 import { FrameworkContext } from "../../../../FrameworkContext";
 import { Camera2D } from "../../../common/Camera2D";
 import { GLShaderImplementation } from "../../../../../webgl/shaders/GLShaderImplementation";
-import verexShaderSource from "./rectangle_renderer_v.glsl?raw"
+import verexShaderSource from "./rectangle_corner_v.glsl?raw"
 import fragmentShaderSource from "../../../../shader_source/gl/basic_color_f.glsl?raw"
-
-
 
 // Rect will be created from 5 rectangles + 4 triangle fans for radius of each corner.
 // Smaller rectangles are boundaries made from rounded edges + inner rect
@@ -26,26 +22,92 @@ export const GL_LINE_RENDERER_STRIDE = 4 * Float32Array.BYTES_PER_ELEMENT;
 
 export class GLRectangleRoundedCorner
 {
-    // private 
-    private m_gl: WebGL2RenderingContext;
+    // #region Properties (8)
 
-    // buffers and data for radius edges
-    private m_vao: WebGLVertexArrayObject;
-    private m_instanceBuffer: WebGLBuffer;
-    private m_instanceData: Float32Array;
-
-    // shader stuff
-    private m_shader: GLShaderImplementation;
     private _projectionViewMatrixLocation: WebGLUniformLocation;
     private m_colorLocation: WebGLUniformLocation;
-
+    // private
+    private m_gl: WebGL2RenderingContext;
+    private m_instanceBuffer: WebGLBuffer;
+    private m_instanceData: Float32Array;
+    // shader stuff
+    private m_shader: GLShaderImplementation;
+    // buffers and data for radius edges
+    private m_vao: WebGLVertexArrayObject;
     // default
     private o_vec2 = Vec2.zero();
+
+    // #endregion Properties (8)
+
+    // #region Constructors (1)
 
     constructor()
     {
         this.m_gl = FrameworkContext.gl;
     }
+
+    // #endregion Constructors (1)
+
+    // #region Public Methods (2)
+
+    public draw (
+        x: number, y: number, w: number, h: number,
+        tl: number, tr: number, br: number, bl: number,
+        color: Color): void 
+    {
+        // rects
+        // TOP LEFT
+        this.m_instanceData[0] = x + tl;
+        this.m_instanceData[1] = y + tl;
+        this.m_instanceData[2] = tl;
+        this.m_instanceData[3] = Math.PI;
+
+        // TOP RIGHT 
+        this.m_instanceData[4] = x + w - tr;
+        this.m_instanceData[5] = y + tr;
+        this.m_instanceData[6] = tr;
+        this.m_instanceData[7] = Math.PI * 1.5;
+
+        // BOTTOM RIGHT 
+        this.m_instanceData[8] = x + w - br;
+        this.m_instanceData[9] = y + h - br;
+        this.m_instanceData[10] = br;
+        this.m_instanceData[11] = 0;
+
+        // BOTTOM LEFT 
+        this.m_instanceData[12] = x + bl;
+        this.m_instanceData[13] = y + h - bl;
+        this.m_instanceData[14] = bl;
+        this.m_instanceData[15] = Math.PI * .5;
+      
+        const gl = this.m_gl;
+
+        // use and set shader vars
+        this.m_shader.use();
+        gl.uniformMatrix4fv(this._projectionViewMatrixLocation, false, Camera2D.projectionViewMatrix);
+        gl.uniform4fv(this.m_colorLocation, color );
+
+        // vao and buffer data
+        gl.bindVertexArray(this.m_vao);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.m_instanceBuffer);
+        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.m_instanceData);
+
+        // draw fans instances. 
+        gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, RESOLUTION, 4);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public async initialize (): Promise<void> 
+    {
+        this.initializeBuffers();
+        await this.initializeShaders();
+    }
+
+    // #endregion Public Methods (2)
+
+    // #region Private Methods (2)
 
     /**
      * Initialize the geometry buffers.
@@ -69,7 +131,6 @@ export class GLRectangleRoundedCorner
             d.push(this.o_vec2[0]);
             d.push(this.o_vec2[1]);
         }
-
 
         // Position buffer
         // TODO: keep it to clear it.
@@ -124,61 +185,5 @@ export class GLRectangleRoundedCorner
         this.m_shader = shader;
     }
 
-    /**
-     * @inheritdoc
-     */
-    public async initialize (): Promise<void> 
-    {
-        this.initializeBuffers();
-        await this.initializeShaders();
-    }
-
-    public draw (
-        x: number, y: number, w: number, h: number,
-        tl: number, tr: number, br: number, bl: number,
-        color: Color): void 
-    {
-
-        // rects
-        // TOP LEFT
-        this.m_instanceData[0] = x + tl;
-        this.m_instanceData[1] = y + tl;
-        this.m_instanceData[2] = tl;
-        this.m_instanceData[3] = Math.PI;
-
-        // TOP RIGHT 
-        this.m_instanceData[4] = x + w - tr;
-        this.m_instanceData[5] = y + tr;
-        this.m_instanceData[6] = tr;
-        this.m_instanceData[7] = Math.PI * 1.5;
-
-        // BOTTOM RIGHT 
-        this.m_instanceData[8] = x + w - br;
-        this.m_instanceData[9] = y + h - br;
-        this.m_instanceData[10] = br;
-        this.m_instanceData[11] = 0;
-
-        // BOTTOM LEFT 
-        this.m_instanceData[12] = x + bl;
-        this.m_instanceData[13] = y + h - bl;
-        this.m_instanceData[14] = bl;
-        this.m_instanceData[15] = Math.PI * .5;
-
-      
-        const gl = this.m_gl;
-
-        // use and set shader vars
-        this.m_shader.use();
-        gl.uniformMatrix4fv(this._projectionViewMatrixLocation, false, Camera2D.projectionViewMatrix);
-        gl.uniform4fv(this.m_colorLocation, color );
-
-
-        // vao and buffer data
-        gl.bindVertexArray(this.m_vao);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.m_instanceBuffer);
-        gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.m_instanceData);
-
-        // draw fans instances. 
-        gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, RESOLUTION, 4);
-    }
+    // #endregion Private Methods (2)
 } 
