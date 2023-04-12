@@ -40,7 +40,7 @@ export class WebGPURectangleRoundedCorner
     /**
      * Triangles geometry.
      */
-    private m_vertexBuffer :GPUBuffer;
+    private m_vertexBuffer: GPUBuffer;
 
     // #endregion Properties (4)
 
@@ -96,7 +96,7 @@ export class WebGPURectangleRoundedCorner
         const part = this.m_drawParts[this.m_drawIndex];
         const renderPass = this.m_ctx.currentRenderPassEncoder;
         const device = this.m_ctx.device;
-        
+
         // use this pipeline
         renderPass.setPipeline(part.pipeline);
 
@@ -128,13 +128,13 @@ export class WebGPURectangleRoundedCorner
         let a = 0;
         for (let i = 0; i < RESOLUTION - 1; i++)
         {
+            Vec2.fromPolar(a, 1, v);
+            d.push(v[0]);
+            d.push(v[1]);
+
             // always to 0
             d.push(0);
             d.push(0);
-
-            Vec2.fromPolar(a, 1,v);
-            d.push(v[0]);
-            d.push(v[1]);
 
             // must be counter clockwise 
             a += STEP;

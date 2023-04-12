@@ -1,6 +1,5 @@
 import { WebGPURenderer } from "../../../webgpu/WebGPURenderer";
 import { Framework } from "../../Framework";
-import { FrameworkContext } from "../../FrameworkContext";
 import { Geometry } from "../../geometry/Geometry";
 import { Mesh } from "../Mesh";
 

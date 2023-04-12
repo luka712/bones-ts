@@ -8,17 +8,14 @@ import { Framework } from "../../../Framework";
 import { FrameworkContext } from "../../../FrameworkContext";
 import { WebGPUMesh } from "../../../mesh/gpu/WebGPUMesh";
 import { Mat4x4 } from "../../../bones_math";
-import { Mesh } from "../../../mesh/Mesh";
 import { Material } from "../../Material";
-
+import { WebGPURenderPipelineUtil } from "../../../renderers/common/gpu/WebGPURenderPipelineUtil";
 
 /**
  * Holds the GPURenderPipeline and informatio about uniforms buffer and bind groups necessary for drawing the BasicMaterial.
  */
 export class WebGPUBasicMaterial extends BasicMaterial 
 {
-
-
     private m_pipeline: GPURenderPipeline;
     private m_uniformsBindGroup: GPUBindGroup;
 
@@ -80,29 +77,7 @@ export class WebGPUBasicMaterial extends BasicMaterial
             ]
         };
 
-        const fragmentState: GPUFragmentState = {
-            module: shaderModule,
-            targets: [{
-                format: 'bgra8unorm',
-                blend: {
-                    // https://learnopengl.com/Advanced-OpenGL/Blending#:~:text=Blending%20in%20OpenGL%20is%20commonly,behind%20it%20with%20varying%20intensity.
-                    // https://wgpu.rs/doc/src/wgpu_types/lib.rs.html#1496
-                    color: {
-                        srcFactor: "src-alpha",
-                        dstFactor: 'one-minus-src-alpha',
-                        operation: "add"
-                    },
-                    alpha: {
-                        // Blend state of (1 * src) + ((1 - src_alpha) * dst)
-                        srcFactor: "one",
-                        dstFactor: "one",
-                        operation: "add"
-                    },
-                },
-                writeMask: GPUColorWrite.ALL,
-            }],
-            entryPoint: 'fs_main'
-        }
+        const fragmentState: GPUFragmentState = WebGPURenderPipelineUtil.createFragmentState(shaderModule);
 
         return {
             vertexState, fragmentState
@@ -167,7 +142,7 @@ export class WebGPUBasicMaterial extends BasicMaterial
                     resource: {
                         buffer: this.m_uniformInstancesBuffer
                     }
-                },]
+                }]
         });
 
         return { uniformsBindGroupLayout };
@@ -191,21 +166,8 @@ export class WebGPUBasicMaterial extends BasicMaterial
             ]
         });
 
-        const pipelineDesc: GPURenderPipelineDescriptor = {
-            label: "basicMaterial",
-            layout: pipelineLayout,
-            vertex: vertexState,
-            fragment: fragmentState,
-            primitive: {
-                topology: "triangle-list",
-                cullMode: "back"
-            },
-            depthStencil: {
-                format: "depth24plus-stencil8",
-                depthWriteEnabled: true,
-                depthCompare: "less-equal", // Very important, must be less equal otherwise it won't be able to resolve depths with same z depth value
-            },
-        };
+        const pipelineDesc: GPURenderPipelineDescriptor
+             = WebGPURenderPipelineUtil.createPipelineDescriptor(pipelineLayout, vertexState, fragmentState, "triangle-list" , "back");
 
         this.m_pipeline = device.createRenderPipeline(pipelineDesc);
     }
@@ -229,7 +191,7 @@ export class WebGPUBasicMaterial extends BasicMaterial
         renderPassEncoder.setPipeline(this.m_pipeline);
         renderPassEncoder.setBindGroup(0, this.m_uniformsBindGroup);
 
-        //Triangles
+        // Triangles
         renderPassEncoder.setVertexBuffer(0, mesh.vertexPositionsBuffer, 0, mesh.vertexPositionsBuffer.size);
         renderPassEncoder.setVertexBuffer(1, mesh.vertexColorsBuffer, 0, mesh.vertexColorsBuffer.size);
         renderPassEncoder.setIndexBuffer(mesh.indicesBuffer, mesh.indexFormat);
@@ -264,7 +226,7 @@ export class WebGPUBasicMaterial extends BasicMaterial
         renderPassEncoder.setPipeline(this.m_pipeline);
         renderPassEncoder.setBindGroup(0, this.m_uniformsBindGroup);
 
-        //Triangles
+        // Triangles
         renderPassEncoder.setVertexBuffer(0, mesh.vertexPositionsBuffer, 0, mesh.vertexPositionsBuffer.size);
         renderPassEncoder.setVertexBuffer(1, mesh.vertexColorsBuffer, 0, mesh.vertexColorsBuffer.size);
         renderPassEncoder.setIndexBuffer(mesh.indicesBuffer, mesh.indexFormat);

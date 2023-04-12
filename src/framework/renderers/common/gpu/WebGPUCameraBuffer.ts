@@ -1,4 +1,4 @@
-import { Mat4x4 } from "../../bones_math";
+import { Mat4x4 } from "../../../bones_math";
 
 export class WebGPUCameraBuffer 
 {

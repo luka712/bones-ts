@@ -4,7 +4,7 @@ import { TextureManager } from "../framework/bones_texture";
 import { Framework } from "../framework/Framework";
 import { FrameworkContext } from "../framework/FrameworkContext";
 import { Camera2D } from "../framework/renderers/common/Camera2D";
-import { WebGPUCameraBuffer } from "../framework/renderers/common/WebGPUCameraBuffer";
+import { WebGPUCameraBuffer } from "../framework/renderers/common/gpu/WebGPUCameraBuffer";
 import { SpriteRenderer } from "../framework/SpriteRenderer";
 
 // TODO: see https://austin-eng.com/webgpu-samples/samples/helloTriangle#main.ts

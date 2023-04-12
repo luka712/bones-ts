@@ -1,4 +1,4 @@
-import { WebGPUCameraBuffer } from '../../../framework/renderers/common/WebGPUCameraBuffer';
+import { WebGPUCameraBuffer } from '../../../framework/renderers/common/gpu/WebGPUCameraBuffer';
 import { WebGPUTexture2D } from '../../textures/WebGPUTexture';
 import shaderSource from './spriteshader.wgsl?raw';
 
