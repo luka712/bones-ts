@@ -1,23 +1,22 @@
-import { LifecycleState } from "../../../framework/bones_common";
-import { FileLoader } from "../../../framework/bones_loaders";
-import { IRenderer } from "../../../framework/bones_renderer";
-import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
-import { Texture2D } from "../../../framework/bones_texture";
-import { WindowManager } from "../../../framework/Window";
-import { Rect } from "../../../framework/math/Rect";
-import { Color, Vec2 } from "../../../framework/bones_math";
-import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
-import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
-import vertexSource from "./shaders/vspriteshader.glsl?raw"
-import fragmentSource from "./shaders/fspriteshader.glsl?raw"
-import { GLTexture2D } from "../../GLTexture";
-import { SpriteFont } from "../../../framework/fonts/SpriteFont";
-import { Camera2D } from "../../../framework/renderers/common/Camera2D";
 
 
 
 
 // in order to optimize, sprite renderer will render with really large buffer that needs to be setup properly
+
+import { GLTexture2D } from "../../../../webgl/GLTexture";
+import { GLBlendModeUtil } from "../../../../webgl/renderers/common/GLBlendModeUtil";
+import { GLShaderImplementation } from "../../../../webgl/shaders/GLShaderImplementation";
+import { SpriteRenderer, Blend } from "../../../SpriteRenderer";
+import { LifecycleState } from "../../../bones_common";
+import { Color, Vec2, Rect } from "../../../bones_math";
+import { Texture2D } from "../../../bones_texture";
+import { SpriteFont } from "../../../fonts/SpriteFont";
+import { Camera2D } from "../../common/Camera2D";
+import vertexSource from "./shaders/sprite_v.glsl?raw"
+import fragmentSource from "./shaders/sprite_f.glsl?raw"
+
+
 // buffer will support configurable number of instances.
 const NUM_MAX_INSTANCES = 1000;
 // pos3, tc2, color4

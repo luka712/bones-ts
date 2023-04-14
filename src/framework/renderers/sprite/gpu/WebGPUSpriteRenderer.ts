@@ -1,14 +1,11 @@
-import { LifecycleState } from "../../../framework/bones_common";
-import { Color, Rect } from "../../../framework/bones_math";
-import { IRenderer } from "../../../framework/bones_renderer";
-import { Texture2D } from "../../../framework/bones_texture";
-import { SpriteFont } from "../../../framework/fonts/SpriteFont";
-import { Vec2 } from "../../../framework/math/vec/Vec2";
-import { Camera2D } from "../../../framework/renderers/common/Camera2D";
-import { Blend, SpriteRenderer } from "../../../framework/SpriteRenderer";
-import { WindowManager } from "../../../framework/Window";
-import { WebGPUTexture2D } from "../../textures/WebGPUTexture";
-import { WebGPURendererContext } from "../../WebGPURenderer";
+
+import { WebGPURendererContext } from "../../../../webgpu/WebGPURenderer";
+import { WebGPUTexture2D } from "../../../../webgpu/textures/WebGPUTexture";
+import { SpriteRenderer, Blend } from "../../../SpriteRenderer";
+import { LifecycleState } from "../../../bones_common";
+import { Color, Vec2, Rect } from "../../../bones_math";
+import { Texture2D } from "../../../bones_texture";
+import { SpriteFont } from "../../../fonts/SpriteFont";
 import { GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE, WebGPUSpriteRendererPart, WebGPUSpriteUtil } from "./WebGPUSpriteUtil";
 
 
@@ -451,22 +448,8 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
 
         const i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
 
-        // /******************* SETUP OPTIMIZATION VECTORS ******************/
-        // it's easier to reason with vector.
-
-        // TODO: use first with passed
-        // const origin = origin ?? this.origin;
-        const origin = this.origin;
-
-        // move to top left by default
-        const x = draw_rect.x - draw_rect.w * .5;
-        const y = draw_rect.y - draw_rect.h * .5;
-
-        const w = draw_rect.w;
-        const h = draw_rect.h;
-
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
-        this.drawInner(i, x, y, w, h, rotation_in_radians, rotation_anchor, tintColor);
+        this.drawInner(i, draw_rect.x, draw_rect.y, draw_rect.w, draw_rect.h, rotation_in_radians, rotation_anchor, tintColor);
     }
 
     /**
@@ -479,17 +462,10 @@ export class WebGPUSpriteRenderer extends SpriteRenderer
         // find current index, but take into account stride.
         const i = this._lastPart.instanceIndex * GPU_SPRITE_RENDERER_ATTRIBUTES_STRIDE;
 
-        // move to top left by default
-        const x = drawRect.x - drawRect.w * .5;
-        const y = drawRect.y - drawRect.h * .5;
-
-        const w = drawRect.w;
-        const h = drawRect.h;
-
         // draw inner fills buffer correctly with positions, texture coordinates, tint color and increase the current instance index.
         this.drawInnerSource(
             i,
-            x, y, w, h,
+            drawRect.x, drawRect.y, drawRect.w, drawRect.h,
             sourceRect,
             rotationInRadians, rotationAnchor, tintColor);
 

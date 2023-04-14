@@ -1,7 +1,6 @@
 import { GLEffectFactory } from "../webgl/GLPostProcessManager";
 import { GL2Renderer } from "../webgl/GL2Renderer";
 import { GLTextureManager } from "../webgl/GLTexture";
-import { GLTextRenderer_Obsolete_2023_02_15 } from "../webgl/GLTextRenderer__Obsolete_";
 import { Config } from "./bones_config";
 import { InputManager } from "./input/InputManager";
 import { FileLoader, ImageLoader } from "./bones_loaders";
@@ -24,13 +23,10 @@ import { WebGPUTextureManager } from "../webgpu/textures/WebGPUTextureManager";
 import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
 import { GLPipelineFactory } from "../webgl/post_process/pipelines/GLPipelineFactory";
 import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager";
-import { GLSpriteRenderer } from "../webgl/renderers/sprite/GLSpriteRenderer";
 import { GLLineRenderer2D } from "../webgl/renderers/lines/GLLineRenderer2D";
 import { LineRenderer2D } from "./renderers/LineRenderer2D";
 import { RectangleRenderer } from "./renderers/RectangleRenderer";
 import { GLEllipseRenderer } from "../webgl/renderers/ellipse/GLEllipseRenderer";
-import { WebGPUSpriteRenderer } from "../webgpu/renderers/sprite/WebGPUSpriteRenderer";
-import { GeometryBuffer } from "./GeometryBuffer";
 import { GeometryBuilder } from "./geometry/GeometryBuilder";
 import { Scene } from "./scene/Scene";
 import { MaterialFactory } from "./material/MaterialFactory";
@@ -42,6 +38,8 @@ import { WebGPUMeshFactory } from "./mesh/gpu/WebGPUMeshFactory";
 import { FrameworkContext } from "./FrameworkContext";
 import { WebGPURectangleRenderer } from "./renderers/rectangle/gpu/WebGPURectangleRenderer";
 import { GLRectangleRenderer } from "./renderers/rectangle/gl/GLRectangleRenderer";
+import { GLSpriteRenderer } from "./renderers/sprite/gl/GLSpriteRenderer";
+import { WebGPUSpriteRenderer } from "./renderers/sprite/gpu/WebGPUSpriteRenderer";
 
 
 
