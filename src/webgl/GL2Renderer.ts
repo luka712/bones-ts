@@ -80,7 +80,7 @@ export class GL2Renderer implements IRenderer
         gl.clearColor(this.clearColor.r, this.clearColor.g, this.clearColor.b, this.clearColor.a);
 
         // clear color buffer and depth buffer.
-        gl.enable(gl.DEPTH_TEST | gl.CULL_FACE);
+        gl.enable(gl.DEPTH_TEST);
         gl.depthFunc(gl.LEQUAL);
         gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     }

@@ -61,7 +61,7 @@ enum TextureFormat
  */
 class TextureOptions
 {
-    public textureFormat? :TextureFormat;
+    public textureFormat?: TextureFormat;
     public textureFiltering?: TextureFiltering;
     public textureWrap?: TextureWrap;
 
@@ -88,8 +88,8 @@ abstract class Texture2D
     /**
      * The async intialize method.
      */
-    async initialize() : Promise<void> {}
-    
+    async initialize (): Promise<void> { }
+
 
     /**
      * Sets the active texture unit.
@@ -103,18 +103,18 @@ abstract class Texture2D
     /**
      * @brief Use the current texture.
      */
-     abstract bind (): void;
+    abstract bind (): void;
 
     /**
      * @brief Release the current texture.
      */
-     abstract destroy (): void;
+    abstract destroy (): void;
 };
 
 /**
  * @brief The texture manager interface.
  */
- interface TextureManager
+interface TextureManager
 {
 
     /**
@@ -161,7 +161,7 @@ abstract class Texture2D
      * @param { number } height 
      * @param { TextureOptions | undefined } options 
      */
-    createRandomnessTexture(key: string, width: number, height: number, options?: TextureOptions) : Texture2D;
+    createRandomnessTexture (key: string, width: number, height: number, options?: TextureOptions): Texture2D;
 
     /**
      * @brief Get the Texture object from key or path.

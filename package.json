@@ -4,7 +4,7 @@
   "description": "The Typescript implementation of Bones Framework",
   "main": "dist/index.umd.js",
   "browser": "dist/index.mjs",
-  "typings": "dist/index.d.ts",
+  "typings": "dist/index.ts",
   "scripts": {
     "test": "jest",
     "build": "npx webpack",

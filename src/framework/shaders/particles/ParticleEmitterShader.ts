@@ -10,25 +10,19 @@ import { Shader } from "../Shader";
  */
 export abstract class ParticleEmitterUpdateStepShader extends Shader 
 {
-   public noiseTexture: Texture2D;
-   public frictionFactor: number = 0.9999;
-   public origin: Vec3 = Vec3.zero();
+    /**
+     * The randomness texture.
+     */
+    public randomTexture: Texture2D;
 
-   public projectionMatrix: Mat4x4 = Mat4x4.identity();
-   public viewMatrix: Mat4x4 = Mat4x4.identity();
+    public origin: Vec2 = Vec2.zero();
 
-   public xDirectionMinMax: Vec2 = new Vec2(-1, 1);
-   public yDirectionMinMax: Vec2 = new Vec2(-1, 1);
-   public zDirectionMinMax: Vec2 = new Vec2(-1, 1);
-   public minMaxSpeed: Vec2 = new Vec2(5, 10);
-   public force: Vec3 = Vec3.zero();
-   public maxAge: number = 1000;
-
-   /**
-    * Update the particle emitter.
-    * @param { number } delta_time 
-    */
-   abstract update (delta_time: number): void;
+    public projectionViewMatrix: Mat4x4 = Mat4x4.identity();
+    /**
+     * Update the particle emitter.
+     * @param { number } delta_time 
+     */
+    abstract update (delta_time: number): void;
 
 }
 

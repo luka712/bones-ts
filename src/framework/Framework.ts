@@ -17,7 +17,6 @@ import { WebGPURenderer } from "../webgpu/WebGPURenderer";
 import { SoundManager } from "./sounds/SoundManager";
 import { PostProcessManager, IEffectFactory } from "./bones_post_process";
 import { ParticlesFactory } from "./particles/ParticlesFactory";
-import { GLParticlesFactory } from "../webgl/particles/GLParticlesFactory";
 import { FrameworkPlugin } from "./plugin/FrameworkPlugin";
 import { WebGPUTextureManager } from "../webgpu/textures/WebGPUTextureManager";
 import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
@@ -40,6 +39,7 @@ import { WebGPURectangleRenderer } from "./renderers/rectangle/gpu/WebGPURectang
 import { GLRectangleRenderer } from "./renderers/rectangle/gl/GLRectangleRenderer";
 import { GLSpriteRenderer } from "./renderers/sprite/gl/GLSpriteRenderer";
 import { WebGPUSpriteRenderer } from "./renderers/sprite/gpu/WebGPUSpriteRenderer";
+import { GLParticlesFactory } from "./particles/gl/GLParticlesFactory";
 
 
 

@@ -1,0 +1,92 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.umd.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+           
+            particleEmitter = null;
+
+
+            createFolder (gui, rect, index) {
+                const lf = gui.addFolder(`Rect ${index}`);
+
+                // lf.add(rect, "x");
+                // lf.add(rect, "y");
+                // lf.add(rect, "width");
+                // lf.add(rect, "height");
+
+
+                // // Color
+                // const temp = {
+                //     color: [rect.color.r * 255, rect.color.g * 255, rect.color.b * 255],
+                //     stroke_color: [rect.stroke_color.r * 255, rect.stroke_color.g * 255, rect.stroke_color.b * 255],
+                // }
+                // lf.addColor(temp, "color").onChange(v => {
+                //     rect.color[0] = v[0] / 255;
+                //     rect.color[1] = v[1] / 255;
+                //     rect.color[2] = v[2] / 255;
+                // });
+
+                // const rf = lf.addFolder("radius");
+                // rf.add(rect, "top_left");
+                // rf.add(rect, "top_right");
+                // rf.add(rect, "bottom_right");
+                // rf.add(rect, "bottom_left");
+
+                // const sf = lf.addFolder("stroke");
+                // sf.add(rect, "stroke_width");
+                // sf.addColor(temp, "stroke_color").onChange(v => {
+                //     rect.stroke_color[0] = v[0] / 255;
+                //     rect.stroke_color[1] = v[1] / 255;
+                //     rect.stroke_color[2] = v[2] / 255;
+                // });
+
+
+            }
+
+            async initialize () {
+
+                this.particleEmitter = this.particles.createParticlesEmitter();
+                await this.particleEmitter.initialize();
+
+                const gui = new dat.GUI();
+                // this.createFolder(gui, this.rect1, 1);
+                // this.createFolder(gui, this.rect2, 2);
+                // this.createFolder(gui, this.rect3, 3);
+            }
+
+            update (deltaTime) { 
+
+                this.particleEmitter.update(deltaTime);
+            }
+
+            draw () {
+                this.particleEmitter.draw();
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"));
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>
