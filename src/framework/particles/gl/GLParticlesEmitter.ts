@@ -6,12 +6,11 @@ import { FileLoader } from "../../bones_loaders";
 import { Vec3 } from "../../math/vec/Vec3";
 import { InputManager } from "../../input/InputManager";
 import { GLParticleEmitterRenderStepShader, GLParticleEmitterUpdateStepShader } from "./GLParticleEmitterShaders";
-import { ParticlesEmitter } from "../ParticlesEmitter";
+import { ParticleEmitterOptions, ParticlesEmitter } from "../ParticlesEmitter";
 import { ParticleEmitterRenderStepShader, ParticleEmitterUpdateStepShader } from "../../shaders/particles/ParticleEmitterShader";
 import { WindowManager } from "../../Window";
 import { Camera2D } from "../../renderers/common/Camera2D";
-
-// TODO: this is experimental, not finished
+import { Framework } from "../../Framework";
 
 /**
  * The GL Particles Manager.
@@ -34,11 +33,12 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
     // #region Constructors (1)
 
     constructor(private m_gl: WebGL2RenderingContext,
-        private m_fileLoader: FileLoader,
-        private m_inputManager: InputManager,
-        private m_textureManager: TextureManager)
+        private readonly m_framework: Framework,
+        options: ParticleEmitterOptions = {
+            nOfParticles: 10_000
+        })
     {
-        super();
+        super(options);
     }
 
     // #endregion Constructors (1)
@@ -67,8 +67,8 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
     public async initialize (): Promise<void>
     {
         // SHADERS
-        this.m_updateStepShader = new GLParticleEmitterUpdateStepShader(this.m_gl, this.m_fileLoader, this.m_textureManager);
-        this.m_renderStepShader = new GLParticleEmitterRenderStepShader(this.m_gl, this.m_fileLoader);
+        this.m_updateStepShader = new GLParticleEmitterUpdateStepShader(this.m_gl, this.m_framework);
+        this.m_renderStepShader = new GLParticleEmitterRenderStepShader(this.m_gl, this.m_framework);
 
         await this.m_updateStepShader.initialize();
         await this.m_renderStepShader.initialize();
@@ -117,11 +117,9 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
         life_desc.offsetInBytes = 5 * 4;
         life_desc.vertexSize = 1;
 
-       
-
         shared_buffer.sharedVertexBufferItems = [pos_desc, vel_desc, age_desc, life_desc];
         shared_buffer.bufferUsage = BufferUsage.STREAM_DRAW;
-        shared_buffer.numberOfPrimitives = 100_000; // fix later, n particles TODO:
+        shared_buffer.numberOfPrimitives = this.m_options.nOfParticles;
         shared_buffer.drawType = DrawType.POINTS;
 
         // create both, for two buffers.
@@ -134,22 +132,18 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
 
     public update (delta_time: number): void
     {
-        const origin = Vec2.zero();
-        var mouse_state = this.m_inputManager.getMouseState();
-        origin[0] = mouse_state.position.x;
-        origin[1] = mouse_state.position.y;
-
-        const force = Vec3.zero();
-
-        if (this.m_inputManager.getMouseState().leftButtonDown)
+        const inputManager = this.m_framework.input;
+        const mouseState = inputManager.getMouseState();
+        
+        this.m_updateStepShader.emitNew = false;
+        if (inputManager.getMouseState().leftButtonDown)
         {
-            force[0] = (Math.random() - 0.5) * 2.0;
-            force[1] = (Math.random() - 0.5) * 2.0;
+            this.m_updateStepShader.emitNew = true;
         }
 
         this.m_updateStepShader.use();
 
-        this.m_updateStepShader.origin = origin;
+        Vec2.copy(mouseState.position, this.m_updateStepShader.origin);
         this.m_updateStepShader.projectionViewMatrix = Camera2D.projectionViewMatrix;
         this.m_updateStepShader.update(delta_time);
 
@@ -166,25 +160,24 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
      * @param nOfParticles - the number of particles. By default 10000.
      * @returns 
      */
-    private particlesData (nOfParticles = 100_000): Float32Array
+    private particlesData (): Float32Array
     {
         const data = [];
-        for (let i = 0; i < nOfParticles; i++)
+        for (let i = 0; i < this.m_options.nOfParticles; i++)
         {
             // position
             data.push(0);
             data.push(0);
 
             // vel
-            data.push(0.1);
-            data.push(0.1);
+            data.push(0);
+            data.push(0);
 
-            // age. Push big number, so that all particles are restarted at beginning.
-            data.push(Math.random() * 20_000);
+            // current age. Push big number, so that all particles are restarted at beginning.
+            data.push(Math.random() * 20000); // current age
 
-            // life. Max life of a particle
-            data.push(Math.random() * 20_000);
-
+            // max age. Max age of a particle
+            data.push(Math.random() * 20000); // max age
         }
 
         return new Float32Array(data);

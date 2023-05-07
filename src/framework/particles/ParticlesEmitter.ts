@@ -1,10 +1,28 @@
-// TODO: experimental, not finished.
+
+/**
+ * The options of particle emitter.
+ */
+export interface ParticleEmitterOptions 
+{
+    /**
+     * The number of particles
+     */
+    nOfParticles: number;
+}
 
 /**
  * The particle emitter.
  */
 export abstract class ParticlesEmitter 
 {
+
+    /**
+     * The constructor.
+     */
+    constructor(protected m_options: ParticleEmitterOptions = {
+        nOfParticles: 10_000
+    }){}
+
     /**
      * Initialize particle emitter.
      */

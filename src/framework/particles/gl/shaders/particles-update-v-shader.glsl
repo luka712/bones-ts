@@ -12,10 +12,10 @@ layout (location = 0) in vec2 a_position;
 layout (location = 1) in vec2 a_velocity;
 
 // the age of a particle
-layout (location = 2) in float a_age;
+layout (location = 2) in float a_currentAge;
 
 // the life of a particle
-layout (location = 3) in float a_life;
+layout (location = 3) in float a_maxAge;
 
 uniform sampler2D u_texture0; // randomness texture.
 
@@ -31,23 +31,16 @@ uniform vec2 u_origin;
 // the particle max age.
 uniform float u_maxAge;
 
+uniform float u_frictionFactor;
+
+// should new particles be emitted
+uniform int u_emitNew;
+
 // outputs, must mirror the inputs, These values will be captured into transform feedback buffer.
 out vec2 v_position;
 out vec2 v_velocity;
-out float v_age;
-out float v_life;
-
-vec3 limit(vec3 vec_to_limit, float max_length)
-{
-    float l = length(vec_to_limit);
-    if(l > max_length)
-    {
-        vec3 r = normalize(vec_to_limit);
-        r *= max_length;
-        return r;
-    }
-    return vec_to_limit;
-}
+out float v_currentAge;
+out float v_maxAge;
 
 /**
 * vec4 contains 4 random values between 0 and 1 
@@ -69,37 +62,44 @@ float randValueBetweenMinMax(vec2 min_max, float r)
     return min_max.x + r * (min_max.y - min_max.x);
 }
 
+void restartParticle()
+{
+    v_currentAge = a_maxAge; // restart age
+
+    // emit direction
+    vec4 rand = random4();
+
+    // reset current position.
+    v_position = (u_projectionViewMatrix * vec4(u_origin, 0.0, 1.0)).xy;  
+
+    // 2PI * rand.x 
+    float angle = 6.283 * (-1.0 + rand.x + rand.y);
+
+    float x = cos(angle);
+    float y = sin(angle);
+    v_velocity = vec2(x * 0.001 * rand.y, y * 0.001 * rand.y);
+}
+
 void main()
 {
-    if(a_age < 0.0)
+    // write here values that should always be passed. Should be constant
+    v_maxAge = a_maxAge;
+
+    // is particle dead ? 
+    if(a_currentAge <= 0.0)
     {
-        v_age = a_life;
-
-        // emit direction
-        vec4 rand = random4();
-
-        // reset current position.
-        v_position = (u_projectionViewMatrix * vec4(u_origin, 0.0, 1.0)).xy;  
-
-        // 2PI * rand.x 
-        float angle = 6.283 * (-1.0 + rand.x + rand.y);
-   
-        float x = cos(angle);
-        float y = sin(angle);
-
-        v_velocity = vec2(x * 0.0005,y * 0.0005);
+        if(u_emitNew == 1)
+        {
+            restartParticle();
+        }
     }
     else
     {
-        v_life = a_life;
-
         // add friction
         v_position = a_position + a_velocity * u_deltaTime;
 
-        v_age = a_age - u_deltaTime;
+        v_currentAge = a_currentAge - u_deltaTime;
 
-        v_velocity = a_velocity;
+        v_velocity = a_velocity * 0.9999;
     }
-
-
 }

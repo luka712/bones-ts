@@ -1,31 +1,32 @@
-import { WindowManager } from "../../Window";
-import { FileLoader } from "../../bones_loaders";
-import { TextureManager } from "../../bones_texture";
-import { InputManager } from "../../input/InputManager";
+import { Framework } from "../../Framework";
 import { ParticlesEmitter } from "../ParticlesEmitter";
 import { ParticlesFactory } from "../ParticlesFactory";
 import { GLTransformFeedbackParticlesEmitter } from "./GLParticlesEmitter";
 
 export class GLParticlesFactory extends ParticlesFactory
 {
+    // #region Constructors (1)
+
     /**
      * The constructor.
      */
-    constructor(protected m_gl: WebGL2RenderingContext,
-        protected m_fileLoader: FileLoader,
-        protected m_inputManager: InputManager,
-        protected m_textureManager: TextureManager,
-        protected m_window: WindowManager)
+    constructor(protected readonly m_gl: WebGL2RenderingContext,
+        protected readonly m_framework: Framework)
     {
         super();
     }
+
+    // #endregion Constructors (1)
+
+    // #region Public Methods (1)
 
     /**
      * Creates the particles emitter.
      */
     public createParticlesEmitter (): ParticlesEmitter
     {
-        return new GLTransformFeedbackParticlesEmitter(this.m_gl, this.m_fileLoader, this.m_inputManager, this.m_textureManager);
+        return new GLTransformFeedbackParticlesEmitter(this.m_gl, this.m_framework);
     }
 
+    // #endregion Public Methods (1)
 }

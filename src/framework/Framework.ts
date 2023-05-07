@@ -268,7 +268,7 @@ abstract class Framework
             this.postProcessManager = new GLPostProcessManager(this.window, this.renderer, gl);
             this.effects = new GLEffectFactory(this.renderer, this.timeManager, this.fileLoader, this.textureManager, gl);
             this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
-            this.particles = new GLParticlesFactory(gl, this.fileLoader, this.input, this.textureManager, this.window);
+            this.particles = new GLParticlesFactory(gl, this);
             this.postProcessPipelines = new GLPipelineFactory(this.window, this.renderer, gl, this.effects);
 
             // various renderers. Use factory to create one instead.

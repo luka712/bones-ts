@@ -198,8 +198,8 @@ class GLTextureManager implements TextureManager
      */
     public createRandomnessTexture (key: string, width: number, height: number, options?: TextureOptions): Texture2D
     {
-        const size = width * height;
-        const data = new Uint8Array(width * height * 4);
+        const size = width * height * 4;
+        const data = new Uint8Array(size);
 
         for (let i = 0; i < size; i += 4)
         {

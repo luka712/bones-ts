@@ -10,20 +10,33 @@ import { Shader } from "../Shader";
  */
 export abstract class ParticleEmitterUpdateStepShader extends Shader 
 {
+    // #region Properties (4)
+
+    /**
+     * The friction.
+     */
+    public frictionFactor = 0.9;
+    public origin: Vec2 = Vec2.zero();
+    public projectionViewMatrix: Mat4x4 = Mat4x4.identity();
+
+    public emitNew: boolean = false;
+
     /**
      * The randomness texture.
      */
     public randomTexture: Texture2D;
 
-    public origin: Vec2 = Vec2.zero();
+    // #endregion Properties (4)
 
-    public projectionViewMatrix: Mat4x4 = Mat4x4.identity();
+    // #region Public Abstract Methods (1)
+
     /**
      * Update the particle emitter.
-     * @param { number } delta_time 
+     * @param { number } deltaTime 
      */
-    abstract update (delta_time: number): void;
+    public abstract update (deltaTime: number): void;
 
+    // #endregion Public Abstract Methods (1)
 }
 
 export abstract class ParticleEmitterRenderStepShader extends Shader 
