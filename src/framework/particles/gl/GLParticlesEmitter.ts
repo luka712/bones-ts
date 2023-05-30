@@ -1,6 +1,6 @@
 import { TextureManager } from "../../bones_texture";
-import { ComponentType, BufferUsage, GeometryBuffer, SharedVertexBufferDescription, SharedVertexBufferItemDescription, DrawType } from "../../GeometryBuffer";
-import { GLGeometryBuffer } from "../../../webgl/GLGeometryBuffer";
+import { ComponentType, BufferUsage, GeometryBuffer, SharedVertexBufferDescription, SharedVertexBufferItemDescription, DrawType, VertexBufferDescription } from "../../GeometryBuffer";
+import { GLGeometryBuffer } from "../../geometry/gl/GLGeometryBuffer";
 import { Mat4x4, Vec2 } from "../../bones_math";
 import { FileLoader } from "../../bones_loaders";
 import { Vec3 } from "../../math/vec/Vec3";
@@ -11,6 +11,7 @@ import { ParticleEmitterRenderStepShader, ParticleEmitterUpdateStepShader } from
 import { WindowManager } from "../../Window";
 import { Camera2D } from "../../renderers/common/Camera2D";
 import { Framework } from "../../Framework";
+import { verify } from "crypto";
 
 /**
  * The GL Particles Manager.
@@ -35,7 +36,7 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
     constructor(private m_gl: WebGL2RenderingContext,
         private readonly m_framework: Framework,
         options: ParticleEmitterOptions = {
-            nOfParticles: 10_000
+            nOfParticles: 10_0
         })
     {
         super(options);
@@ -90,29 +91,38 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
         this.m_gl.bindBuffer(this.m_gl.ARRAY_BUFFER, buffer_render);
         this.m_gl.bufferData(this.m_gl.ARRAY_BUFFER, data, BufferUsage.STREAM_DRAW);
 
+        // vertex buffer, shared between each particle
+        const vertexBuffer = new VertexBufferDescription();
+        vertexBuffer.layoutLocation = 0;
+        vertexBuffer.divisor = 1;
+        vertexBuffer.componentType = ComponentType.FLOAT;
+        vertexBuffer.vertexSize = 1;
+        vertexBuffer.bufferUsage = BufferUsage.STATIC_DRAW;
+        vertexBuffer.data = new Float32Array([1]);
+
         // use shared buffer, describe attributes.
         const shared_buffer = new SharedVertexBufferDescription();
 
         const pos_desc = new SharedVertexBufferItemDescription();
-        pos_desc.layoutLocation = 0;
+        pos_desc.layoutLocation = 1;
         pos_desc.componentType = ComponentType.FLOAT;
         pos_desc.offsetInBytes = 0;
         pos_desc.vertexSize = 2;
 
         const vel_desc = new SharedVertexBufferItemDescription();
-        vel_desc.layoutLocation = 1;
+        vel_desc.layoutLocation = 2;
         vel_desc.componentType = ComponentType.FLOAT;
         vel_desc.offsetInBytes = 2 * 4;
         vel_desc.vertexSize = 2;
 
         const age_desc = new SharedVertexBufferItemDescription();
-        age_desc.layoutLocation = 2;
+        age_desc.layoutLocation = 3;
         age_desc.componentType = ComponentType.FLOAT;
         age_desc.offsetInBytes = 4 * 4;
         age_desc.vertexSize = 1;
 
         const life_desc = new SharedVertexBufferItemDescription();
-        life_desc.layoutLocation = 3;
+        life_desc.layoutLocation = 4;
         life_desc.componentType = ComponentType.FLOAT;
         life_desc.offsetInBytes = 5 * 4;
         life_desc.vertexSize = 1;
@@ -124,10 +134,16 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
 
         // create both, for two buffers.
         shared_buffer.glBuffer = buffer_update;
-        this.m_readBuffer = new GLGeometryBuffer(this.m_gl, null, null, shared_buffer);
+        this.m_readBuffer = new GLGeometryBuffer(this.m_gl, [vertexBuffer], null, shared_buffer, {
+            instanced: true,
+            instancesCount: this.m_options.nOfParticles
+        });
 
         shared_buffer.glBuffer = buffer_render;
-        this.m_writeBuffer = new GLGeometryBuffer(this.m_gl, null, null, shared_buffer);
+        this.m_writeBuffer = new GLGeometryBuffer(this.m_gl, [vertexBuffer], null, shared_buffer, {
+            instanced: true,
+            instancesCount: this.m_options.nOfParticles
+        });
     }
 
     public update (delta_time: number): void
@@ -162,7 +178,7 @@ export class GLTransformFeedbackParticlesEmitter extends ParticlesEmitter
      */
     private particlesData (): Float32Array
     {
-        const data = [];
+        const data = [1];
         for (let i = 0; i < this.m_options.nOfParticles; i++)
         {
             // position

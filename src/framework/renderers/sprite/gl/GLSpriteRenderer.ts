@@ -7,7 +7,7 @@
 import { GLTexture2D } from "../../../../webgl/GLTexture";
 import { GLBlendModeUtil } from "../../../../webgl/renderers/common/GLBlendModeUtil";
 import { GLShaderImplementation } from "../../../../webgl/shaders/GLShaderImplementation";
-import { SpriteRenderer, Blend } from "../../../SpriteRenderer";
+import { SpriteRenderer, BlendMode } from "../../../SpriteRenderer";
 import { LifecycleState } from "../../../bones_common";
 import { Color, Vec2, Rect } from "../../../bones_math";
 import { Texture2D } from "../../../bones_texture";
@@ -55,7 +55,7 @@ export class GLSpriteRenderer extends SpriteRenderer
     // tint color for optimization.
     private o_defaultTintColor: Color = Color.white();
 
-    private o_defaultBlend = Blend.nonPremultiplied();
+    private o_defaultBlend = BlendMode.AlphaBlending;
 
     // Optimization vector, when passing to buffer.
     private o_v0: Vec2 = Vec2.zero();
@@ -166,8 +166,6 @@ export class GLSpriteRenderer extends SpriteRenderer
         gl.bindBufferBase(gl.UNIFORM_BUFFER, GLOBAL_UBO_BINDING_POINT, this._globalUniformBuffer);
         gl.bufferData(gl.UNIFORM_BUFFER, Camera2D.projectionViewMatrix, gl.DYNAMIC_DRAW);
 
-
-
         this.m_shader = shader;
     }
 
@@ -247,7 +245,7 @@ export class GLSpriteRenderer extends SpriteRenderer
     /**
      * {@inheritDoc SpriteRenderer}
      */
-    public begin (mode?: Blend, maxInstances = 1000): void
+    public begin (mode?: BlendMode, maxInstances = 1000): void
     {
         // TODO: use max instances.
 

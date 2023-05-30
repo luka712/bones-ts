@@ -3,7 +3,7 @@ import { Color, Vec2 } from "../../../framework/bones_math";
 import { Framework } from "../../../framework/Framework";
 import { FrameworkContext } from "../../../framework/FrameworkContext";
 import { GLLineJoin, LineDrawAdditionalContext, LineCapsType, LineJoinType, LineRenderer2D, GLLineCaps } from "../../../framework/renderers/LineRenderer2D";
-import { Blend } from "../../../framework/SpriteRenderer";
+import { BlendMode } from "../../../framework/SpriteRenderer";
 import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
 import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
 import { ShaderSource } from "../common/ShaderSource";
@@ -256,7 +256,7 @@ export class GLLineRenderer2D extends LineRenderer2D
     /**
      * {@inheritDoc SpriteRenderer}
      */
-    public begin (mode?: Blend): void
+    public begin (mode?: BlendMode): void
     {
         if (mode)
         {

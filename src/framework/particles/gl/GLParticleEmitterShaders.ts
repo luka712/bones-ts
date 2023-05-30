@@ -32,7 +32,7 @@ export class GLParticleEmitterUpdateStepShader extends ParticleEmitterUpdateStep
         super();
 
         this.m_shader = new GLShaderImplementation(m_gl, null, null, {
-            transformFeedbackVaryings: ["v_position", "v_velocity", "v_currentAge", "v_maxAge"] // must be set to attribute outputs
+            transformFeedbackVaryings: [ "v_useNum", "v_position", "v_velocity", "v_currentAge", "v_maxAge"] // must be set to attribute outputs
         });
     }
 

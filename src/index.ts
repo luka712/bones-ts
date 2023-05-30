@@ -1,7 +1,7 @@
 import { Framework, FrameworkOptions, UseRendererOption } from "./framework/Framework";
 import { Texture2D, TextureFiltering, TextureManager, TextureOptions } from "./framework/bones_texture";
 import { Vec3 } from "./framework/math/vec/Vec3";
-import { Blend, BlendFactor, SpriteRenderer } from "./framework/SpriteRenderer";
+import { BlendMode, SpriteRenderer } from "./framework/SpriteRenderer";
 import { InputManager } from "./framework/input/InputManager";
 import { GamePadState, KeyboardState, MouseState } from "./framework/input/InputStates";
 import { DPadButtons, FaceButtons, GamePadIndex, Keys } from "./framework/input/InputManagerEnums";
@@ -51,8 +51,7 @@ export
     MathUtil,
 
     // sprite renderer data
-    Blend,
-    BlendFactor,
+    BlendMode,
 
     // time manager data
     Time,

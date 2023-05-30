@@ -1,4 +1,4 @@
-import { Blend, BlendFactor } from "../../../framework/SpriteRenderer";
+import {  BlendMode } from "../../../framework/SpriteRenderer";
 
 /**
  * Utility for working with blends.
@@ -10,41 +10,40 @@ export class GLBlendModeUtil
      * @param gl - the webgl context
      * @param mode - the mode
      */
-    public static setBlendMode (gl: WebGL2RenderingContext, mode: Blend): void 
+    public static setBlendMode (gl: WebGL2RenderingContext, mode: BlendMode): void 
     {
 
-        let source = gl.SRC_ALPHA;
-        let dest = gl.ONE_MINUS_SRC_ALPHA;
+        let source: number;
+        let dest: number;
 
-        switch (mode.srcFactor)
+        if (mode == BlendMode.AlphaBlending)
         {
-            case BlendFactor.SRC_ALPHA:
-                source = gl.SRC_ALPHA;
-                break;
-            case BlendFactor.ONE_MINUS_SRC_ALPHA:
-                source = gl.ONE_MINUS_SRC_ALPHA;
-                break;
-            case BlendFactor.ONE:
-                source = gl.ONE;
-                break;
-            default:
-                throw new Error("GLSpriteRenderer::setBlendingMode:  Unable to resolve source blending mode!");
+            source = gl.SRC_ALPHA;
+            dest = gl.ONE_MINUS_SRC_ALPHA;
         }
-
-        switch (mode.destFactor)
+        else if(mode == BlendMode.AdditiveBlending)
         {
-            case BlendFactor.SRC_ALPHA:
-                dest = gl.SRC_ALPHA;
-                break;
-            case BlendFactor.ONE_MINUS_SRC_ALPHA:
-                dest = gl.ONE_MINUS_SRC_ALPHA;
-                break;
-            case BlendFactor.ONE:
-                dest = gl.ONE;
-                break;
-            default:
-                throw new Error("GLSpriteRenderer::setBlendingMode:  Unable to resolve destination blending mode!");
-
+            source = gl.ONE;
+            dest = gl.ONE;
+        }
+        else if (mode == BlendMode.MultiplicativeBlending)
+        {
+            source = gl.DST_COLOR;
+            dest = gl.ZERO;
+        }
+        else if(mode == BlendMode.PreMultipliedAlphaBlending)
+        {
+            source = gl.ONE;
+            dest = gl.ONE_MINUS_SRC_ALPHA;
+        }
+        else if(mode == BlendMode.InteropolativeBlending)
+        {
+            source = gl.SRC_ALPHA;
+            dest = gl.ONE_MINUS_SRC_ALPHA;
+        }
+        else
+        {
+            throw new Error("Not implemented");
         }
 
         gl.enable(gl.BLEND);

@@ -5,17 +5,20 @@ precision highp float;
 // attributes need to be setup before update
 // uniforms are passed on update.
 
+// number of particles to use on start
+layout(location = 0) in float a_useNum; // this is global for instanced drawing
+
 // particle position
-layout (location = 0) in vec2 a_position;
+layout (location = 1) in vec2 a_position;
 
 // the velocity of a particle
-layout (location = 1) in vec2 a_velocity;
+layout (location = 2) in vec2 a_velocity;
 
 // the age of a particle
-layout (location = 2) in float a_currentAge;
+layout (location = 3) in float a_currentAge;
 
 // the life of a particle
-layout (location = 3) in float a_maxAge;
+layout (location = 4) in float a_maxAge;
 
 uniform sampler2D u_texture0; // randomness texture.
 
@@ -37,6 +40,7 @@ uniform float u_frictionFactor;
 uniform int u_emitNew;
 
 // outputs, must mirror the inputs, These values will be captured into transform feedback buffer.
+ out float v_useNum;
 out vec2 v_position;
 out vec2 v_velocity;
 out float v_currentAge;
@@ -84,6 +88,7 @@ void main()
 {
     // write here values that should always be passed. Should be constant
     v_maxAge = a_maxAge;
+    v_useNum = a_useNum;
 
     // is particle dead ? 
     if(a_currentAge <= 0.0)

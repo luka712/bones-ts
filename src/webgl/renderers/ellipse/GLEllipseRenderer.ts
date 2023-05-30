@@ -8,7 +8,7 @@ import { Color, Vec2 } from "../../../framework/bones_math";
 import { Framework } from "../../../framework/Framework";
 import { FrameworkContext } from "../../../framework/FrameworkContext";
 import { Camera2D } from "../../../framework/renderers/common/Camera2D";
-import { Blend } from "../../../framework/SpriteRenderer";
+import { BlendMode } from "../../../framework/SpriteRenderer";
 import { WindowManager } from "../../../framework/Window";
 import { GLShaderImplementation } from "../../shaders/GLShaderImplementation";
 import { GLBlendModeUtil } from "../common/GLBlendModeUtil";
@@ -209,7 +209,7 @@ export class GLEllipseRenderer
     /**
      * {@inheritDoc SpriteRenderer}
      */
-    public begin (mode?: Blend): void
+    public begin (mode?: BlendMode): void
     {
         if (mode)
         {

@@ -17,68 +17,38 @@ import { SpriteFont } from './fonts/SpriteFont';
 // spriteRenderer.begin()
 // spriteRenderer.draw() .... n items
 // spriteRenderer.end()
-
-
-
-/**
- * Pixels can be drawn using a function that blends the incoming (source) RGBA values with the RGBA values that are already in the frame buffer (the destination values)
- * For webl documentation see [OpenGL](https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glBlendFunc.xml)
- */
-export class Blend 
-{
-    constructor(src_factor: BlendFactor = BlendFactor.SRC_ALPHA, dest_factor: BlendFactor = BlendFactor.ONE_MINUS_SRC_ALPHA)
-    {
-        this.srcFactor = src_factor;
-        this.destFactor = dest_factor;
-    }
-
-    /**
-     * Specifies how the red, green, blue, and alpha source blending factors are computed. 
-     */
-    srcFactor: BlendFactor
-
-    /**
-     * Specifies how the red, green, blue, and alpha destination blending factors are computed.
-     */
-    destFactor: BlendFactor;
-
-    /**
-     * A built-in state object with settings for blending with non-premultipled alpha, that is blending source and destination data using alpha while assuming the color data contains no alpha information.
-     */
-    public static nonPremultiplied (): Blend 
-    {
-        return new Blend(BlendFactor.SRC_ALPHA, BlendFactor.ONE_MINUS_SRC_ALPHA);
-    }
-
-    /**
-     * A built-in state object with settings for additive blend, which is adding the destination data to the source data without using alpha.
-     */
-    public static additive (): Blend 
-    {
-        return new Blend(BlendFactor.SRC_ALPHA, BlendFactor.ONE);
-    }
-}
-
-/**
- * The blend factor.
- */
-export enum BlendFactor 
-{
-    SRC_ALPHA,
-    ONE_MINUS_SRC_ALPHA,
-    ONE
-}
-
 /**
  * BlendMode is used by various renderers, for example Text and Sprite renderers.
  */
+
 export enum BlendMode
 {
+
     /**
-     * factor = 1 - normalized_alpha
-     * Use this to achieve transparency, where alpha value of 1.0 ( 255 ) will result in 0, meaning fully transparent image.
+     * Alpha blending.
      */
-    OneMinusSrcAlpha
+    AlphaBlending,
+
+    /**
+     * Additive blending.
+     */
+    AdditiveBlending,
+
+    /**
+     * The multiplicative blending.
+     * sr
+     */
+    MultiplicativeBlending,
+
+    /**
+     * The pre-multiplied alpha blending.
+     */
+    PreMultipliedAlphaBlending,
+
+    /**
+     * The interopolative blending.
+     */
+    InteropolativeBlending
 }
 
 /**
@@ -140,7 +110,7 @@ export abstract class SpriteRenderer
      * Use large size if you expect large number of instances per texture. For example is long streams of texts are to be used.
      * If you do not expect large number of instances, such as when rendering small number of sprites or if you do not use sprite sheet, use small numbers.
      */
-    public abstract begin (mode?: Blend, maxInstances?: number): void;
+    public abstract begin (mode?: BlendMode, maxInstances?: number): void;
 
     /**
      * @brief Draws the texture at position.

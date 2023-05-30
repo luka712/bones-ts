@@ -19,6 +19,8 @@
 
         class Game extends BonesFramework.Framework {
 
+            blendMode = BonesFramework.BlendMode.AlphaBlending;
+
             sprite1 = {
                 position: new BonesFramework.Vec2(100, 100),
                 tintColor: BonesFramework.Color.white(),
@@ -149,6 +151,21 @@
 
             }
 
+            createBlendModeDropdown(gui){
+                const blendModeObj = {
+                    blendMode: this.blendMode
+                }
+                gui.add(blendModeObj, "blendMode", {
+                    "AlphaBlending": BonesFramework.BlendMode.AlphaBlending,
+                    "AdditiveBlending": BonesFramework.BlendMode.AdditiveBlending,
+                    "MultiplicativeBlending": BonesFramework.BlendMode.MultiplicativeBlending,
+                    "PreMultipliedAlphaBlending": BonesFramework.BlendMode.PreMultipliedAlphaBlending,
+                    "InteropolativeBlending": BonesFramework.BlendMode.InteropolativeBlending,
+                }).onChange(v => {
+                    this.blendMode = v;
+                });
+            }
+
             async initialize () {
                 const gui = new dat.GUI();
 
@@ -167,6 +184,9 @@
                 this.sprite7.texture = t1;
                 this.sprite8.texture = t2;
                 this.sprite9.texture = t3;
+
+                // create dat.gui dropdown
+                this.createBlendModeDropdown(gui);
 
                 this.createFolder(gui, this.sprite1, 1);
                 this.createFolder(gui, this.sprite2, 2);
@@ -194,7 +214,7 @@
 
             draw () {
 
-                this.spriteRenderer.begin();
+                this.spriteRenderer.begin(this.blendMode);
 
                 this.renderSprite(this.sprite1);
                 this.renderSprite(this.sprite2);

@@ -140,9 +140,16 @@ export class VertexBufferDescription
     bufferUsage: BufferUsage;
 
     /**
+     * For use with instanced drawing, divisor can be used.
+     */
+    divisor?: number;
+
+    /**
      * The default draw type. If IndicesBufferDescription is specified, draw type is used from there instead.
      */
     drawType?: DrawType;
+
+
 }
 
 export class SharedVertexBufferItemDescription

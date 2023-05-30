@@ -1,5 +1,6 @@
 
 import { WebGPUTexture2D } from '../../../../webgpu/textures/WebGPUTexture';
+import { BlendMode } from '../../../SpriteRenderer';
 import { WebGPUCameraBuffer } from '../../common/gpu/WebGPUCameraBuffer';
 import { WebGPURenderPipelineUtil } from '../../common/gpu/WebGPURenderPipelineUtil';
 import shaderSource from './spriteshader.wgsl?raw';
@@ -37,7 +38,10 @@ export interface WebGPUSpriteRendererPart
      */
     instanceIndex: number;
 
-
+    /**
+     * Type of blending being used.
+     */
+    blendMode: BlendMode
 }
 
 export class WebGPUSpriteUtil 
@@ -114,7 +118,7 @@ export class WebGPUSpriteUtil
      * @param texture 
      * @param maxInstances - what is number of instances that can be rendererd per part? 
      */
-    public static createSpriteRenderPart (device: GPUDevice, texture: WebGPUTexture2D, maxInstances: number): WebGPUSpriteRendererPart
+    public static createSpriteRenderPart (device: GPUDevice, texture: WebGPUTexture2D, maxInstances: number, blendMode: BlendMode): WebGPUSpriteRendererPart
     {
 
         // Shaders first 
@@ -154,7 +158,7 @@ export class WebGPUSpriteUtil
             ]
         };
 
-        const fragmentState: GPUFragmentState = WebGPURenderPipelineUtil.createFragmentState(shaderModule); 
+        const fragmentState: GPUFragmentState = WebGPURenderPipelineUtil.createFragmentState(shaderModule, 'fs_main', blendMode);
         
         // UNIFORMS
 
@@ -247,6 +251,8 @@ export class WebGPUSpriteUtil
             indicesBuffer: buffers.indicesBuffer,
 
             instanceIndex: 0,
+
+            blendMode: blendMode
         }
     }
 }
