@@ -1,7 +1,7 @@
 import { Framework } from "../Framework";
 import { BasicMaterial } from "./basic/BasicMaterial";
 import { WebGPUBasicMaterial } from "./basic/gpu/WebGPUBasicMaterial";
-import { BasicMaterialOptions, MaterialFactory } from "./MaterialFactory";
+import { BasicMaterialData, MaterialFactory } from "./MaterialFactory";
 
 export class WebGPUMaterialFactory implements MaterialFactory
 {
@@ -10,7 +10,7 @@ export class WebGPUMaterialFactory implements MaterialFactory
     /**
      * @inheritdoc
      */
-    public createBasicMaterial (options?: BasicMaterialOptions): BasicMaterial
+    public createBasicMaterial (options?: BasicMaterialData): BasicMaterial
     {
         const material = new WebGPUBasicMaterial(this.m_framework, options?.maxInstances);
         if(options?.diffuseColor)

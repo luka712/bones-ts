@@ -1,7 +1,7 @@
 import { Framework } from "../Framework";
 import { GLBasicMaterial } from "./basic/gl/GLBasicMaterial";
 import { BasicMaterial } from "./basic/BasicMaterial";
-import { BasicMaterialOptions, MaterialFactory } from "./MaterialFactory";
+import { BasicMaterialData, MaterialFactory } from "./MaterialFactory";
 
 export class GLMaterialFactory implements MaterialFactory
 {
@@ -10,7 +10,7 @@ export class GLMaterialFactory implements MaterialFactory
     /**
      * @inheritdoc
      */
-    public createBasicMaterial (options?: BasicMaterialOptions): BasicMaterial
+    public createBasicMaterial (options?: BasicMaterialData): BasicMaterial
     {
         const material = new GLBasicMaterial(this.m_framework);
         if(options?.diffuseColor)

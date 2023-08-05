@@ -1,5 +1,3 @@
-
-
 import shaderSource from "./basic_material_shader.wgsl?raw"
 import { BasicMaterial } from "../BasicMaterial";
 import { WebGPURenderer } from "../../../../webgpu/WebGPURenderer";
@@ -16,9 +14,9 @@ import { WebGPURenderPipelineUtil } from "../../../renderers/common/gpu/WebGPURe
  */
 export class WebGPUBasicMaterial extends BasicMaterial 
 {
-    private m_pipeline: GPURenderPipeline;
-    private m_uniformsBindGroup: GPUBindGroup;
+    // #region Properties (4)
 
+    private m_pipeline: GPURenderPipeline;
     /**
      * For global (projectionViewMatrix)
      */
@@ -27,149 +25,30 @@ export class WebGPUBasicMaterial extends BasicMaterial
      * For drawing instance(transformMatrix, diffuseColor)
      */
     private m_uniformInstancesBuffer: GPUBuffer;
+    private m_uniformsBindGroup: GPUBindGroup;
 
+    // #endregion Properties (4)
+
+    // #region Constructors (1)
 
     constructor(private m_framework: Framework, maxInstances = 1)
     {
         super(maxInstances);
     }
 
-    private intializeStates (): { vertexState: GPUVertexState, fragmentState: GPUFragmentState }
-    {
-        const device = FrameworkContext.device;
+    // #endregion Constructors (1)
 
-        // Shaders first 
-        const shaderModule = device.createShaderModule({
-            code: shaderSource
-        });
-
-        // 🎭 Shader Stages
-        const vertexState: GPUVertexState = {
-            module: shaderModule,
-            entryPoint: 'vs_main',
-
-            buffers: [
-                {
-                    arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
-                    attributes: [
-                        // POSITION
-                        {
-                            shaderLocation: 0,
-                            format: 'float32x3',
-                            offset: 0
-                        },
-                    ],
-                    stepMode: 'vertex'
-                },
-                {
-                    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
-                    attributes: [
-                        // VERTEX COLOR 
-                        {
-                            shaderLocation: 1,
-                            format: 'float32x4',
-                            offset: 0
-                        },
-                    ],
-                    stepMode: 'vertex'
-                },
-
-            ]
-        };
-
-        const fragmentState: GPUFragmentState = WebGPURenderPipelineUtil.createFragmentState(shaderModule);
-
-        return {
-            vertexState, fragmentState
-        }
-    }
-
-    private initializeBuffers (): { uniformsBindGroupLayout: GPUBindGroupLayout }
-    {
-        const device = FrameworkContext.device;
-
-        // UNIFORMS
-
-        // GLOBAL UNIFORM BIND GROUP LAYOUT group(0)
-        const uniformsBindGroupLayout = device.createBindGroupLayout({
-            label: "basic_material_layout",
-            entries: [
-                {
-                    // global uniform group(0) binding(0)
-                    binding: 0,
-                    visibility: GPUShaderStage.VERTEX,
-                    buffer: {}
-                },
-                {
-                    // instance uniform group(0) binding(1)
-                    binding: 1,
-                    visibility: GPUShaderStage.VERTEX,
-                    buffer: {
-                        type: "read-only-storage",
-                        hasDynamicOffset: false
-                    }
-                }
-
-            ],
-        });
-
-
-        // ONCE PER FRAME 
-        this.m_uniformGlobalBuffer = device.createBuffer({
-            // projectionView, diffuseColor
-            size: Float32Array.BYTES_PER_ELEMENT * (16 + 4),
-            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
-        });
-
-        this.m_uniformInstancesBuffer = device.createBuffer({
-            // transform
-            size: Float32Array.BYTES_PER_ELEMENT * 16 * this.maxInstances,
-            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
-        });
-
-        // uniform layout. Done only once per frame, not for instance.
-        this.m_uniformsBindGroup = device.createBindGroup({
-            layout: uniformsBindGroupLayout,
-            entries: [
-                {
-                    binding: 0,
-                    resource: {
-                        buffer: this.m_uniformGlobalBuffer
-                    },
-                },
-                {
-                    binding: 1,
-                    resource: {
-                        buffer: this.m_uniformInstancesBuffer
-                    }
-                }]
-        });
-
-        return { uniformsBindGroupLayout };
-    }
+    // #region Public Methods (5)
 
     /**
-     * Initialize the backend wrapper.
-     * Creates the render pipeline and all the uniform buffers.
+     * @inheritdoc
      */
-    public initialize (): void 
+    public copy (): Material
     {
-        const { vertexState, fragmentState } = this.intializeStates();
-        const { uniformsBindGroupLayout } = this.initializeBuffers();
-
-        const device = FrameworkContext.device;
-
-
-        const pipelineLayout = device.createPipelineLayout({
-            bindGroupLayouts: [
-                uniformsBindGroupLayout
-            ]
-        });
-
-        const pipelineDesc: GPURenderPipelineDescriptor
-             = WebGPURenderPipelineUtil.createPipelineDescriptor(pipelineLayout, vertexState, fragmentState, "triangle-list" , "back");
-
-        this.m_pipeline = device.createRenderPipeline(pipelineDesc);
+        const material = new WebGPUBasicMaterial(this.m_framework, this.maxInstances);
+        material.diffuseColor = this.diffuseColor;
+        material.initialize();
+        return material;
     }
 
     /**
@@ -191,7 +70,7 @@ export class WebGPUBasicMaterial extends BasicMaterial
         renderPassEncoder.setPipeline(this.m_pipeline);
         renderPassEncoder.setBindGroup(0, this.m_uniformsBindGroup);
 
-        // Triangles
+        // draw
         renderPassEncoder.setVertexBuffer(0, mesh.vertexPositionsBuffer, 0, mesh.vertexPositionsBuffer.size);
         renderPassEncoder.setVertexBuffer(1, mesh.vertexColorsBuffer, 0, mesh.vertexColorsBuffer.size);
         renderPassEncoder.setIndexBuffer(mesh.indicesBuffer, mesh.indexFormat);
@@ -235,14 +114,145 @@ export class WebGPUBasicMaterial extends BasicMaterial
     }
 
     /**
-     * @inheritdoc
+     * Initialize the backend wrapper.
+     * Creates the render pipeline and all the uniform buffers.
      */
-    public copy (): Material
+    public initialize (): void 
     {
-        const material = new WebGPUBasicMaterial(this.m_framework, this.maxInstances);
-        material.diffuseColor = this.diffuseColor;
-        material.initialize();
-        return material;
+        const { vertexState, fragmentState } = this.intializeStates();
+        const { uniformsBindGroupLayout } = this.initializeBuffers();
+
+        const device = FrameworkContext.device;
+
+        const pipelineLayout = device.createPipelineLayout({
+            bindGroupLayouts: [
+                uniformsBindGroupLayout
+            ]
+        });
+
+        const pipelineDesc: GPURenderPipelineDescriptor
+             = WebGPURenderPipelineUtil.createPipelineDescriptor(pipelineLayout, vertexState, fragmentState, "triangle-list" , "back");
+
+        this.m_pipeline = device.createRenderPipeline(pipelineDesc);
     }
 
+    // #endregion Public Methods (5)
+
+    // #region Private Methods (2)
+
+    private initializeBuffers (): { uniformsBindGroupLayout: GPUBindGroupLayout }
+    {
+        const device = FrameworkContext.device;
+
+        // UNIFORMS
+
+        // GLOBAL UNIFORM BIND GROUP LAYOUT group(0)
+        const uniformsBindGroupLayout = device.createBindGroupLayout({
+            label: "basic_material_layout",
+            entries: [
+                {
+                    // global uniform group(0) binding(0)
+                    binding: 0,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: {}
+                },
+                {
+                    // instance uniform group(0) binding(1)
+                    binding: 1,
+                    visibility: GPUShaderStage.VERTEX,
+                    buffer: {
+                        type: "read-only-storage",
+                        hasDynamicOffset: false
+                    }
+                }
+
+            ],
+        });
+
+        // ONCE PER FRAME 
+        this.m_uniformGlobalBuffer = device.createBuffer({
+            // projectionView, diffuseColor
+            size: Float32Array.BYTES_PER_ELEMENT * (16 + 4),
+            usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+        });
+
+        this.m_uniformInstancesBuffer = device.createBuffer({
+            // transform
+            size: Float32Array.BYTES_PER_ELEMENT * 16 * this.maxInstances,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+
+        // uniform layout. Done only once per frame, not for instance.
+        this.m_uniformsBindGroup = device.createBindGroup({
+            layout: uniformsBindGroupLayout,
+            entries: [
+                {
+                    binding: 0,
+                    resource: {
+                        buffer: this.m_uniformGlobalBuffer
+                    },
+                },
+                {
+                    binding: 1,
+                    resource: {
+                        buffer: this.m_uniformInstancesBuffer
+                    }
+                }]
+        });
+
+        return { uniformsBindGroupLayout };
+    }
+
+    private intializeStates (): { vertexState: GPUVertexState, fragmentState: GPUFragmentState }
+    {
+        const device = FrameworkContext.device;
+
+        // Shaders first 
+        const shaderModule = device.createShaderModule({
+            code: shaderSource,
+            label: "basic_material_shader_module"
+        });
+
+        // 🎭 Shader Stages
+        const vertexState: GPUVertexState = {
+            module: shaderModule,
+            entryPoint: 'vs_main',
+
+            buffers: [
+                {
+                    arrayStride: Float32Array.BYTES_PER_ELEMENT * 3,
+                    attributes: [
+                        // POSITION
+                        {
+                            shaderLocation: 0,
+                            format: 'float32x3',
+                            offset: 0
+                        },
+                    ],
+                    stepMode: 'vertex'
+                },
+                {
+                    arrayStride: Float32Array.BYTES_PER_ELEMENT * 4,
+                    attributes: [
+                        // VERTEX COLOR 
+                        {
+                            shaderLocation: 1,
+                            format: 'float32x4',
+                            offset: 0
+                        },
+                    ],
+                    stepMode: 'vertex'
+                },
+
+            ]
+        };
+
+        const fragmentState: GPUFragmentState = WebGPURenderPipelineUtil.createFragmentState(shaderModule);
+
+        return {
+            vertexState, fragmentState
+        }
+    }
+
+    // #endregion Private Methods (2)
 }

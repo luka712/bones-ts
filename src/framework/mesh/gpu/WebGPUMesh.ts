@@ -53,7 +53,7 @@ export class WebGPUMesh extends Mesh
 
         // POSITIONS, TEX COORDS, TINT COLORS
         const positionsBuffer = device.createBuffer({
-            label: "vertexBuffer",
+            label: "vertex_position_buffer",
             size: this.m_geometry.vertexPositions.byteLength,
             usage: GPUBufferUsage.VERTEX,
             mappedAtCreation: true,

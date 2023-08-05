@@ -1,7 +1,7 @@
 import { Color } from "../bones_math";
 import { BasicMaterial } from "./basic/BasicMaterial";
 
-export interface BasicMaterialOptions 
+export interface BasicMaterialData 
 {
     diffuseColor?:Color;
 
@@ -19,5 +19,5 @@ export interface MaterialFactory
     /**
      * Creates the basic material.
      */
-    createBasicMaterial(options?: BasicMaterialOptions) : BasicMaterial;
+    createBasicMaterial(options?: BasicMaterialData) : BasicMaterial;
 }
