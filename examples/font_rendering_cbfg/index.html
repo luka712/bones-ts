@@ -1,0 +1,124 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+    <script src="../../dist/index.umd.js"></script>
+</head>
+
+<body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</body>
+
+<script>
+
+    window.onload = () => {
+
+        class Game extends BonesFramework.Framework {
+
+            font = null;
+
+            text1 = {
+                text: "Bones",
+                position: new BonesFramework.Vec2(100, 100),
+                tintColor: BonesFramework.Color.white(),
+                rotation: 0,
+                scale: 1
+            };
+
+            text2 = {
+                text: "Framework",
+                position: new BonesFramework.Vec2(100, 200),
+                tintColor: BonesFramework.Color.blue(),
+                rotation: 0,
+                scale: 1
+            };
+
+            text3 = {
+                text: "is great!",
+                position: new BonesFramework.Vec2(100, 300),
+                tintColor: BonesFramework.Color.red(),
+                rotation: 0,
+                scale: 1
+            }
+
+
+            createFolder (gui, text, index) {
+                const lf = gui.addFolder(`Text ${index}`);
+
+                lf.add(text, "text");
+
+                // POSITION
+                const pos_obj = {
+                    x: text.position.x,
+                    y: text.position.y,
+                };
+                const pf = lf.addFolder("position");
+                pf.add(pos_obj, "x").onChange(v => {
+                    text.position.x = v;
+                });
+                pf.add(pos_obj, "y").onChange(v => {
+                    text.position.y = v;
+                });
+
+                // ROTATION
+                lf.add(text, "scale");
+
+                // COLOR 
+                const temp = {
+                    tintColor: [text.tintColor.r * 255, text.tintColor.g * 255, text.tintColor.b * 255],
+                }
+                lf.addColor(temp, "tintColor").onChange(v => {
+                    text.tintColor[0] = v[0] / 255;
+                    text.tintColor[1] = v[1] / 255;
+                    text.tintColor[2] = v[2] / 255;
+                });
+            }
+
+            async initialize () {
+                const gui = new dat.GUI();
+
+                this.font  = await this.fontManager.loadCBFGFont("TheleahFat.bmp", "TheleahFat.csv");
+
+                this.createFolder(gui, this.text1, 1);
+                this.createFolder(gui, this.text2, 2);
+                this.createFolder(gui, this.text3, 3);
+            }
+
+            update (delta_time) { }
+
+            renderText(text) {
+                this.spriteRenderer.drawString(
+                    this.font,
+                    text.text,
+                    text.position,
+                    text.tintColor,
+                    text.scale);
+            }
+
+            draw () {
+
+                this.spriteRenderer.beginFrame();
+
+                this.renderText(this.text1);
+                this.renderText(this.text2);
+                this.renderText(this.text3);
+
+                this.spriteRenderer.endFrame();
+            }
+        }
+
+        const framework = new Game(document.getElementById("canvas"), {
+            renderer: "webgpu"
+        });
+        framework.initializeFramework().then(x => {
+            framework.runFrameworkLoops();
+        });
+
+    }
+</script>
+
+</html>

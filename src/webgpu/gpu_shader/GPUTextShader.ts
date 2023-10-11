@@ -5,7 +5,7 @@ import { Texture2D } from "../../framework/bones_texture";
 import { ShaderUniform } from "../../framework/shaders/Shader";
 import { SpriteShader } from "../../framework/shaders/SpriteShader";
 import { TextShader } from "../../framework/shaders/TextShader";
-import { WebGPUTexture2D } from "../textures/WebGPUTexture";
+import { Texture2D } from "../../framework/textures/Texture2D";
 import { GPUShader, GPU_BIND_GROUP_OFFSET } from "./GPUShader";
 
 export class GPUTextShader extends GPUShader implements TextShader
@@ -194,7 +194,7 @@ export class GPUTextShader extends GPUShader implements TextShader
     /**
      * Create and use GPU texture bind group.
      * 
-     * @param texture {@link WebGPUTexture2D}
+     * @param texture {@link Texture2D}
      */
     public useSpriteTexture(texture: Texture2D) : void 
     {        
@@ -203,11 +203,11 @@ export class GPUTextShader extends GPUShader implements TextShader
             entries: [
                 {
                     binding: 0,
-                    resource: (texture as WebGPUTexture2D).sampler
+                    resource: (texture as Texture2D).sampler
                 },
                 {
                     binding: 1,
-                    resource: (texture as WebGPUTexture2D).texture.createView()
+                    resource: (texture as Texture2D).texture.createView()
                 },
             ]
          });

@@ -1,7 +1,7 @@
 import { GeometryBuffer } from "./GeometryBuffer";
 import { Color, Mat4x4, Vec2 } from "./bones_math";
 import { IRenderer } from "./bones_renderer";
-import { BlendMode } from "./SpriteRenderer";
+import { BlendMode } from "./sprite/SpriteRenderer";
 import { Texture2D } from "./bones_texture";
 import { Vec3 } from "./math/vec/Vec3";
 import { SpriteFont } from "./fonts/SpriteFont";

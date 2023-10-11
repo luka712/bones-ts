@@ -11,6 +11,7 @@ import { Vec3 } from "./Vec3";
  */
 export class Vec2 extends BaseMatrix<Vec2>
 {
+ 
     // just optimization variables 
     private static temp_v2_a: Vec2;
     private static temp_v2_b: Vec2;
@@ -63,6 +64,17 @@ export class Vec2 extends BaseMatrix<Vec2>
         this[0] *= magnitude;
         this[1] *= magnitude;
         return this;
+    }
+
+    /**
+     * Sets the values of a vector.
+     * @param x The x value.
+     * @param y The y value.
+     */
+    public setValues(x: number, y: number): void
+    {
+        this[0] = x;
+        this[1] = y;
     }
 
     /**
@@ -387,6 +399,16 @@ export class Vec2 extends BaseMatrix<Vec2>
     public static fromArray (value: ArrayLike<number>): Vec2  
     {
         return new Vec2(value[0], value[1]);
+    }
+
+    /**
+     * Create a new vector from values.
+     * @param x 
+     * @param y 
+     * @returns @see {@link Vec2}
+     */
+    public static fromValues (x: number, y: number): Vec2 {
+        return new Vec2(x, y);
     }
 
     /**

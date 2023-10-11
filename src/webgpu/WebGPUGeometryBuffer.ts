@@ -1,5 +1,5 @@
 import { BufferUsage, ComponentType, DrawType, GeometryBuffer, IndicesBufferDescription, SharedVertexBufferDescription, VertexBufferDescription } from "../framework/GeometryBuffer";
-import { WebGPURenderer } from "./WebGPURenderer";
+import { Renderer } from "../framework/renderer/Renderer";
 
 // to read https://github.com/toji/webgpu-best-practices/blob/main/buffer-uploads.md
 
@@ -53,7 +53,7 @@ export class WebGPUGeometryBuffer implements GeometryBuffer
      */
     private m_boundIndex: number = 0;
 
-    constructor(private m_renderer: WebGPURenderer, vertices_attr: Array<VertexBufferDescription> = null, indices_attr: IndicesBufferDescription = null, shared_buffer: SharedVertexBufferDescription = null)
+    constructor(private m_renderer: Renderer, vertices_attr: Array<VertexBufferDescription> = null, indices_attr: IndicesBufferDescription = null, shared_buffer: SharedVertexBufferDescription = null)
     {
         // useful https://github.com/toji/webgpu-best-practices/blob/main/buffer-uploads.md
 

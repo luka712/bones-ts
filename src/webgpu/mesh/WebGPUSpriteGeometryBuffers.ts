@@ -2,7 +2,7 @@
 // to read https://github.com/toji/webgpu-best-practices/blob/main/buffer-uploads.md
 
 import { QuadGeometry } from "../../framework/geometry/bones_geometry";
-import { WebGPURendererContext } from "../WebGPURenderer";
+import { WebGPURendererContext } from "../../framework/renderer/Renderer";
 
 // OBSOLETE
 export class WebGPUSpriteGeometryBuffer

@@ -1,50 +1,31 @@
-import { GLEffectFactory } from "../webgl/GLPostProcessManager";
-import { GL2Renderer } from "../webgl/GL2Renderer";
-import { GLTextureManager } from "../webgl/GLTexture";
+
 import { Config } from "./bones_config";
 import { InputManager } from "./input/InputManager";
-import { FileLoader, ImageLoader } from "./bones_loaders";
-import { IRenderer } from "./bones_renderer";
-import { SpriteRenderer } from "./SpriteRenderer";
-import { TextureManager } from "./bones_texture";
+import { SpriteRenderer } from "./sprite/SpriteRenderer";
 import { TextRenderManager } from "./TextRenderer";
 import { TimeManager } from "./bones_time";
 import { WindowManager } from "./Window";
 import { State } from "./state/State";
 import { SpriteFont } from "./fonts/SpriteFont";
 import { SpriteFontManager } from "./fonts/SpriteFontManager";
-import { WebGPURenderer } from "../webgpu/WebGPURenderer";
+import { Renderer } from "./renderer/Renderer";
 import { SoundManager } from "./sounds/SoundManager";
-import { PostProcessManager, IEffectFactory } from "./bones_post_process";
 import { ParticlesFactory } from "./particles/ParticlesFactory";
 import { FrameworkPlugin } from "./plugin/FrameworkPlugin";
-import { WebGPUTextureManager } from "../webgpu/textures/WebGPUTextureManager";
+import { TextureManager } from "./textures/TextureManager";
 import { PostProcessPipelineFactory } from "./post_process/pipelines/PostProcessPipelineFactory";
-import { GLPipelineFactory } from "../webgl/post_process/pipelines/GLPipelineFactory";
-import { GLPostProcessManager } from "../webgl/post_process/GLPostProcessManager";
-import { GLLineRenderer2D } from "../webgl/renderers/lines/GLLineRenderer2D";
-import { LineRenderer2D } from "./renderers/LineRenderer2D";
-import { RectangleRenderer } from "./renderers/RectangleRenderer";
-import { GLEllipseRenderer } from "../webgl/renderers/ellipse/GLEllipseRenderer";
 import { GeometryBuilder } from "./geometry/GeometryBuilder";
 import { Scene } from "./scene/Scene";
-import { MaterialFactory } from "./material/MaterialFactory";
-import { WebGPUMaterialFactory } from "./material/WebGPUMaterialFactory";
 import { MeshFactory } from "./mesh/MeshFactory";
-import { GLMaterialFactory } from "./material/GLMaterialFactory";
-import { GLMeshFactory } from "./mesh/gl/GLMeshFactory";
 import { WebGPUMeshFactory } from "./mesh/gpu/WebGPUMeshFactory";
 import { FrameworkContext } from "./FrameworkContext";
-import { WebGPURectangleRenderer } from "./renderers/rectangle/gpu/WebGPURectangleRenderer";
-import { GLRectangleRenderer } from "./renderers/rectangle/gl/GLRectangleRenderer";
-import { GLSpriteRenderer } from "./renderers/sprite/gl/GLSpriteRenderer";
-import { WebGPUSpriteRenderer } from "./renderers/sprite/gpu/WebGPUSpriteRenderer";
-import { GLParticlesFactory } from "./particles/gl/GLParticlesFactory";
+import { ImageLoader } from "./loaders/ImageLoader";
+import { FileLoader } from "./loaders/FileLoader";
+import { EffectsFactory } from "./effects/EffectsFactory";
 
 
 
-export interface GameJoltCredentials 
-{
+export interface GameJoltCredentials {
     /**
      * The private key of a game.
      */
@@ -58,30 +39,16 @@ export interface GameJoltCredentials
 
 
 /**
- * Which renderer to use.
- */
-export enum UseRendererOption 
-{
-    WebGL2 = "webgl2",
-    WebGPU = "webgpu"
-}
-
-/**
  * The framework options.
  */
-export interface FrameworkOptions 
-{
-    /**
-     * Which renderer to use.
-     */
-    renderer?: UseRendererOption | string;
+export interface FrameworkOptions {
 }
 
 /**
  * The framework.
  */
-abstract class Framework
-{
+abstract class Framework {
+
     private m_runFramework: boolean;
 
     /**
@@ -107,7 +74,7 @@ abstract class Framework
     /**
      * The renderer.
      */
-    public readonly renderer: IRenderer;
+    public readonly renderer: Renderer;
 
     /**
      * The file loader.
@@ -128,21 +95,6 @@ abstract class Framework
      * The sprite renderer.
      */
     public readonly spriteRenderer: SpriteRenderer;
-
-    /**
-     * The line renderer.
-     */
-    public readonly lineRenderer2D: LineRenderer2D;
-
-    /**
-     * The rectangle renderer.
-     */
-    public readonly rectangleRenderer: RectangleRenderer;
-
-    /**
-     * The ellipse/circle renderer.
-     */
-    public readonly ellipseRenderer: GLEllipseRenderer;
 
     /**
      * The text render manager.
@@ -175,14 +127,9 @@ abstract class Framework
     public readonly timeManager: TimeManager;
 
     /**
-     * The post process manager.
-     */
-    public readonly postProcessManager: PostProcessManager;
-
-    /**
      * The effects.
      */
-    public readonly effects: IEffectFactory;
+    public readonly effects: EffectsFactory;
 
     /**
      * The pipeline factory.
@@ -215,22 +162,17 @@ abstract class Framework
     public readonly meshFactory: MeshFactory;
 
     /**
-     * The material manager.
-     */
-    public readonly materialFactory: MaterialFactory;
-
-    /**
      * The active scene, if greater or equal 0, tries to get scene from scenes.
      */
     public activeScene = -1;
 
+    public context: FrameworkContext = {};
 
     /**
      * The constructor.
      * @param { HTMLCanvasElement } canvas 
      */
-    constructor(public readonly canvas: HTMLCanvasElement, options: FrameworkOptions)
-    {
+    constructor(public readonly canvas: HTMLCanvasElement, options: FrameworkOptions) {
         this.window = new WindowManager(canvas);
         this.fileLoader = new FileLoader();
         this.imageLoader = new ImageLoader();
@@ -239,57 +181,23 @@ abstract class Framework
         this.config = new Config(this.fileLoader);
         this.timeManager = new TimeManager();
         this.geometryBuilder = new GeometryBuilder();
-
-        if (options?.renderer == UseRendererOption.WebGPU)
-        {
-            this.renderer = new WebGPURenderer(canvas, this);
-            this.materialFactory = new WebGPUMaterialFactory(this);
-            this.meshFactory = new WebGPUMeshFactory(this);
-            this.textureManager = new WebGPUTextureManager(this.renderer as WebGPURenderer, this.imageLoader);
-            this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
-            this.spriteRenderer = new WebGPUSpriteRenderer((this.renderer as WebGPURenderer).context);
-            this.rectangleRenderer = new WebGPURectangleRenderer(this, (this.renderer as WebGPURenderer).context);
-
-            // TODO: temp
-            this.renderer.spriteRenderer = this.spriteRenderer;
-            (this.renderer as WebGPURenderer).textureManager = this.textureManager;
-        }
-        // by default WebGL2
-        else
-        {
-            this.renderer = new GL2Renderer(canvas, this.window);
-            const gl = FrameworkContext.gl;
-            this.materialFactory = new GLMaterialFactory(this);
-            this.meshFactory = new GLMeshFactory(this);
-            this.textureManager = new GLTextureManager(gl, this.imageLoader);
-            this.spriteRenderer = new GLSpriteRenderer(gl);
-            this.renderer.spriteRenderer = this.spriteRenderer;
-            // this.textRenderManager = new GLTextRenderer(gl, this.window, this.renderer, this.fileLoader);
-            this.postProcessManager = new GLPostProcessManager(this.window, this.renderer, gl);
-            this.effects = new GLEffectFactory(this.renderer, this.timeManager, this.fileLoader, this.textureManager, gl);
-            this.fontManager = new SpriteFontManager(this.textureManager, this.imageLoader);
-            this.particles = new GLParticlesFactory(gl, this);
-            this.postProcessPipelines = new GLPipelineFactory(this.window, this.renderer, gl, this.effects);
-
-            // various renderers. Use factory to create one instead.
-            this.lineRenderer2D = new GLLineRenderer2D(this);
-            this.rectangleRenderer = new GLRectangleRenderer(this);
-            this.ellipseRenderer = new GLEllipseRenderer(this);
-        }
+        this.renderer = new Renderer(this);
+        this.meshFactory = new WebGPUMeshFactory(this);
+        this.textureManager = new TextureManager(this);
+        this.fontManager = new SpriteFontManager(this);
+        this.spriteRenderer = new SpriteRenderer(this);
+        this.effects = new EffectsFactory(this);
     }
 
     /**
      * The animation frame. Runs all loops.
      */
-    private animationFrame (): void
-    {
-        if (this.m_runFramework)
-        {
+    private animationFrame (): void {
+        if (this.m_runFramework) {
             this.timeManager.start();
 
-            if (this.activeScene >= 0)
-            {
-               //   this.sceneManager.activeScene = this.scenes[this.activeScene];
+            if (this.activeScene >= 0) {
+                //   this.sceneManager.activeScene = this.scenes[this.activeScene];
             }
 
             this.input.update();
@@ -300,8 +208,7 @@ abstract class Framework
             // main method, state, plugins
             this.update(delta_time_ms);
             this.m_currentState?.onUpdate(delta_time_ms);
-            for (let key in this.plugins)
-            {
+            for (let key in this.plugins) {
                 this.plugins[key].update(delta_time_ms);
             }
 
@@ -316,8 +223,7 @@ abstract class Framework
             // main method, state, plugins
             this.draw();
             this.m_currentState?.onDraw();
-            for (let key in this.plugins)
-            {
+            for (let key in this.plugins) {
                 this.plugins[key].draw();
             }
             this.renderer.endDraw();
@@ -334,10 +240,8 @@ abstract class Framework
      * @param { State } state - state to register.
      * @returns {  Promise<void> }
      */
-    protected addState (name: string, state: State): Promise<void> 
-    {
-        if (this.m_stateMap[name])
-        {
+    protected addState (name: string, state: State): Promise<void> {
+        if (this.m_stateMap[name]) {
             this.m_stateMap[name].destroy();
         }
 
@@ -351,10 +255,8 @@ abstract class Framework
      * @param { string } name - name of a state.
      * @returns { void }
      */
-    protected removeState (name: string): void 
-    {
-        if (this.m_stateMap[name])
-        {
+    protected removeState (name: string): void {
+        if (this.m_stateMap[name]) {
             this.m_stateMap[name].destroy();
         }
         delete this.m_stateMap[name];
@@ -365,8 +267,7 @@ abstract class Framework
      * @param { string } name
      * @returns { FrameworkPlugin | undefined} 
      */
-    public getPlugin (name: string): FrameworkPlugin | undefined
-    {
+    public getPlugin (name: string): FrameworkPlugin | undefined {
         return this.plugins[name];
     }
 
@@ -375,10 +276,8 @@ abstract class Framework
      * @param { string } name 
      * @param { FrameworkPlugin } plugin - plugin instance. 
      */
-    protected addPlugin (name: string, plugin: FrameworkPlugin): FrameworkPlugin 
-    {
-        if (this.plugins[name])
-        {
+    protected addPlugin (name: string, plugin: FrameworkPlugin): FrameworkPlugin {
+        if (this.plugins[name]) {
             throw new Error(`Framework::addPlugin: Plugin '${name}' already added!`);
         }
         this.plugins[name] = plugin;
@@ -389,16 +288,14 @@ abstract class Framework
      * Setups the framework. 
      * To override if there are any plugins to be registered.
      */
-    public setup (): void 
-    {
+    public setup (): void {
 
     }
 
     /**
      * Initialize the framework.
      */
-    public async initializeFramework (): Promise<void>
-    {
+    public async initializeFramework (): Promise<void> {
         this.m_runFramework = true;
 
         await this.renderer.initialize();
@@ -406,11 +303,7 @@ abstract class Framework
         await this.spriteRenderer?.initialize();
         // await this.textRenderManager?.initialize();
         await this.config.initialize();
-        this.fontManager?.initialize();
-        await this.postProcessManager?.initialize();
-        await this.lineRenderer2D?.initialize();
-        await this.rectangleRenderer?.initialize();
-        await this.ellipseRenderer?.initialize();
+        this.fontManager?.initialize();;
 
         // this.inputManager.initialize();
 
@@ -420,16 +313,14 @@ abstract class Framework
         this.setup();
 
         // setup plugins
-        for (let key in this.plugins)
-        {
+        for (let key in this.plugins) {
             this.plugins[key].setup(this);
         }
 
         // initialize.
         await this.initialize();
 
-        for (let key in this.plugins)
-        {
+        for (let key in this.plugins) {
             await this.plugins[key].initialize();
         }
     }
@@ -437,27 +328,23 @@ abstract class Framework
     /**
      * @brief Starts the update and render loop.
      */
-    public runFrameworkLoops (): void 
-    {
+    public runFrameworkLoops (): void {
         requestAnimationFrame(this.animationFrame.bind(this));
     }
 
     /**
      * @brief Stops the framework and releases all the resources.
      */
-    public stopFramework (): void 
-    {
+    public stopFramework (): void {
         this.m_runFramework = false;
     }
 
     /**
      * @brief Destroys the framework and all of it's resources.
      */
-    public destroyFramework (): void 
-    {
+    public destroyFramework (): void {
         // Destroy all the manager/variables that implement destroy.
         this.renderer.destroy();
-        this.spriteRenderer.destroy();
         //  this.textRenderManager.destroy();
     }
 
@@ -470,10 +357,8 @@ abstract class Framework
      * @param { string } name - name of a state.
      * @returns { void }
      */
-    public useState (name: string): void 
-    {
-        if (this.m_currentState)
-        {
+    public useState (name: string): void {
+        if (this.m_currentState) {
             this.m_currentState.onExit();
         }
         this.m_currentState = this.m_stateMap[name];
@@ -500,7 +385,6 @@ abstract class Framework
     //#endregion
 }
 
-export
-{
+export {
     Framework
 }

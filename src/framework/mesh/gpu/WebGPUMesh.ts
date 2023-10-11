@@ -1,4 +1,4 @@
-import { WebGPURenderer } from "../../../webgpu/WebGPURenderer";
+import { Renderer } from "../../renderer/Renderer";
 import { Framework } from "../../Framework";
 import { Geometry } from "../../geometry/Geometry";
 import { Mesh } from "../Mesh";
@@ -48,7 +48,7 @@ export class WebGPUMesh extends Mesh
 
     private intitializePositionsBuffer (): GPUBuffer
     {
-        const device = (this.m_framework.renderer as WebGPURenderer).device;
+        const device = (this.m_framework.renderer as Renderer).device;
 
 
         // POSITIONS, TEX COORDS, TINT COLORS
@@ -102,7 +102,7 @@ export class WebGPUMesh extends Mesh
 
     public initialize () : void 
     {
-        this.m_device = (this.m_framework.renderer as WebGPURenderer).device;
+        this.m_device = (this.m_framework.renderer as Renderer).device;
 
         this.indicesBuffer = this.initializeIndicesBuffer();
         this.vertexPositionsBuffer = this.intitializePositionsBuffer();

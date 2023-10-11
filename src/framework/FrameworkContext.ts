@@ -1,5 +1,12 @@
 export class FrameworkContext 
 {
-    public static device: GPUDevice;
-    public static gl: WebGL2RenderingContext;
+    /**
+     * The gpu device.
+     */
+    public device?: GPUDevice;
+
+    /**
+     * The current render pass encoder.
+     */
+    public currentRenderPassEncoder?: GPURenderPassEncoder;
 }

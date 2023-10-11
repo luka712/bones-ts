@@ -1,8 +1,8 @@
 
 import { FileLoader } from "../../framework/bones_loaders";
 import { Mat4x4, Color } from "../../framework/bones_math";
-import { WebGPUTexture2D } from "../textures/WebGPUTexture";
-import { WebGPURendererContext } from "../WebGPURenderer";
+import { Texture2D } from "../../framework/textures/Texture2D";
+import { WebGPURendererContext } from "../../framework/renderer/Renderer";
 
 /**
  * The offset or alignment that needs to be between various groups.
@@ -249,7 +249,7 @@ export class WebGPUSpritePipeline
      * @param tint_color 
      * @param texture 
      */
-    public setInstanceData (transform_matrix: Mat4x4, tint_color: Color, texture: WebGPUTexture2D): void 
+    public setInstanceData (transform_matrix: Mat4x4, tint_color: Color, texture: Texture2D): void 
     {
         // create or get from cache bind group.
         if (this.m_instanceIndex >= this.m_instanceBindGroup.length)

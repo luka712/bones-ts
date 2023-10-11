@@ -3,16 +3,21 @@ import { Mat4x4 } from "../bones_math";
 export abstract class Camera 
 {
     /**
-     * The projection matrix.
+     * The projection matrix. 
+     * @note Do not modify this. It is modified by camera class.
      */
-    projectionMatrix: Mat4x4;
+    protected m_projectionMatrix: Mat4x4;
 
     /**
-     * The view matrix.
+     * The view matrix. 
+     * @note Do not modify this. It is modified by camera class.
      */
-    viewMatrix: Mat4x4;
+    protected m_viewMatrix: Mat4x4;
 
-    // only used really internally.
+    /**
+     * The projection view matrix.
+     * @note Do not modify this. It is modified by camera class.
+     */
     projectionViewMatrix: Mat4x4 = Mat4x4.identity();
 
     public abstract update(deltaTime: number) : void;

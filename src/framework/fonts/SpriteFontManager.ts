@@ -1,11 +1,12 @@
-import { CbfgFontLoader } from "./CbfgFontLoader";
-import { ImageLoader } from "../bones_loaders";
+import { CbfgFontLoader } from "../loaders/CbfgFontLoader";
 import { Vec2 } from "../bones_math";
-import { TextureManager } from "../bones_texture";
-import { FontCharacter, FontType, SpriteFont } from "./SpriteFont";
 
-export class SpriteFontManager 
-{
+import { SpriteFontCharacter, FontType, SpriteFont } from "./SpriteFont";
+import { ImageLoader } from "../loaders/ImageLoader";
+import { Framework, TextureManager } from "../..";
+import { SnowBFontLoader } from "../loaders/SnowBFontLoader";
+
+export class SpriteFontManager {
     /**
      * The default font provided by SpriteFontManager.
      */
@@ -17,20 +18,24 @@ export class SpriteFontManager
     private m_cbfgFontLoader: CbfgFontLoader;
 
     /**
-     * The constructor.
-     * @param { TextureManager } m_textureManager 
+     * The specific font loader.
      */
-    constructor(private readonly m_textureManager: TextureManager, private readonly m_imageLoader: ImageLoader)
-    {
-        this.m_cbfgFontLoader = new CbfgFontLoader(m_imageLoader, m_textureManager);
+    private m_snowBFontLoader: SnowBFontLoader;
+
+    /**
+     * The constructor.
+     * @param @see {@link Framework } m_framework 
+     */
+    constructor(private readonly m_framework: Framework) {
+        this.m_cbfgFontLoader = new CbfgFontLoader(m_framework);
+        this.m_snowBFontLoader = new SnowBFontLoader(m_framework);
     }
 
     /**
      * Initialize the sprite font manager.
      * @returns { void }
      */
-    public async initialize (): Promise<void> 
-    {
+    public async initialize (): Promise<void> {
         this.defaultFont = await this.createFont();
     }
 
@@ -40,15 +45,13 @@ export class SpriteFontManager
      * @param { string } font - any standard css font that can be used by 2d context of canvas element. @see https://developer.mozilla.org/en-US/docs/Web/CSS/font . By default se to '48px sans-serif'.
      * @param { number } size - font size. By default set to 24. Larger font results in clearer text, but larger textures.
      */
-    public async createFont (font: string = '24px sans-serif', size: number = 24): Promise<SpriteFont>
-    {
+    public async createFont (font: string = '24px sans-serif', size: number = 24): Promise<SpriteFont> {
         const result = new SpriteFont(FontType.GlyphCharFont, size);
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
 
-        for (let i = 0; i < 128; i++)
-        {
+        for (let i = 0; i < 128; i++) {
             let char = String.fromCharCode(i);
 
             ctx.canvas.width = size;
@@ -61,8 +64,10 @@ export class SpriteFontManager
             ctx.clearRect(0, 0, size, size);
             ctx.fillText(char, size / 2, size / 2);
 
-            const font_char = new FontCharacter();
-            font_char.texture = await this.m_textureManager.createTexture(canvas, size, size);
+            const font_char = new SpriteFontCharacter();
+            font_char.texture = await this.m_framework.textureManager.createTexture(canvas, {
+                textureSize: new Vec2(size, size)
+            });
             font_char.size = new Vec2(size, size);
 
             result.createFontCharacterInfo(char, font_char);
@@ -80,8 +85,7 @@ export class SpriteFontManager
      * @param { number | undefined } size - optional size parameter. Each char will be of passed size. 
      * @returns { Promise<SpriteFont> }
      */
-    public async loadAndCreateFont (family: string, font_path: string, size: number = 48): Promise<SpriteFont>
-    {
+    public async loadAndCreateFont (family: string, font_path: string, size: number = 48): Promise<SpriteFont> {
         // first load new font and add it to document
         const font = new FontFace(family, `url(${font_path})`);
         await font.load();
@@ -95,8 +99,7 @@ export class SpriteFontManager
         const ctx = canvas.getContext("2d");
 
         // for each ASCII char
-        for (let i = 0; i < 128; i++)
-        {
+        for (let i = 0; i < 128; i++) {
             let char = String.fromCharCode(i);
 
             // describe char
@@ -111,8 +114,10 @@ export class SpriteFontManager
             ctx.fillText(char, size / 2, size / 2);
 
             // create charater and texture for it.
-            const font_char = new FontCharacter();
-            font_char.texture = await this.m_textureManager.createTexture(canvas, size, size);
+            const font_char = new SpriteFontCharacter();
+            font_char.texture = await this.m_framework.textureManager.createTexture(canvas, {
+                textureSize: new Vec2(size, size)
+            });
             font_char.size = new Vec2(size, size);
 
             result.createFontCharacterInfo(char, font_char);
@@ -126,22 +131,29 @@ export class SpriteFontManager
 
 
     /**
-     * Loads a bitmap font. 
-     * @param { string } family - name of font family.
-     * @param { string } font_path - path to font.
-     * @param { number | undefined } size - optional size parameter. Each char will be of passed size. 
-     * @returns { Promise<SpriteFont> }
+     * Loads a bitmap font, created by CBFG tool.
+     * @param bitmapPath Path to bitmap.
+     * @param csvPath Path to csv file.
+     * @returns @see {@link Promise<SpriteFont> }
      */
-    public loadBitmapFont (bitmap_path: string, data_path: string): Promise<SpriteFont> 
-    {
-        return this.m_cbfgFontLoader.loadFont(bitmap_path, data_path);
+    public loadCBFGFont (bitmapPath: string, csvPath: string): Promise<SpriteFont> {
+        return this.m_cbfgFontLoader.loadFont(bitmapPath, csvPath);
+    }
+
+    /**
+     * Loads a bitmap font, created by SnowB tool.
+     * @param imagePath Path to bitmap.
+     * @param xmlPath Path to xml file.
+     * @returns @see {@link Promise<SpriteFont>}
+     */
+    public loadSnowBFont (imagePath: string, xmlPath: string): Promise<SpriteFont> {
+        return this.m_snowBFontLoader.loadFont(imagePath, xmlPath);
     }
 
     /**
      * Destroy the font manager.
      */
-    public destroy (): void 
-    {
+    public destroy (): void {
         this.defaultFont.destroy();
     }
 }

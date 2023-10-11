@@ -9,7 +9,7 @@ import { GLParticleEmitterRenderStepShader, GLParticleEmitterUpdateStepShader } 
 import { ParticleEmitterOptions, ParticlesEmitter } from "../ParticlesEmitter";
 import { ParticleEmitterRenderStepShader, ParticleEmitterUpdateStepShader } from "../../shaders/particles/ParticleEmitterShader";
 import { WindowManager } from "../../Window";
-import { Camera2D } from "../../renderers/common/Camera2D";
+import { Camera2D } from "../../sprite/common/Camera2D";
 import { Framework } from "../../Framework";
 import { verify } from "crypto";
 

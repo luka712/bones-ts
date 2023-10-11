@@ -1,7 +1,7 @@
 import { Rect, Vec2 } from "../framework/bones_math";
 import { Texture2D } from "../framework/bones_texture";
 import { SpriteFont } from "../framework/fonts/SpriteFont";
-import { SpriteRenderer } from "../framework/SpriteRenderer";
+import { SpriteRenderer } from "../framework/sprite/SpriteRenderer";
 import { TextRenderManager } from "../framework/TextRenderer";
 
 /**

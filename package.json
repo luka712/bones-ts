@@ -7,7 +7,8 @@
   "typings": "dist/index.ts",
   "scripts": {
     "test": "jest",
-    "build": "npx webpack",
+    "build": "tsc && vite build",
+    "vite": "vite build",
     "typescript": "tsc"
   },
   "devDependencies": {

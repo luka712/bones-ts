@@ -7,15 +7,15 @@ export class Quad2D
 {
     /**
      * Constructs a 2d quad.
-     * @param { Vec2 } a 
-     * @param { Vec2 } b 
-     * @param { Vec2 } c 
-     * @param { Vec2 } d 
+     * @param { Vec2 } topLeft 
+     * @param { Vec2 } topRight 
+     * @param { Vec2 } bottomRight 
+     * @param { Vec2 } bottomLeft 
      */
     constructor(
-        public a: Vec2,
-        public b: Vec2,
-        public c: Vec2,
-        public d: Vec2
+        public topLeft: Vec2,
+        public topRight: Vec2,
+        public bottomRight: Vec2,
+        public bottomLeft: Vec2
     ) { }
 }

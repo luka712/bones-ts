@@ -53,5 +53,5 @@ generate documentation with
 ```npx typedoc src/index.ts```
 
 # TODO: 
-LINE RENDERING
-https://wwwtyro.net/2019/11/18/instanced-lines.html
+- get rid of webgl
+- implement sprite renderer, font renderer 

@@ -3,7 +3,7 @@ import { Config } from "../bones_config";
 import { Framework } from "../Framework";
 import { InputManager } from "../input/InputManager";
 import { IEffectFactory, PostProcessManager } from "../bones_post_process";
-import { SpriteRenderer } from "../SpriteRenderer";
+import { SpriteRenderer } from "../sprite/SpriteRenderer";
 import { TextureManager } from "../bones_texture";
 import { TextRenderManager } from "../TextRenderer";
 import { TimeManager } from "../bones_time";

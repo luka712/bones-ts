@@ -16,7 +16,25 @@ class Rect
     {
 
     }
+
+    /**
+     * The width.
+     * Same as @see {@link w}
+     */
+    public get width(): number 
+    {
+        return this.w;
+    }
     
+    /**
+     * The height.
+     * Same as @see {@link h}
+     */
+    public get height(): number
+    {
+        return this.h;
+    }
+
     /**
      * Does the rectangle intersects other rectangle.
      * @param { RectF } other 

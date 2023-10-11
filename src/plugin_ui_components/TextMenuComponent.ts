@@ -1,7 +1,7 @@
 import { TimerComponent } from "../plugin_utils_components/TimerComponent";
 import { LifecycleState } from "../framework/bones_common";
 import { Vec2, Rect, Color } from "../framework/bones_math";
-import { SpriteFont, FontCharacter, FontType } from "../framework/fonts/SpriteFont";
+import { SpriteFont, SpriteFontCharacter, FontType } from "../framework/fonts/SpriteFont";
 import { InputManager } from "../framework/input/InputManager";
 import { Sound } from "../framework/sounds/Sound";
 import { TextRenderManager } from "../framework/TextRenderer";
@@ -379,12 +379,12 @@ export class TextMenuComponent
             // set rect w
             const count = child.text.length;
 
-            let ch: FontCharacter | null = null;
+            let ch: SpriteFontCharacter | null = null;
 
             // Don't really care about last char, when it comes to width.
             for (let i = 0; i < count; i++)
             {
-                ch = this.m_font.getFontCharacterInfo(child.text[i]);
+                ch = this.m_font.getChar(child.text[i]);
 
                 // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
                 if (this.m_font.fontType == FontType.GlyphCharFont)

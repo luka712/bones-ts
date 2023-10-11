@@ -4,7 +4,7 @@ import { Mat4x4, Color } from "../../framework/bones_math";
 import { Texture2D } from "../../framework/bones_texture";
 import { ShaderUniform } from "../../framework/shaders/Shader";
 import { SpriteShader } from "../../framework/shaders/SpriteShader";
-import { WebGPUTexture2D } from "../textures/WebGPUTexture";
+import { Texture2D } from "../../framework/textures/Texture2D";
 import { GPUShader, GPU_BIND_GROUP_OFFSET } from "./GPUShader";
 
 // OBSOLETE
@@ -199,7 +199,7 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
     /**
      * Create and use GPU texture bind group.
      * 
-     * @param texture {@link WebGPUTexture2D}
+     * @param texture {@link Texture2D}
      */
     public useSpriteTexture(texture: Texture2D) : void 
     {        
@@ -208,11 +208,11 @@ export class GPUSpriteShader extends GPUShader implements SpriteShader
             entries: [
                 {
                     binding: 0,
-                    resource: (texture as WebGPUTexture2D).sampler
+                    resource: (texture as Texture2D).sampler
                 },
                 {
                     binding: 1,
-                    resource: (texture as WebGPUTexture2D).texture.createView()
+                    resource: (texture as Texture2D).texture.createView()
                 },
             ]
          });
